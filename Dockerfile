@@ -110,7 +110,7 @@ ENV CONTAINER_ARCH=$TARGETARCH
 ENV ENV_MODE=production
 
 # ========= Install all apt packages in a single layer =========
-# Base packages, PostgreSQL 17 and rclone share one RUN to minimise layer count
+# Base packages and PostgreSQL 17 share one RUN to minimise layer count
 # and cache-export overhead.
 #
 #   - wget: build-only — fetches the repo signing keys, then purged at the end of
@@ -125,7 +125,7 @@ ENV ENV_MODE=production
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-      ca-certificates gosu rclone \
+      ca-certificates gosu \
       libncurses5 libncurses6 libmariadb3 libgnutls30 \
       wget; \
     wget -qO /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc; \

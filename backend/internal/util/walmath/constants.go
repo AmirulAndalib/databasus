@@ -16,6 +16,9 @@ const (
 
 	maxCountOfLSN = 2
 	hexUint32Bits = 32
+	hexUint64Bits = 64
+
+	walSegmentFilenameLength = 24
 )
 
 func SetWalSize(sizeMb uint64) {

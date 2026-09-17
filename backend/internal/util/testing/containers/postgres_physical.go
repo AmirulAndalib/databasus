@@ -32,13 +32,13 @@ const physicalStandbySlotName = "databasus_test_standby"
 // logical default fills mid-test and the source crashes with "No space left on device".
 const physicalDataDirTmpfsOptions = "rw,size=2g"
 
-// physicalPostgresOptions configures a replication-capable source container.
 type physicalPostgresOptions struct {
-	summarizeWal            bool
-	fullPageWrites          bool
-	withTablespace          bool
-	omitReplicationHbaEntry bool
-	maxConnections          int
+	shouldSummarizeWal            bool
+	shouldEnableFullPageWrites    bool
+	shouldCreateTablespace        bool
+	shouldOmitReplicationHbaEntry bool
+	shouldSpreadCheckpoints       bool
+	maxConnections                int
 }
 
 // PhysicalPostgresOption tunes a physical source container away from its replication-ready default.
@@ -47,20 +47,20 @@ type PhysicalPostgresOption func(*physicalPostgresOptions)
 // WithoutSummarizer starts the cluster with summarize_wal=off, so an incremental pre-flight reaches
 // the SUMMARIZER_OFF fallback deterministically.
 func WithoutSummarizer() PhysicalPostgresOption {
-	return func(o *physicalPostgresOptions) { o.summarizeWal = false }
+	return func(o *physicalPostgresOptions) { o.shouldSummarizeWal = false }
 }
 
 // WithTablespace pre-creates a custom tablespace at first boot so the pre-flight rejects the cluster
 // per ADR-0010 (physical backups do not support custom tablespaces).
 func WithTablespace() PhysicalPostgresOption {
-	return func(o *physicalPostgresOptions) { o.withTablespace = true }
+	return func(o *physicalPostgresOptions) { o.shouldCreateTablespace = true }
 }
 
 // WithoutReplicationHbaEntry omits the "host replication" pg_hba line, leaving only the image's
 // default "host all all all" rule. Such a cluster accepts ordinary and logical-replication
 // connections but refuses physical replication — the mode pg_basebackup / pg_receivewal actually use.
 func WithoutReplicationHbaEntry() PhysicalPostgresOption {
-	return func(o *physicalPostgresOptions) { o.omitReplicationHbaEntry = true }
+	return func(o *physicalPostgresOptions) { o.shouldOmitReplicationHbaEntry = true }
 }
 
 // WithMaxConnections runs the source with a raised max_connections so a restored cluster booted at
@@ -68,6 +68,14 @@ func WithoutReplicationHbaEntry() PhysicalPostgresOption {
 // "insufficient parameter settings" case.
 func WithMaxConnections(connections int) PhysicalPostgresOption {
 	return func(o *physicalPostgresOptions) { o.maxConnections = connections }
+}
+
+// A promotion only requests its checkpoint, so on a node carrying dirty buffers that request stays
+// outstanding for the length of a test and pg_control_checkpoint() keeps answering the pre-failover
+// timeline — the stale reading a timeline probe must not trust. The completion target is pinned so
+// the pacing does not depend on the image's default.
+func WithCheckpointsSpreadOverAnHour() PhysicalPostgresOption {
+	return func(o *physicalPostgresOptions) { o.shouldSpreadCheckpoints = true }
 }
 
 // allowReplicationInitScript appends the pg_hba replication rule at first boot. "host all all" does
@@ -100,7 +108,7 @@ func createTablespaceInitScript() testcontainers.ContainerFile {
 
 func physicalPostgresCmd(opts physicalPostgresOptions) []string {
 	summarize := "summarize_wal=on"
-	if !opts.summarizeWal {
+	if !opts.shouldSummarizeWal {
 		summarize = "summarize_wal=off"
 	}
 
@@ -108,7 +116,7 @@ func physicalPostgresCmd(opts physicalPostgresOptions) []string {
 	// ("backup ... is corrupt"), so the replication-pair callers turn it on; single-node sources keep
 	// it off for the throwaway-durability speedup.
 	fullPageWrites := "full_page_writes=off"
-	if opts.fullPageWrites {
+	if opts.shouldEnableFullPageWrites {
 		fullPageWrites = "full_page_writes=on"
 	}
 
@@ -119,6 +127,10 @@ func physicalPostgresCmd(opts physicalPostgresOptions) []string {
 	}
 	if opts.maxConnections > 0 {
 		cmd = append(cmd, "-c", fmt.Sprintf("max_connections=%d", opts.maxConnections))
+	}
+
+	if opts.shouldSpreadCheckpoints {
+		cmd = append(cmd, "-c", "checkpoint_timeout=1h", "-c", "checkpoint_completion_target=0.9")
 	}
 
 	return cmd
@@ -161,7 +173,7 @@ func StartPhysicalPostgresBehindSshBastion(
 }
 
 func resolvePhysicalPostgresOptions(opts []PhysicalPostgresOption) physicalPostgresOptions {
-	options := physicalPostgresOptions{summarizeWal: true}
+	options := physicalPostgresOptions{shouldSummarizeWal: true}
 	for _, apply := range opts {
 		apply(&options)
 	}
@@ -171,10 +183,10 @@ func resolvePhysicalPostgresOptions(opts []PhysicalPostgresOption) physicalPostg
 
 func physicalPostgresRequest(image string, options physicalPostgresOptions) testcontainers.ContainerRequest {
 	var files []testcontainers.ContainerFile
-	if !options.omitReplicationHbaEntry {
+	if !options.shouldOmitReplicationHbaEntry {
 		files = append(files, allowReplicationInitScript())
 	}
-	if options.withTablespace {
+	if options.shouldCreateTablespace {
 		files = append(files, createTablespaceInitScript())
 	}
 
@@ -202,13 +214,10 @@ func StartPhysicalPrimaryWithStandby(
 ) (Endpoint, Endpoint) {
 	t.Helper()
 
-	options := physicalPostgresOptions{summarizeWal: true}
-	for _, apply := range opts {
-		apply(&options)
-	}
+	options := resolvePhysicalPostgresOptions(opts)
 
 	// A base backup taken on the standby requires full_page_writes — force it on for both nodes.
-	options.fullPageWrites = true
+	options.shouldEnableFullPageWrites = true
 
 	replicationNetwork, err := network.New(context.Background())
 	if err != nil {
@@ -285,7 +294,7 @@ chown -R postgres:postgres "$PGDATA"
 echo "databasus-standby: waiting for primary to accept connections"
 until pg_isready -h ` + physicalPrimaryAlias + ` -p 5432 -U ` + PostgresUsername + ` >/dev/null 2>&1; do sleep 1; done
 echo "databasus-standby: cloning primary via pg_basebackup"
-gosu postgres pg_basebackup -D "$PGDATA" -R -X stream -C -S ` + physicalStandbySlotName + ` -w \
+gosu postgres pg_basebackup -D "$PGDATA" -R -X stream -c fast -C -S ` + physicalStandbySlotName + ` -w \
   -d "host=` + physicalPrimaryAlias + ` port=5432 user=` + PostgresUsername +
 		` password=` + PostgresPassword + ` dbname=postgres"
 echo "databasus-standby: starting as a streaming standby"

@@ -24,6 +24,7 @@ import (
 	backups_core_enums "databasus-backend/internal/features/backups/backups/core/enums"
 	"databasus-backend/internal/features/backups/backups/core/physical/chain_view"
 	physical_enums "databasus-backend/internal/features/backups/backups/core/physical/enums"
+	physical_models "databasus-backend/internal/features/backups/backups/core/physical/models"
 	physical_repositories "databasus-backend/internal/features/backups/backups/core/physical/repositories"
 	backups_dto_physical "databasus-backend/internal/features/backups/backups/dto/physical"
 	postgresql_executor "databasus-backend/internal/features/backups/backups/usecases/physical/postgresql"
@@ -1135,6 +1136,138 @@ func waitForTimelineHistoryOnParent(
 	t.Fatalf("WAL stream supervisor never cataloged the timeline-%d history row on the parent databases.id "+
 		"within %s (issue #643: keying on the physical PK fails fk_physical_wal_history_files_database_id)",
 		timelineID, timeout)
+}
+
+// Re-anchoring crosses the incremental executor, the scheduler and the FULL executor,
+// and each of them can stop it for its own reason, so the timeout prints the catalog
+// rows it last read rather than only the verdict.
+func waitForReanchoredFull(
+	t *testing.T,
+	fixture *postgresql_executor.PhysicalDBFixture,
+	staleFullID uuid.UUID,
+	newTimelineID int,
+	timeout time.Duration,
+) {
+	t.Helper()
+
+	deadline := time.Now().UTC().Add(timeout)
+
+	var state reanchorCatalogState
+
+	for time.Now().UTC().Before(deadline) {
+		state = readReanchorCatalogState(t, fixture, staleFullID)
+
+		hasReplacementFull := len(state.CompletedFulls) >= 2 &&
+			state.CompletedFulls[0].TimelineID == newTimelineID
+
+		if hasTimelineRefusal(state.StaleChainIncrementals) && hasReplacementFull {
+			return
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	t.Fatalf("promotion did not re-anchor within %s: the stale chain must refuse an incremental with %s, "+
+		"and a COMPLETED FULL on timeline %d must follow it\n"+
+		"  stale-chain incrementals: %s\n"+
+		"  completed fulls:          %s\n"+
+		"  newest full (any status): %s",
+		timeout, physical_enums.PhysicalBackupErrorTimelineSwitchDetected, newTimelineID,
+		describeIncrementalOutcomes(state.StaleChainIncrementals),
+		describeFullOutcomes(state.CompletedFulls),
+		describeFullOutcome(state.NewestFullAnyStatus))
+}
+
+type reanchorCatalogState struct {
+	StaleChainIncrementals []*physical_models.PhysicalIncrementalBackup
+	CompletedFulls         []*physical_models.PhysicalFullBackup
+	// A replacement FULL that failed is absent from the completed list.
+	NewestFullAnyStatus *physical_models.PhysicalFullBackup
+}
+
+// waitForReanchoredFull polls for a typed error reason, which only the repository rows
+// carry; the backup list DTO has just the free-text fail message.
+func readReanchorCatalogState(
+	t *testing.T,
+	fixture *postgresql_executor.PhysicalDBFixture,
+	staleFullID uuid.UUID,
+) reanchorCatalogState {
+	t.Helper()
+
+	incrementalRepo := physical_repositories.GetIncrementalBackupRepository()
+	fullRepo := physical_repositories.GetFullBackupRepository()
+
+	staleChainIncrementals, err := incrementalRepo.FindAllByRootFull(staleFullID)
+	require.NoError(t, err)
+
+	completedFulls, err := fullRepo.FindCompletedNewestFirstByDatabase(fixture.DB.ID)
+	require.NoError(t, err)
+
+	newestFullAnyStatus, err := fullRepo.FindLastFullAnyStatusByDatabase(fixture.DB.ID)
+	require.NoError(t, err)
+
+	return reanchorCatalogState{
+		StaleChainIncrementals: staleChainIncrementals,
+		CompletedFulls:         completedFulls,
+		NewestFullAnyStatus:    newestFullAnyStatus,
+	}
+}
+
+func hasTimelineRefusal(incrementals []*physical_models.PhysicalIncrementalBackup) bool {
+	return slices.ContainsFunc(
+		incrementals,
+		func(incremental *physical_models.PhysicalIncrementalBackup) bool {
+			return incremental.Status == physical_enums.PhysicalBackupStatusChainBroken &&
+				incremental.ErrorReason != nil &&
+				*incremental.ErrorReason == physical_enums.PhysicalBackupErrorTimelineSwitchDetected
+		},
+	)
+}
+
+func describeIncrementalOutcomes(incrementals []*physical_models.PhysicalIncrementalBackup) string {
+	descriptions := make([]string, 0, len(incrementals))
+
+	for _, incremental := range incrementals {
+		descriptions = append(descriptions, fmt.Sprintf("%s %s (%s)",
+			incremental.ID, incremental.Status, describeErrorReason(incremental.ErrorReason)))
+	}
+
+	return joinOutcomesOrNone(descriptions)
+}
+
+func describeFullOutcomes(fulls []*physical_models.PhysicalFullBackup) string {
+	descriptions := make([]string, 0, len(fulls))
+
+	for _, full := range fulls {
+		descriptions = append(descriptions, describeFullOutcome(full))
+	}
+
+	return joinOutcomesOrNone(descriptions)
+}
+
+func describeFullOutcome(full *physical_models.PhysicalFullBackup) string {
+	if full == nil {
+		return "none"
+	}
+
+	return fmt.Sprintf("%s %s on TL %d (%s)",
+		full.ID, full.Status, full.TimelineID, describeErrorReason(full.ErrorReason))
+}
+
+func joinOutcomesOrNone(descriptions []string) string {
+	if len(descriptions) == 0 {
+		return "none"
+	}
+
+	return strings.Join(descriptions, "; ")
+}
+
+func describeErrorReason(reason *physical_enums.PhysicalBackupErrorReason) string {
+	if reason == nil {
+		return "no error reason"
+	}
+
+	return string(*reason)
 }
 
 func connectWithRetry(t *testing.T, dsn string, timeout time.Duration) *pgx.Conn {
