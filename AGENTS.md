@@ -15,11 +15,11 @@ This root file holds the engineering philosophy that applies everywhere.
 
 ---
 
-## Mandatory Humanizer
+## Mandatory communication skill
 
-At the start of every turn, before sending any message or taking any action, read [`.agents/skills/humanizer/SKILL.md`](.agents/skills/humanizer/SKILL.md) completely. This applies to every request and every workflow without exception.
+At the start of every turn, before sending any message or taking any action, read the [how-to-communicate skill](.agents/skills/humanizer/SKILL.md) completely. Load it explicitly regardless of automatic skill selection. This applies to every request and workflow, for all agents working in this repository, including Claude Code, Codex and subagents.
 
-Apply the skill in embedded mode to all agent-authored prose, including chat responses, plans, documentation, OpenSpec artifacts, review findings, commit messages, and pull request text. Run its draft, audit, and final pass internally, then emit only the final text. Preserve exact code, commands, paths, identifiers, schemas, required templates, quotations, and user-provided text unless the user asks to edit them. Humanization must not change facts, behavior, scope, or technical meaning.
+Apply the skill in embedded mode to all agent-authored prose, including chat responses, progress updates, plans, documentation, OpenSpec artifacts, review findings, commit messages and pull request text. Prioritize the reader's understanding, factual accuracy and necessary context before style and brevity. Run its draft, audit and final pass internally, then emit only the final text. Preserve exact code, commands, paths, identifiers, schemas, required templates, quotations and user-provided text unless the user asks to edit them. Select relevant information for original answers without hiding material limitations; preserve substantive claims when editing supplied text unless summarization is requested. Editing must not change facts, behavior, scope or technical meaning.
 
 ---
 
@@ -74,7 +74,7 @@ Every non-trivial change is audited twice by the [`reviewer`](.claude/agents/rev
 
 The reviewer is read-only: it reports findings, you apply the fixes. Resolve every `CHANGES REQUIRED` finding before moving on. Hooks in [`.claude/settings.json`](.claude/settings.json) prompt for both checkpoints, but the obligation is this rule, not the hook — honour it if hooks are disabled.
 
-> At both checkpoints, the reviewer also applies [the repository Humanizer skill](.agents/skills/humanizer/SKILL.md) to every agent-authored response, plan, document, OpenSpec artifact, review finding, commit or pull request text, and code comment available in scope. Before humanizing a code comment, it first checks whether clearer naming or a smaller function can remove the comment. It flags removable comments instead of rewriting them. Humanization must preserve facts, behavior, scope, and technical meaning.
+> At both checkpoints, the reviewer also applies [the how-to-communicate skill](.agents/skills/humanizer/SKILL.md) to every agent-authored response, plan, document, OpenSpec artifact, review finding, commit or pull request text, and code comment available in scope. Before editing a code comment, it first checks whether clearer naming or a smaller function can remove the comment. It flags removable comments instead of rewriting them. Editing must preserve facts, behavior, scope and technical meaning.
 
 ### Naming
 
