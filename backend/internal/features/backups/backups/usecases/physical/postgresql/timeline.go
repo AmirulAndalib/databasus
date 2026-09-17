@@ -328,20 +328,67 @@ func UploadHistoryFile(
 	return row, nil
 }
 
-func readClusterIdentity(ctx context.Context, conn *pgx.Conn) (int, string, error) {
-	var tli int
-	var sysID string
+type clusterIdentitySources struct {
+	// NULL during recovery, where pg_current_wal_lsn() cannot be called.
+	CurrentWalFilename    *string
+	ControlFileTimelineID int
+	SystemIdentifier      string
+}
+
+func readClusterIdentitySources(ctx context.Context, conn *pgx.Conn) (clusterIdentitySources, error) {
+	var sources clusterIdentitySources
 
 	err := conn.QueryRow(ctx, `
 		SELECT
+			CASE WHEN pg_is_in_recovery() THEN NULL ELSE pg_walfile_name(pg_current_wal_lsn()) END,
 			(SELECT timeline_id FROM pg_control_checkpoint()),
 			(SELECT system_identifier::text FROM pg_control_system())
-	`).Scan(&tli, &sysID)
+	`).Scan(
+		&sources.CurrentWalFilename,
+		&sources.ControlFileTimelineID,
+		&sources.SystemIdentifier,
+	)
 	if err != nil {
-		return 0, "", fmt.Errorf("read cluster identity: %w", err)
+		return clusterIdentitySources{}, fmt.Errorf("read cluster identity: %w", err)
 	}
 
-	return tli, sysID, nil
+	return sources, nil
+}
+
+func readClusterIdentity(ctx context.Context, conn *pgx.Conn) (int, string, error) {
+	sources, err := readClusterIdentitySources(ctx, conn)
+	if err != nil {
+		return 0, "", err
+	}
+
+	timelineID, err := resolveLiveTimelineID(sources)
+	if err != nil {
+		return 0, "", err
+	}
+
+	return timelineID, sources.SystemIdentifier, nil
+}
+
+// Every cluster answers the control file, but it lags a promotion: PostgreSQL stamps it
+// at checkpoints, and the checkpoint a promotion requests is spread across
+// checkpoint_completion_target, so a promoted primary keeps naming the pre-failover
+// timeline for minutes. A stale reading lets an incremental extend a chain anchored to a
+// timeline the cluster has already left.
+//
+// A source still in recovery has no fresher reading to offer: pg_walfile_name() refuses
+// to run there, and pg_stat_wal_receiver hides received_tli from a role without
+// pg_read_all_stats, which the replication user this product provisions does not have.
+func resolveLiveTimelineID(sources clusterIdentitySources) (int, error) {
+	if sources.CurrentWalFilename != nil {
+		timelineID, err := walmath.ParseWALFilenameTimeline(*sources.CurrentWalFilename)
+		if err != nil {
+			return 0, fmt.Errorf("read timeline from current WAL file name: %w", err)
+		}
+
+		return int(timelineID), nil
+	}
+
+	return sources.ControlFileTimelineID, nil
 }
 
 func newestKnownTimeline(

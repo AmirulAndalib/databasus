@@ -146,3 +146,32 @@ func Test_FormatHistoryFilename_KnownTimeline_FormatsAsPg(t *testing.T) {
 	assert.Equal(t, "00000003.history", walmath.FormatHistoryFilename(3))
 	assert.Equal(t, "0000000A.history", walmath.FormatHistoryFilename(10))
 }
+
+func Test_ParseWALFilenameTimeline_ValidName_ReadsTimelineWithoutSegmentSize(t *testing.T) {
+	// A cluster with segments smaller than 16 MB numbers them past what 16 MB
+	// arithmetic accepts. The timeline field reads either way.
+	segmentOfASmallerSegmentedCluster := "000000020000000000000100"
+
+	timeline, err := walmath.ParseWALFilenameTimeline(segmentOfASmallerSegmentedCluster)
+	assert.NoError(t, err)
+	assert.Equal(t, uint32(2), timeline)
+
+	_, _, err = walmath.ParseWALFilenameWithSize(segmentOfASmallerSegmentedCluster, 16*1024*1024)
+	assert.Error(t, err, "the segment-size-aware parser is the one that rejects such a name")
+}
+
+func Test_ParseWALFilenameTimeline_MalformedNames_ReturnsError(t *testing.T) {
+	cases := []string{
+		"",
+		"00000002",
+		"000xYz020000000000000030",
+		"00000002000xYz0000000030",
+		"0000000200000000000xYz30",
+		"0000000200000000000000300",
+	}
+
+	for _, name := range cases {
+		_, err := walmath.ParseWALFilenameTimeline(name)
+		assert.Error(t, err, name)
+	}
+}

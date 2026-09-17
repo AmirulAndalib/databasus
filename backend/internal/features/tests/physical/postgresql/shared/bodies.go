@@ -6,17 +6,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	backuping_physical "databasus-backend/internal/features/backups/backups/backuping/physical"
-	physical_enums "databasus-backend/internal/features/backups/backups/core/physical/enums"
-	physical_models "databasus-backend/internal/features/backups/backups/core/physical/models"
 	physical_repositories "databasus-backend/internal/features/backups/backups/core/physical/repositories"
 	postgresql_executor "databasus-backend/internal/features/backups/backups/usecases/physical/postgresql"
 	postgresql_physical "databasus-backend/internal/features/databases/databases/postgresql/physical"
@@ -215,36 +211,7 @@ func RunPromotionReanchorsIncrementalChain(t *testing.T, version, image string) 
 	waitForTimelineHistoryOnParent(t, fixture, 2, 60*time.Second)
 	triggerIncrementalViaAPI(t, router, fixture)
 
-	deadline := time.Now().UTC().Add(4 * time.Minute)
-	var replacementFullID uuid.UUID
-	for time.Now().UTC().Before(deadline) {
-		incrementals, err := physical_repositories.GetIncrementalBackupRepository().FindAllByRootFull(initialFullID)
-		require.NoError(t, err)
-		fulls, err := physical_repositories.GetFullBackupRepository().FindCompletedNewestFirstByDatabase(fixture.DB.ID)
-		require.NoError(t, err)
-
-		hasTimelineRefusal := slices.ContainsFunc(
-			incrementals,
-			func(incremental *physical_models.PhysicalIncrementalBackup) bool {
-				return incremental.Status == physical_enums.PhysicalBackupStatusChainBroken &&
-					incremental.ErrorReason != nil &&
-					*incremental.ErrorReason == physical_enums.PhysicalBackupErrorTimelineSwitchDetected
-			},
-		)
-		if hasTimelineRefusal && len(fulls) >= 2 && fulls[0].TimelineID == 2 {
-			replacementFullID = fulls[0].ID
-
-			break
-		}
-
-		time.Sleep(500 * time.Millisecond)
-	}
-	require.NotEqual(
-		t,
-		uuid.Nil,
-		replacementFullID,
-		"promotion must refuse the stale incremental and complete a timeline-2 FULL",
-	)
+	waitForReanchoredFull(t, fixture, initialFullID, 2, 4*time.Minute)
 
 	backuping_physical.RunOrphanWalCleanupForTest(t, fixture.DB.ID)
 	bundle := downloadRestoreBundleViaAPI(t, router, fixture, nil)
