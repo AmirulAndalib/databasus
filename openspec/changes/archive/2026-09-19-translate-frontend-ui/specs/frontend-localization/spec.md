@@ -16,6 +16,11 @@ Technical strings are excluded and stay identical in every language: command lin
 - **THEN** every visible label, button and message re-renders in Russian without a page reload
 - **AND** command blocks, connection strings and engine names remain byte-identical to what English showed
 
+#### Scenario: Switching language keeps what is on screen
+
+- **WHEN** a user switches the language while a form on the page holds unsaved input, or from the language control inside the open narrow-viewport sidebar
+- **THEN** the form keeps its input and the sidebar stays open, both now labelled in the new language
+
 ### Requirement: The language control sits beside the theme control
 
 The language control SHALL be presented together with the light/dark theme control as a single paired element, and SHALL appear everywhere that element appears: the main navigation bar, the narrow-viewport sidebar, and the authentication screen. A user SHALL be able to choose a language before signing in.
@@ -125,6 +130,25 @@ The page SHALL declare the selected language to the browser, and its title SHALL
 - **WHEN** the interface renders in a non-English language
 - **THEN** the browser tab and any bookmark made from it show a title in that language
 
+### Requirement: Website links open in the selected language
+
+When the interface links to a page on the product website, the link SHALL open that page in the selected language if the website publishes it in that language, and the English page otherwise. A link to a section of a page SHALL land on that section in either case.
+
+#### Scenario: The website has the page in the selected language
+
+- **WHEN** a user with Russian selected follows a link to the installation guide
+- **THEN** the Russian version of the installation guide opens
+
+#### Scenario: The website has the page only in English
+
+- **WHEN** a user with Russian selected follows a link to a page the website publishes only in English
+- **THEN** the English page opens rather than a missing page
+
+#### Scenario: A link to a section
+
+- **WHEN** a user with Chinese selected follows a link to a section of a translated page
+- **THEN** the Chinese page opens scrolled to that section
+
 ### Requirement: Status labels are translated while wire values stay stable
 
 Status values exchanged with the backend SHALL remain unchanged English identifiers. Their displayed labels SHALL be translated.
@@ -159,23 +183,38 @@ Each non-English dictionary SHALL be checked against the English dictionary at b
 - **WHEN** code requests a key that does not exist in the English dictionary
 - **THEN** the type check fails
 
-### Requirement: Migrated code cannot regress to hardcoded strings
+### Requirement: New code cannot add hardcoded strings
 
-Once a directory has been migrated, the lint job SHALL reject a user-facing string literal added to it. Directories not yet migrated are exempt until they are.
+The lint job SHALL reject a user-facing string literal added anywhere in the frontend source. Technical strings and test files are exempt.
 
-#### Scenario: A hardcoded string is added to migrated code
+#### Scenario: A hardcoded string is added
 
-- **WHEN** a contributor adds a literal label, placeholder or message to a migrated directory
+- **WHEN** a contributor adds a literal label, placeholder or message to any frontend source file
 - **THEN** the lint job fails and points at the literal
 
-#### Scenario: A technical string is added to migrated code
+#### Scenario: A technical string is added
 
-- **WHEN** a contributor adds a command block, connection string or engine name to a migrated directory
+- **WHEN** a contributor adds a command block, connection string or engine name to a frontend source file
 - **THEN** the lint job accepts it, either through the configured exclusions or through an inline suppression carrying a reason
+
+### Requirement: Translated text and inserted values render as plain text
+
+Every translated message SHALL reach the page as text, never as markup. A value inserted into a translated sentence, such as a workspace, user or database name, SHALL be shown as text and SHALL never become markup, even when it contains characters that look like HTML. The only markup in a translated sentence is the formatting the interface itself supplies, such as code spans, bold text and links.
+
+#### Scenario: A name that looks like markup
+
+- **WHEN** a workspace is named `<img src=x onerror=alert(1)>` or `<strong>bold</strong>` and a translated sentence mentions it, including a sentence that carries the interface's own formatting
+- **THEN** the sentence shows that name literally, as text
+- **AND** no element is created from it and no script runs
+
+#### Scenario: A translation that contains markup-like text
+
+- **WHEN** a translated message contains angle brackets that are not part of the interface's own formatting
+- **THEN** they are shown as characters rather than interpreted as elements
 
 ### Requirement: Backend errors are translated by code, with the message as fallback
 
-The frontend SHALL translate an error response by its stable error code when the backend supplies one, and SHALL display the backend's message text only when no code is present. This change does not add codes to the backend.
+The frontend SHALL translate an error response by its stable error code when the backend supplies one, and SHALL display the backend's message text only when no code is present or the frontend has no translation for it. This change does not add codes to the backend.
 
 #### Scenario: The backend supplies a known error code
 
@@ -191,3 +230,13 @@ The frontend SHALL translate an error response by its stable error code when the
 
 - **WHEN** a request fails with an error code the frontend has no translation for
 - **THEN** the user sees the backend's message text rather than a raw code or a blank message
+
+#### Scenario: The backend supplies an unrecognized code and no message
+
+- **WHEN** a request fails with an error code the frontend has no translation for and no message
+- **THEN** the user sees a general error message in the selected language rather than the raw code
+
+#### Scenario: The request fails without an answer from the backend
+
+- **WHEN** the server cannot be reached, or answers with an error status but no error description
+- **THEN** the user sees a message in the selected language rather than a request address or a status line
