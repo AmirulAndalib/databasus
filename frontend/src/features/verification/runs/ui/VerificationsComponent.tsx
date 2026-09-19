@@ -10,16 +10,21 @@ import {
 import { Spin, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import type { Database } from '../../../../entity/databases';
 import { verificationAgentApi } from '../../../../entity/verification/agents';
 import {
   type RestoreVerification,
+  VERIFICATION_STATUS_LABEL_KEYS,
+  VERIFICATION_TRIGGER_LABEL_KEYS,
   VerificationStatus,
   VerificationTrigger,
   verificationRunsApi,
 } from '../../../../entity/verification/runs';
+import { getWebsitePageUrl, translateApiError, useLocale } from '../../../../shared/i18n';
 import { getUserTimeFormat } from '../../../../shared/time';
 import { VerificationDetailDrawer } from './VerificationDetailDrawer';
 
@@ -45,22 +50,27 @@ const formatDurationMs = (durationMs?: number) => {
   const seconds = totalSeconds % 60;
 
   if (hours > 0) {
+    // eslint-disable-next-line i18next/no-literal-string -- unit letters stay English in every language
     return `${hours}h ${minutes}m ${seconds}s`;
   }
 
   if (minutes > 0) {
+    // eslint-disable-next-line i18next/no-literal-string -- unit letters stay English in every language
     return `${minutes}m ${seconds}s`;
   }
 
+  // eslint-disable-next-line i18next/no-literal-string -- unit letters stay English in every language
   return `${seconds}s`;
 };
 
-const renderStatus = (status: VerificationStatus) => {
+const renderStatus = (status: VerificationStatus, t: TFunction) => {
+  const label = t(VERIFICATION_STATUS_LABEL_KEYS[status]);
+
   if (status === VerificationStatus.COMPLETED) {
     return (
       <div className="flex items-center text-green-600">
         <CheckCircleOutlined className="mr-2" style={{ fontSize: 16 }} />
-        <span>Successful</span>
+        <span>{label}</span>
       </div>
     );
   }
@@ -69,7 +79,7 @@ const renderStatus = (status: VerificationStatus) => {
     return (
       <div className="flex items-center text-red-600">
         <ExclamationCircleOutlined className="mr-2" style={{ fontSize: 16 }} />
-        <span>Failed</span>
+        <span>{label}</span>
       </div>
     );
   }
@@ -78,7 +88,7 @@ const renderStatus = (status: VerificationStatus) => {
     return (
       <div className="flex items-center font-bold text-blue-600">
         <SyncOutlined spin />
-        <span className="ml-2">Running</span>
+        <span className="ml-2">{label}</span>
       </div>
     );
   }
@@ -87,7 +97,7 @@ const renderStatus = (status: VerificationStatus) => {
     return (
       <div className="flex items-center text-gray-600">
         <ClockCircleOutlined className="mr-2" style={{ fontSize: 16 }} />
-        <span>Pending</span>
+        <span>{label}</span>
       </div>
     );
   }
@@ -96,7 +106,7 @@ const renderStatus = (status: VerificationStatus) => {
     return (
       <div className="flex items-center text-gray-500">
         <CloseCircleOutlined className="mr-2" style={{ fontSize: 16 }} />
-        <span>Canceled</span>
+        <span>{label}</span>
       </div>
     );
   }
@@ -104,18 +114,16 @@ const renderStatus = (status: VerificationStatus) => {
   return (
     <div className="flex items-center">
       <PauseCircleOutlined className="mr-2" style={{ fontSize: 16 }} />
-      <span>{status}</span>
+      <span>{label}</span>
     </div>
   );
 };
 
-const renderTrigger = (trigger: VerificationTrigger) => {
-  if (trigger === VerificationTrigger.MANUAL) {
-    return <Tag color="blue">Manual</Tag>;
-  }
-
-  return <Tag color="purple">Scheduled</Tag>;
-};
+const renderTrigger = (trigger: VerificationTrigger, t: TFunction) => (
+  <Tag color={trigger === VerificationTrigger.MANUAL ? 'blue' : 'purple'}>
+    {t(VERIFICATION_TRIGGER_LABEL_KEYS[trigger])}
+  </Tag>
+);
 
 export const VerificationsComponent = ({
   database,
@@ -123,6 +131,8 @@ export const VerificationsComponent = ({
   isDirectlyUnderTab,
   scrollContainerRef,
 }: Props) => {
+  const { t } = useTranslation();
+  const { locale, formatRelativeTime } = useLocale();
   const [verifications, setVerifications] = useState<RestoreVerification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVerificationId, setSelectedVerificationId] = useState<string | undefined>();
@@ -150,7 +160,7 @@ export const VerificationsComponent = ({
       setTotalVerifications(response.total);
       setHasMore(response.verifications.length < response.total);
     } catch (e) {
-      alert((e as Error).message);
+      alert(translateApiError(e, t));
     } finally {
       isVerificationsRequestInFlightRef.current = false;
     }
@@ -178,7 +188,7 @@ export const VerificationsComponent = ({
       await verificationRunsApi.cancel(id);
       await loadVerifications();
     } catch (e) {
-      alert((e as Error).message);
+      alert(translateApiError(e, t));
     } finally {
       setCancellingVerificationId(undefined);
     }
@@ -200,7 +210,7 @@ export const VerificationsComponent = ({
           {isCancelling ? (
             <SyncOutlined spin />
           ) : (
-            <Tooltip title="Cancel verification">
+            <Tooltip title={t('verification.runs.actions.cancel')}>
               <CloseCircleOutlined
                 className="cursor-pointer"
                 onClick={() => {
@@ -222,7 +232,7 @@ export const VerificationsComponent = ({
     ) {
       return (
         <div className="flex gap-2 text-lg">
-          <Tooltip title="View details">
+          <Tooltip title={t('verification.runs.actions.viewDetails')}>
             <EyeOutlined
               className="cursor-pointer"
               onClick={() => setSelectedVerificationId(record.id)}
@@ -298,7 +308,7 @@ export const VerificationsComponent = ({
 
   const columns: ColumnsType<RestoreVerification> = [
     {
-      title: 'Created at',
+      title: t('verification.runs.fields.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 220,
@@ -306,30 +316,30 @@ export const VerificationsComponent = ({
         <div>
           {dayjs.utc(createdAt).local().format(getUserTimeFormat().format)} <br />
           <span className="text-gray-500 dark:text-gray-400">
-            ({dayjs.utc(createdAt).local().fromNow()})
+            ({formatRelativeTime(dayjs.utc(createdAt))})
           </span>
         </div>
       ),
     },
     {
-      title: 'Status',
+      title: t('common.fields.status'),
       dataIndex: 'status',
       key: 'status',
       width: 160,
-      render: (status: VerificationStatus) => renderStatus(status),
+      render: (status: VerificationStatus) => renderStatus(status, t),
     },
     {
-      title: 'Trigger',
+      title: t('verification.runs.fields.trigger'),
       dataIndex: 'trigger',
       key: 'trigger',
       width: 110,
-      render: (trigger: VerificationTrigger) => renderTrigger(trigger),
+      render: (trigger: VerificationTrigger) => renderTrigger(trigger, t),
     },
     {
       title: (
         <div className="flex items-center">
-          Duration
-          <Tooltip className="ml-1" title="Restore + verify time reported by the agent.">
+          {t('verification.runs.fields.duration')}
+          <Tooltip className="ml-1" title={t('verification.runs.durationTooltip')}>
             <ExclamationCircleOutlined />
           </Tooltip>
         </div>
@@ -349,14 +359,14 @@ export const VerificationsComponent = ({
           <div className="text-sm">
             <div>{formatDurationMs(total)}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              restore {formatDurationMs(restoreMs)}
+              {t('verification.runs.restoreDuration', { duration: formatDurationMs(restoreMs) })}
             </div>
           </div>
         );
       },
     },
     {
-      title: 'Actions',
+      title: t('verification.runs.fields.actions'),
       key: 'actions',
       width: 120,
       render: (_, record: RestoreVerification) => renderActions(record),
@@ -367,26 +377,31 @@ export const VerificationsComponent = ({
     <div
       className={`w-full bg-white p-3 shadow md:p-5 dark:bg-gray-800 ${isDirectlyUnderTab ? 'rounded-tr-md rounded-br-md rounded-bl-md' : 'rounded-md'}`}
     >
-      <h2 className="text-lg font-bold md:text-xl dark:text-white">Restore verifications</h2>
+      <h2 className="text-lg font-bold md:text-xl dark:text-white">
+        {t('verification.runs.title')}
+      </h2>
 
       <p className="mt-2 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-        Each row is one attempt to restore a backup of this database into a temporary copy
+        {t('verification.runs.description')}
       </p>
 
       {hasAgents === false && (
         <div className="mt-3 flex max-w-2xl max-w-[400px] items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
           <ExclamationCircleOutlined className="shrink-0" />
           <span>
-            No verification agents registered - please add it in Databasus settings tab in
-            &quot;Verification agents&quot; section.{' '}
-            <a
-              href="https://databasus.com/restore-verification"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:no-underline"
-            >
-              Learn more
-            </a>
+            <Trans
+              i18nKey="verification.runs.noAgentsWarning"
+              components={{
+                docsLink: (
+                  <a
+                    href={getWebsitePageUrl('restoreVerification', locale)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:no-underline"
+                  />
+                ),
+              }}
+            />
           </span>
         </div>
       )}
@@ -405,7 +420,7 @@ export const VerificationsComponent = ({
           />
           {!isLoading && verifications.length === 0 && (
             <div className="mt-3 text-center text-sm text-gray-500 dark:text-gray-400">
-              No restore checks yet
+              {t('verification.runs.empty')}
             </div>
           )}
           {isLoadingMore && (
@@ -415,7 +430,7 @@ export const VerificationsComponent = ({
           )}
           {!hasMore && verifications.length > 0 && (
             <div className="mt-2 text-center text-gray-500 dark:text-gray-400">
-              All restore checks loaded ({totalVerifications} total)
+              {t('verification.runs.allLoaded', { total: totalVerifications })}
             </div>
           )}
         </div>
@@ -428,7 +443,7 @@ export const VerificationsComponent = ({
             </div>
           ) : verifications.length === 0 ? (
             <div className="py-8 text-center text-gray-500 dark:text-gray-400">
-              No restore checks yet
+              {t('verification.runs.empty')}
             </div>
           ) : (
             verifications.map((verification) => (
@@ -438,22 +453,24 @@ export const VerificationsComponent = ({
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Created at</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {t('verification.runs.fields.createdAt')}
+                    </div>
                     <div className="text-sm font-medium">
                       {dayjs.utc(verification.createdAt).local().format(getUserTimeFormat().format)}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      ({dayjs.utc(verification.createdAt).local().fromNow()})
+                      ({formatRelativeTime(dayjs.utc(verification.createdAt))})
                     </div>
                   </div>
-                  <div>{renderStatus(verification.status)}</div>
+                  <div>{renderStatus(verification.status, t)}</div>
                 </div>
 
                 <div className="mt-3 flex items-center gap-2">
-                  {renderTrigger(verification.trigger)}
+                  {renderTrigger(verification.trigger, t)}
                   {verification.attemptCount > 1 && (
                     <span className="text-xs text-gray-500">
-                      attempt {verification.attemptCount}
+                      {t('verification.runs.attempt', { attempt: verification.attemptCount })}
                     </span>
                   )}
                 </div>
@@ -484,7 +501,7 @@ export const VerificationsComponent = ({
           )}
           {!hasMore && verifications.length > 0 && (
             <div className="mt-3 text-center text-sm text-gray-500 dark:text-gray-400">
-              All restore checks loaded ({totalVerifications} total)
+              {t('verification.runs.allLoaded', { total: totalVerifications })}
             </div>
           )}
         </div>

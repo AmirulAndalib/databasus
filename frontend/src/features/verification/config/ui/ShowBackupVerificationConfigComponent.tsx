@@ -2,14 +2,21 @@ import { Spin } from 'antd';
 import { CronExpressionParser } from 'cron-parser';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
-import { IntervalType } from '../../../../entity/intervals';
+import {
+  INTERVAL_TYPE_LABEL_KEYS,
+  IntervalType,
+  WEEKDAY_LABEL_KEYS,
+  type Weekday,
+} from '../../../../entity/intervals';
 import {
   type BackupVerificationConfig,
-  VerificationNotificationType,
+  VERIFICATION_NOTIFICATION_TYPE_LABEL_KEYS,
   VerificationScheduleType,
   verificationConfigApi,
 } from '../../../../entity/verification/config';
+import { translateApiError, useLocale } from '../../../../shared/i18n';
 import { getUserTimeFormat } from '../../../../shared/time';
 import {
   getUserTimeFormat as getIs12Hour,
@@ -21,30 +28,9 @@ interface Props {
   databaseId: string;
 }
 
-const weekdayLabels: Record<number, string> = {
-  1: 'Mon',
-  2: 'Tue',
-  3: 'Wed',
-  4: 'Thu',
-  5: 'Fri',
-  6: 'Sat',
-  7: 'Sun',
-};
-
-const intervalLabels: Record<IntervalType, string> = {
-  [IntervalType.HOURLY]: 'Hourly',
-  [IntervalType.DAILY]: 'Daily',
-  [IntervalType.WEEKLY]: 'Weekly',
-  [IntervalType.MONTHLY]: 'Monthly',
-  [IntervalType.CRON]: 'Cron',
-};
-
-const notificationLabels: Record<VerificationNotificationType, string> = {
-  [VerificationNotificationType.VerificationSuccess]: 'Verification success',
-  [VerificationNotificationType.VerificationFailed]: 'Verification failed',
-};
-
 export const ShowBackupVerificationConfigComponent = ({ databaseId }: Props) => {
+  const { t } = useTranslation();
+  const { formatRelativeTime } = useLocale();
   const [config, setConfig] = useState<BackupVerificationConfig>();
   const [isLoading, setIsLoading] = useState(true);
 
@@ -53,7 +39,7 @@ export const ShowBackupVerificationConfigComponent = ({ databaseId }: Props) => 
     verificationConfigApi
       .getByDatabaseId(databaseId)
       .then(setConfig)
-      .catch((error: Error) => alert(error.message))
+      .catch((error: unknown) => alert(translateApiError(error, t)))
       .finally(() => setIsLoading(false));
   }, [databaseId]);
 
@@ -94,35 +80,37 @@ export const ShowBackupVerificationConfigComponent = ({ databaseId }: Props) => 
   return (
     <div>
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[180px]">Scheduled verification</div>
+        <div className="min-w-[180px] pr-2">{t('verification.config.scheduledVerification')}</div>
         <div className={config.isScheduledVerificationEnabled ? '' : 'text-gray-500'}>
-          {config.isScheduledVerificationEnabled ? 'Yes' : 'No'}
+          {config.isScheduledVerificationEnabled ? t('common.answers.yes') : t('common.answers.no')}
         </div>
       </div>
 
       {config.isScheduledVerificationEnabled && (
         <>
           <div className="mt-5 mb-1 flex w-full items-center">
-            <div className="min-w-[180px]">Verification interval</div>
+            <div className="min-w-[180px] pr-2">{t('verification.config.interval')}</div>
             <div>
               {isAfterBackup
-                ? 'After backup'
+                ? t('verification.config.afterBackup')
                 : verificationInterval?.type
-                  ? intervalLabels[verificationInterval.type]
+                  ? t(INTERVAL_TYPE_LABEL_KEYS[verificationInterval.type])
                   : ''}
             </div>
           </div>
 
           {!isAfterBackup && verificationInterval?.type === IntervalType.WEEKLY && (
             <div className="mb-1 flex w-full items-center">
-              <div className="min-w-[180px]">Verification weekday</div>
-              <div>{displayedWeekday ? weekdayLabels[displayedWeekday] : ''}</div>
+              <div className="min-w-[180px] pr-2">{t('verification.config.weekday')}</div>
+              <div>
+                {displayedWeekday ? t(WEEKDAY_LABEL_KEYS[displayedWeekday as Weekday]) : ''}
+              </div>
             </div>
           )}
 
           {!isAfterBackup && verificationInterval?.type === IntervalType.MONTHLY && (
             <div className="mb-1 flex w-full items-center">
-              <div className="min-w-[180px]">Verification day of month</div>
+              <div className="min-w-[180px] pr-2">{t('verification.config.dayOfMonth')}</div>
               <div>{displayedDayOfMonth || ''}</div>
             </div>
           )}
@@ -130,7 +118,7 @@ export const ShowBackupVerificationConfigComponent = ({ databaseId }: Props) => 
           {!isAfterBackup && verificationInterval?.type === IntervalType.CRON && (
             <>
               <div className="mb-1 flex w-full items-center">
-                <div className="min-w-[180px]">Cron expression (UTC)</div>
+                <div className="min-w-[180px] pr-2">{t('verification.config.cron.expression')}</div>
                 <code className="rounded bg-gray-100 px-2 py-0.5 text-sm dark:bg-gray-700">
                   {verificationInterval?.cronExpression || ''}
                 </code>
@@ -147,10 +135,16 @@ export const ShowBackupVerificationConfigComponent = ({ databaseId }: Props) => 
                     const nextRun = interval.next().toDate();
                     return (
                       <div className="mb-1 flex w-full items-center text-xs text-gray-600 dark:text-gray-400">
-                        <div className="min-w-[180px]" />
+                        <div className="min-w-[180px] pr-2" />
                         <div>
-                          Next run {dayjs(nextRun).local().format(dateTimeFormat.format)}
-                          <br />({dayjs(nextRun).fromNow()})
+                          <Trans
+                            i18nKey="verification.config.cron.nextRun"
+                            values={{
+                              dateTime: dayjs(nextRun).local().format(dateTimeFormat.format),
+                              relativeTime: formatRelativeTime(nextRun),
+                            }}
+                            components={{ lineBreak: <br /> }}
+                          />
                         </div>
                       </div>
                     );
@@ -165,17 +159,19 @@ export const ShowBackupVerificationConfigComponent = ({ databaseId }: Props) => 
             verificationInterval?.type !== IntervalType.HOURLY &&
             verificationInterval?.type !== IntervalType.CRON && (
               <div className="mb-1 flex w-full items-center">
-                <div className="min-w-[180px]">Verification time of day</div>
+                <div className="min-w-[180px] pr-2">{t('verification.config.timeOfDay')}</div>
                 <div>{formattedTime}</div>
               </div>
             )}
 
           <div className="mt-5 mb-1 flex w-full items-center">
-            <div className="min-w-[180px]">Notifications</div>
+            <div className="min-w-[180px] pr-2">{t('verification.config.notifications')}</div>
             <div>
               {config.sendNotificationsOn.length > 0
-                ? config.sendNotificationsOn.map((type) => notificationLabels[type]).join(', ')
-                : 'None'}
+                ? config.sendNotificationsOn
+                    .map((type) => t(VERIFICATION_NOTIFICATION_TYPE_LABEL_KEYS[type]))
+                    .join(', ')
+                : t('verification.config.noNotifications')}
             </div>
           </div>
         </>

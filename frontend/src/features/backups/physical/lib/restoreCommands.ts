@@ -1,3 +1,6 @@
+/* eslint-disable i18next/no-literal-string -- shell commands and paths, shown verbatim in every language */
+import type { TranslationKey } from '../../../../shared/i18n';
+
 // Builds the shell commands the restore dialog shows. Pure string assembly - no
 // network or React - so the wiring (which flag appears when, host vs Docker) is
 // unit-tested in isolation. The served recovery_script.sh accepts optional
@@ -28,6 +31,29 @@ export const clusterDataDir = (outputDir: string, pgVersion: string): string =>
 // conventionally named "main" but pg_createcluster allows any name, so this is the convention rather
 // than a fact about the user's source.
 export const debianConfigDir = (pgVersion: string): string => `/etc/postgresql/${pgVersion}/main`;
+
+export const defaultPgBinDir = (pgVersion: string): string =>
+  `/usr/lib/postgresql/${pgVersion}/bin`;
+
+export const defaultDockerImage = (pgVersion: string): string => `postgres:${pgVersion}`;
+
+export const buildChownCommand = (dataDir: string): string =>
+  `chown -R postgres:postgres ${dataDir}`;
+
+export const buildPgCtlStartCommand = (dataDir: string): string => `pg_ctl -D ${dataDir} start`;
+
+interface DockerRunCommandParams {
+  hostDir: string;
+  containerDir: string;
+  pgVersion: string;
+}
+
+export const buildDockerRunCommand = ({
+  hostDir,
+  containerDir,
+  pgVersion,
+}: DockerRunCommandParams): string =>
+  `docker run -e POSTGRES_PASSWORD=... -v "$PWD/${hostDir}:${containerDir}" ${defaultDockerImage(pgVersion)}`;
 
 export interface ScriptCommandParams {
   scriptUrl: string;
@@ -63,7 +89,7 @@ export interface ManualStepsParams {
 }
 
 export interface RestoreStep {
-  title: string;
+  titleKey: TranslationKey;
   code: string;
 }
 
@@ -200,23 +226,23 @@ export const buildManualSteps = ({
 
   const steps: RestoreStep[] = [
     {
-      title: 'Download the bundle',
+      titleKey: 'backups.physical.restore.manualSteps.download',
       code: `curl -fsSL "${bundleUrl}" -o restore.tar`,
     },
     {
-      title: 'Extract it',
+      titleKey: 'backups.physical.restore.manualSteps.extract',
       code: `mkdir -p bundle\ntar -xf restore.tar -C bundle`,
     },
     {
-      title: 'Verify the transfer',
+      titleKey: 'backups.physical.restore.manualSteps.verify',
       code: `(cd bundle && sha256sum -c MANIFEST.sha256)`,
     },
     {
-      title: 'Reconstruct the data directory',
+      titleKey: 'backups.physical.restore.manualSteps.reconstruct',
       code: combine,
     },
     {
-      title: "Check the cluster's configuration files",
+      titleKey: 'backups.physical.restore.manualSteps.checkConfig',
       code: checkClusterConfigBlock({ dataDir, pgVersion }),
     },
   ];
@@ -227,7 +253,7 @@ export const buildManualSteps = ({
       : '';
 
     steps.push({
-      title: 'Decompress WAL and wire up recovery',
+      titleKey: 'backups.physical.restore.manualSteps.wireUpRecovery',
       // WAL is inflated inside PGDATA and restore_command is relative to it, so replay works
       // whether the cluster starts on the host or in a container (the WAL travels with PGDATA).
       code: [
@@ -247,7 +273,7 @@ export const buildManualSteps = ({
     });
 
     steps.push({
-      title: 'If recovery stops on parameter settings',
+      titleKey: 'backups.physical.restore.manualSteps.recoveryParameters',
       // Archive recovery aborts when these are below the source's values - the served script sets
       // them from the control file automatically, but a hand-run restore must do it too.
       code: [

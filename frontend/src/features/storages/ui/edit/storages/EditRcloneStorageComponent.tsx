@@ -1,5 +1,6 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Input, Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 import type { Storage } from '../../../../../entity/storages';
 
@@ -10,10 +11,12 @@ interface Props {
 }
 
 export function EditRcloneStorageComponent({ storage, setStorage, setUnsaved }: Props) {
+  const { t } = useTranslation();
+
   return (
     <>
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-start">
-        <div className="mb-1 min-w-[110px] pt-1 sm:mb-0">Config</div>
+        <div className="mb-1 min-w-[110px] pt-1 sm:mb-0 sm:pr-2">{t('storages.fields.config')}</div>
         <div className="flex w-full flex-col">
           <div className="flex items-start">
             <Input.TextArea
@@ -31,6 +34,7 @@ export function EditRcloneStorageComponent({ storage, setStorage, setUnsaved }: 
                 setUnsaved();
               }}
               className="w-full max-w-[400px] font-mono text-xs"
+              // eslint-disable-next-line i18next/no-literal-string -- rclone.conf example, not copy
               placeholder={`[myremote]
 type = s3
 provider = AWS
@@ -41,10 +45,7 @@ region = us-east-1`}
               style={{ resize: 'vertical' }}
             />
 
-            <Tooltip
-              className="cursor-pointer"
-              title="Paste your rclone.conf content here. You can get it by running 'rclone config file' and copying the contents. This config supports 70+ cloud storage providers."
-            >
+            <Tooltip className="cursor-pointer" title={t('storages.edit.rclone.configTooltip')}>
               <InfoCircleOutlined className="mt-2 ml-2" style={{ color: 'gray' }} />
             </Tooltip>
           </div>
@@ -56,8 +57,7 @@ region = us-east-1`}
           <div className="hidden min-w-[110px] sm:block" />
 
           <div className="max-w-[300px] text-xs text-gray-400">
-            *content is hidden to not expose sensitive data. If you want to update existing config,
-            put a new one here
+            {t('storages.edit.rclone.configHiddenNote')}
           </div>
         </div>
       )}
@@ -67,13 +67,13 @@ region = us-east-1`}
 
         <div className="text-xs text-blue-600">
           <a href="https://rclone.org/docs/" target="_blank" rel="noreferrer">
-            Rclone documentation
+            {t('storages.edit.rclone.docsLink')}
           </a>
         </div>
       </div>
 
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[110px] sm:mb-0">Remote path</div>
+        <div className="mb-1 min-w-[110px] sm:mb-0 sm:pr-2">{t('storages.fields.remotePath')}</div>
         <div className="flex items-center">
           <Input
             value={storage?.rcloneStorage?.remotePath || ''}
@@ -91,13 +91,10 @@ region = us-east-1`}
             }}
             size="small"
             className="w-full max-w-[250px]"
-            placeholder="/backups (optional)"
+            placeholder={t('storages.edit.optionalPlaceholder', { example: '/backups' })}
           />
 
-          <Tooltip
-            className="cursor-pointer"
-            title="Optional path prefix on the remote where backups will be stored (e.g., '/backups' or 'my-folder/backups')"
-          >
+          <Tooltip className="cursor-pointer" title={t('storages.edit.rclone.remotePathTooltip')}>
             <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
           </Tooltip>
         </div>

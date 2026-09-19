@@ -1,5 +1,6 @@
 import { Button, Input, Modal } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   open: boolean;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function ClipboardPasteModalComponent({ open, onSubmit, onCancel }: Props) {
+  const { t } = useTranslation();
   const [value, setValue] = useState('');
 
   const handleSubmit = () => {
@@ -25,25 +27,25 @@ export function ClipboardPasteModalComponent({ open, onSubmit, onCancel }: Props
 
   return (
     <Modal
-      title="Paste from clipboard"
+      title={t('app.clipboardPaste.title')}
       open={open}
       onCancel={handleCancel}
       footer={
         <div className="flex justify-end gap-2">
-          <Button onClick={handleCancel}>Cancel</Button>
+          <Button onClick={handleCancel}>{t('common.actions.cancel')}</Button>
           <Button type="primary" disabled={!value.trim()} onClick={handleSubmit}>
-            Submit
+            {t('app.clipboardPaste.submit')}
           </Button>
         </div>
       }
     >
       <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-        Automatic clipboard access is not available. Please paste your content below.
+        {t('app.clipboardPaste.description')}
       </p>
       <Input.TextArea
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Paste your connection string here..."
+        placeholder={t('app.clipboardPaste.placeholder')}
         rows={4}
         autoFocus
       />

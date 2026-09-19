@@ -1,8 +1,9 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
-import { type Storage } from '../../../entity/storages';
+import { type Storage, StorageType } from '../../../entity/storages';
 import { getStorageLogoFromType } from '../../../entity/storages/models/getStorageLogoFromType';
-import { getStorageNameFromType } from '../../../entity/storages/models/getStorageNameFromType';
+import type { TranslationKey } from '../../../shared/i18n';
 
 interface Props {
   storage: Storage;
@@ -10,11 +11,26 @@ interface Props {
   setSelectedStorageId: (storageId: string) => void;
 }
 
+// One sentence per type rather than STORAGE_TYPE_LABEL_KEYS: inside the sentence the type is
+// written in lower case, and some languages inflect it
+const STORAGE_CARD_TYPE_KEYS: Record<StorageType, TranslationKey> = {
+  [StorageType.LOCAL]: 'storages.card.type.local',
+  [StorageType.S3]: 'storages.card.type.s3',
+  [StorageType.GOOGLE_DRIVE]: 'storages.card.type.googleDrive',
+  [StorageType.NAS]: 'storages.card.type.nas',
+  [StorageType.AZURE_BLOB]: 'storages.card.type.azureBlob',
+  [StorageType.FTP]: 'storages.card.type.ftp',
+  [StorageType.SFTP]: 'storages.card.type.sftp',
+  [StorageType.RCLONE]: 'storages.card.type.rclone',
+};
+
 export const StorageCardComponent = ({
   storage,
   selectedStorageId,
   setSelectedStorageId,
 }: Props) => {
+  const { t } = useTranslation();
+
   return (
     <div
       className={`mb-3 cursor-pointer rounded p-3 shadow ${selectedStorageId === storage.id ? 'bg-blue-100 dark:bg-blue-800' : 'bg-white dark:bg-gray-800'}`}
@@ -24,20 +40,16 @@ export const StorageCardComponent = ({
 
       <div className="flex items-center">
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          Type: {getStorageNameFromType(storage.type)}
+          {t(STORAGE_CARD_TYPE_KEYS[storage.type])}
         </div>
 
-        <img
-          src={getStorageLogoFromType(storage.type)}
-          alt="storageIcon"
-          className="ml-1 h-4 w-4"
-        />
+        <img src={getStorageLogoFromType(storage.type)} alt="" className="ml-1 h-4 w-4" />
       </div>
 
       {storage.lastSaveError && (
         <div className="mt-1 flex items-center text-sm text-red-600 underline dark:text-red-400">
           <InfoCircleOutlined className="mr-1" style={{ color: 'red' }} />
-          Has save error
+          {t('storages.card.hasSaveError')}
         </div>
       )}
     </div>

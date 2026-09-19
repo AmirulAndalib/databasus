@@ -1,3 +1,5 @@
+import type { LocalizedText } from '../../../../shared/i18n';
+
 export type ParseResult = {
   host: string;
   port: number;
@@ -8,7 +10,7 @@ export type ParseResult = {
 };
 
 export type ParseError = {
-  error: string;
+  error: LocalizedText;
   format?: string;
 };
 
@@ -29,7 +31,7 @@ export class MariadbConnectionStringParser {
     const trimmed = connectionString.trim();
 
     if (!trimmed) {
-      return { error: 'Connection string is empty' };
+      return { error: { key: 'databases.connectionString.errors.empty' } };
     }
 
     // Try JDBC format first (starts with jdbc:)
@@ -48,7 +50,7 @@ export class MariadbConnectionStringParser {
     }
 
     return {
-      error: 'Unrecognized connection string format',
+      error: { key: 'databases.connectionString.errors.unrecognizedFormat' },
     };
   }
 
@@ -92,19 +94,19 @@ export class MariadbConnectionStringParser {
       const isHttps = this.checkSslMode(url.search);
 
       if (!host) {
-        return { error: 'Host is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.hostMissing' } };
       }
 
       if (!username) {
-        return { error: 'Username is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.usernameMissing' } };
       }
 
       if (!password) {
-        return { error: 'Password is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.passwordMissing' } };
       }
 
       if (!database) {
-        return { error: 'Database name is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.databaseMissing' } };
       }
 
       return {
@@ -115,9 +117,9 @@ export class MariadbConnectionStringParser {
         database,
         isHttps,
       };
-    } catch (e) {
+    } catch {
       return {
-        error: `Failed to parse connection string: ${(e as Error).message}`,
+        error: { key: 'databases.connectionString.errors.parseFailed' },
         format: 'URI',
       };
     }
@@ -130,8 +132,10 @@ export class MariadbConnectionStringParser {
 
       if (!match) {
         return {
-          error:
-            'Invalid JDBC connection string format. Expected: jdbc:mariadb://host:port/database?user=x&password=y',
+          error: {
+            key: 'databases.connectionString.errors.jdbc.invalidFormat',
+            params: { expectedFormat: 'jdbc:mariadb://host:port/database?user=x&password=y' },
+          },
           format: 'JDBC',
         };
       }
@@ -140,7 +144,7 @@ export class MariadbConnectionStringParser {
 
       if (!queryString) {
         return {
-          error: 'JDBC connection string is missing query parameters (user and password)',
+          error: { key: 'databases.connectionString.errors.jdbc.queryParametersMissing' },
           format: 'JDBC',
         };
       }
@@ -152,14 +156,14 @@ export class MariadbConnectionStringParser {
 
       if (!username) {
         return {
-          error: 'Username (user parameter) is missing from JDBC connection string',
+          error: { key: 'databases.connectionString.errors.jdbc.usernameMissing' },
           format: 'JDBC',
         };
       }
 
       if (!password) {
         return {
-          error: 'Password parameter is missing from JDBC connection string',
+          error: { key: 'databases.connectionString.errors.jdbc.passwordMissing' },
           format: 'JDBC',
         };
       }
@@ -172,9 +176,9 @@ export class MariadbConnectionStringParser {
         database: decodeURIComponent(database),
         isHttps,
       };
-    } catch (e) {
+    } catch {
       return {
-        error: `Failed to parse JDBC connection string: ${(e as Error).message}`,
+        error: { key: 'databases.connectionString.errors.jdbc.parseFailed' },
         format: 'JDBC',
       };
     }
@@ -202,28 +206,28 @@ export class MariadbConnectionStringParser {
 
       if (!host) {
         return {
-          error: 'Host is missing from connection string. Use host=hostname',
+          error: { key: 'databases.connectionString.errors.keyValue.hostMissing' },
           format: 'key-value',
         };
       }
 
       if (!username) {
         return {
-          error: 'Username is missing from connection string. Use user=username',
+          error: { key: 'databases.connectionString.errors.keyValue.usernameMissing' },
           format: 'key-value',
         };
       }
 
       if (!password) {
         return {
-          error: 'Password is missing from connection string. Use password=yourpassword',
+          error: { key: 'databases.connectionString.errors.keyValue.passwordMissing' },
           format: 'key-value',
         };
       }
 
       if (!database) {
         return {
-          error: 'Database name is missing from connection string. Use database=database',
+          error: { key: 'databases.connectionString.errors.keyValue.databaseMissing' },
           format: 'key-value',
         };
       }
@@ -238,9 +242,9 @@ export class MariadbConnectionStringParser {
         database,
         isHttps,
       };
-    } catch (e) {
+    } catch {
       return {
-        error: `Failed to parse key-value connection string: ${(e as Error).message}`,
+        error: { key: 'databases.connectionString.errors.keyValue.parseFailed' },
         format: 'key-value',
       };
     }
@@ -272,6 +276,7 @@ export class MariadbConnectionStringParser {
     if (!sslValue) return false;
 
     const lowercased = sslValue.toLowerCase();
+    // eslint-disable-next-line i18next/no-literal-string -- connection string parameter values
     const enabledValues = ['true', 'required', 'verify_ca', 'verify_identity', 'yes', '1'];
     return enabledValues.includes(lowercased);
   }

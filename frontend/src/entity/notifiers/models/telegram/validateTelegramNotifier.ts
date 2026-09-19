@@ -1,5 +1,6 @@
 import type { TelegramNotifier } from './TelegramNotifier';
 
+// eslint-disable-next-line i18next/no-literal-string -- URL protocols, not copy
 const allowedProxyProtocols = ['http:', 'https:', 'socks5:', 'socks5h:'];
 
 const isValidProxyUrl = (rawProxyUrl: string): boolean => {

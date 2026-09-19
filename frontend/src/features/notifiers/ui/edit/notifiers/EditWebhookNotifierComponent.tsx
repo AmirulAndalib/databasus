@@ -1,14 +1,21 @@
 import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Input, Select, Tooltip } from 'antd';
 import { useMemo } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import type { Notifier, WebhookHeader } from '../../../../../entity/notifiers';
-import { NotificationType } from '../../../../../entity/notifiers';
-import { WebhookMethod } from '../../../../../entity/notifiers/models/webhook/WebhookMethod';
 import {
-  DEFAULT_ACCEPT_NOTIFICATION_TYPES,
-  NOTIFICATION_TYPE_OPTIONS,
-} from '../../../lib/notificationTypeLabels';
+  NOTIFICATION_TYPE_LABEL_KEYS,
+  NotificationType,
+  WebhookMethod,
+} from '../../../../../entity/notifiers';
+import type { TranslationKey } from '../../../../../shared/i18n';
+import { DEFAULT_ACCEPT_NOTIFICATION_TYPES } from '../../../lib/defaultAcceptNotificationTypes';
+import {
+  EXAMPLE_GET_QUERY,
+  getExamplePostBody,
+  getExamplePostHeaderLines,
+} from '../../../lib/webhookExampleRequest';
 
 interface Props {
   notifier: Notifier;
@@ -16,12 +23,13 @@ interface Props {
   setUnsaved: () => void;
 }
 
+// eslint-disable-next-line i18next/no-literal-string -- JSON template with the backend's variables
 const DEFAULT_BODY_TEMPLATE = `{
   "heading": "{{heading}}",
   "message": "{{message}}"
 }`;
 
-function validateJsonTemplate(template: string): string | null {
+function validateJsonTemplate(template: string): TranslationKey | null {
   if (!template.trim()) {
     return null; // Empty is valid (will use default)
   }
@@ -34,17 +42,18 @@ function validateJsonTemplate(template: string): string | null {
     return null;
   } catch (e) {
     if (e instanceof SyntaxError) {
-      return 'Invalid JSON format';
+      return 'notifiers.webhook.bodyTemplate.invalidJsonFormat';
     }
-    return 'Invalid JSON';
+    return 'notifiers.webhook.bodyTemplate.invalidJson';
   }
 }
 
 export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved }: Props) {
+  const { t } = useTranslation();
   const headers = notifier?.webhookNotifier?.headers || [];
   const bodyTemplate = notifier?.webhookNotifier?.bodyTemplate || '';
 
-  const jsonError = useMemo(() => validateJsonTemplate(bodyTemplate), [bodyTemplate]);
+  const jsonErrorKey = useMemo(() => validateJsonTemplate(bodyTemplate), [bodyTemplate]);
 
   const acceptNotificationTypes =
     notifier?.webhookNotifier?.acceptNotificationTypes || DEFAULT_ACCEPT_NOTIFICATION_TYPES;
@@ -94,7 +103,7 @@ export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved
   return (
     <>
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Webhook URL</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">{t('notifiers.fields.webhookUrl')}</div>
         <Input
           value={notifier?.webhookNotifier?.webhookUrl || ''}
           onChange={(e) => {
@@ -107,7 +116,7 @@ export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved
       </div>
 
       <div className="mt-1 mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Method</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">{t('notifiers.webhook.method')}</div>
         <div className="flex items-center">
           <Select
             value={notifier?.webhookNotifier?.webhookMethod || WebhookMethod.POST}
@@ -117,31 +126,34 @@ export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved
             size="small"
             className="w-[100px] max-w-[250px]"
             options={[
-              { value: WebhookMethod.POST, label: 'POST' },
-              { value: WebhookMethod.GET, label: 'GET' },
+              { value: WebhookMethod.POST, label: WebhookMethod.POST },
+              { value: WebhookMethod.GET, label: WebhookMethod.GET },
             ]}
           />
         </div>
       </div>
 
       <div className="mt-1 mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Send on</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">{t('notifiers.webhook.sendOn')}</div>
         <Select
           mode="multiple"
           value={acceptNotificationTypes}
           onChange={(value) => changeAcceptNotificationTypes(value as NotificationType[])}
           size="small"
           className="w-full max-w-[250px]"
-          options={NOTIFICATION_TYPE_OPTIONS}
-          placeholder="Select notification types"
+          options={Object.values(NotificationType).map((type) => ({
+            label: t(NOTIFICATION_TYPE_LABEL_KEYS[type]),
+            value: type,
+          }))}
+          placeholder={t('notifiers.webhook.sendOnPlaceholder')}
         />
       </div>
 
       <div className="mt-3 mb-1 flex w-full flex-col items-start">
         <div className="mb-1 flex items-center">
-          <span className="min-w-[150px]">
-            Custom headers{' '}
-            <Tooltip title="Add custom HTTP headers to the webhook request (e.g., Authorization, X-API-Key)">
+          <span className="min-w-[150px] pr-2">
+            {t('notifiers.webhook.customHeaders')}{' '}
+            <Tooltip title={t('notifiers.webhook.customHeadersTooltip')}>
               <InfoCircleOutlined className="ml-1" style={{ color: 'gray' }} />
             </Tooltip>
           </span>
@@ -149,7 +161,7 @@ export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved
 
         {notifier.id && (
           <div className="mb-1 text-xs text-orange-700">
-            *Saved headers hidden for security reasons
+            {t('notifiers.webhook.savedHeadersHidden')}
           </div>
         )}
 
@@ -161,14 +173,14 @@ export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved
                 onChange={(e) => updateHeader(index, 'key', e.target.value)}
                 size="small"
                 style={{ width: 150, flexShrink: 0 }}
-                placeholder="Header name"
+                placeholder={t('notifiers.webhook.headerNamePlaceholder')}
               />
               <Input
                 value={header.value}
                 onChange={(e) => updateHeader(index, 'value', e.target.value)}
                 size="small"
                 style={{ flex: 1, minWidth: 0 }}
-                placeholder="Header value"
+                placeholder={t('notifiers.webhook.headerValuePlaceholder')}
               />
               <Button
                 type="text"
@@ -187,7 +199,7 @@ export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved
             onClick={addHeader}
             className="mt-1"
           >
-            Add header
+            {t('notifiers.webhook.addHeader')}
           </Button>
         </div>
       </div>
@@ -195,21 +207,33 @@ export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved
       {notifier?.webhookNotifier?.webhookMethod === WebhookMethod.POST && (
         <div className="mt-3 mb-1 flex w-full flex-col items-start">
           <div className="mb-1 flex items-center">
-            <span className="min-w-[150px]">Body template </span>
+            <span className="min-w-[150px] pr-2">{t('notifiers.webhook.bodyTemplate.title')}</span>
           </div>
 
           <div className="mb-2 text-xs text-gray-500 dark:text-gray-400">
             <span className="mr-4">
-              <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
-                {'{{heading}}'}
-              </code>{' '}
-              — notification title
+              <Trans
+                i18nKey="notifiers.webhook.bodyTemplate.headingVariable"
+                components={{
+                  variable: (
+                    <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+                      {'{{heading}}'}
+                    </code>
+                  ),
+                }}
+              />
             </span>
             <span>
-              <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
-                {'{{message}}'}
-              </code>{' '}
-              — notification message
+              <Trans
+                i18nKey="notifiers.webhook.bodyTemplate.messageVariable"
+                components={{
+                  variable: (
+                    <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+                      {'{{message}}'}
+                    </code>
+                  ),
+                }}
+              />
             </span>
           </div>
 
@@ -221,36 +245,34 @@ export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved
             className="w-full max-w-[500px] font-mono text-xs"
             rows={6}
             placeholder={DEFAULT_BODY_TEMPLATE}
-            status={jsonError ? 'error' : undefined}
+            status={jsonErrorKey ? 'error' : undefined}
           />
-          {jsonError && <div className="mt-1 text-xs text-red-500">{jsonError}</div>}
+          {jsonErrorKey && <div className="mt-1 text-xs text-red-500">{t(jsonErrorKey)}</div>}
         </div>
       )}
 
       {notifier?.webhookNotifier?.webhookUrl && (
         <div className="mt-4">
-          <div className="mb-1 font-medium">Example request</div>
+          <div className="mb-1 font-medium">{t('notifiers.webhook.exampleRequest.title')}</div>
 
           {notifier?.webhookNotifier?.webhookMethod === WebhookMethod.GET && (
             <div className="rounded bg-gray-100 p-2 px-3 text-sm break-all dark:bg-gray-800">
               <div className="font-semibold text-blue-600 dark:text-blue-400">GET</div>
               <div className="mt-1">
                 {notifier?.webhookNotifier?.webhookUrl}
-                {
-                  '?heading=✅ Backup completed for database "my-database" (workspace "Production")&message=Backup completed successfully in 1m 23s.%0ACompressed backup size: 256.00 MB'
-                }
+                {EXAMPLE_GET_QUERY}
               </div>
               {headers.length > 0 && (
                 <div className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-600">
                   <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    Headers:
+                    {t('notifiers.webhook.exampleRequest.headers')}
                   </div>
 
                   {headers
                     .filter((h) => h.key)
                     .map((h, i) => (
                       <div key={i} className="text-xs">
-                        {h.key}: {h.value || '(hidden)'}
+                        {h.key}: {h.value || t('notifiers.webhook.hiddenHeaderValue')}
                       </div>
                     ))}
                 </div>
@@ -264,29 +286,10 @@ export function EditWebhookNotifierComponent({ notifier, setNotifier, setUnsaved
                 POST {notifier?.webhookNotifier?.webhookUrl}
               </div>
               <div className="mt-1 text-gray-600 dark:text-gray-400">
-                {headers.find((h) => h.key.toLowerCase() === 'content-type')
-                  ? ''
-                  : 'Content-Type: application/json'}
-                {headers
-                  .filter((h) => h.key)
-                  .map((h) => `\n${h.key}: ${h.value}`)
-                  .join('')}
+                {getExamplePostHeaderLines(headers)}
               </div>
               <div className="mt-2 break-words whitespace-pre-wrap">
-                {notifier?.webhookNotifier?.bodyTemplate
-                  ? notifier.webhookNotifier.bodyTemplate
-                      .replace(
-                        '{{heading}}',
-                        '✅ Backup completed for database "my-database" (workspace "Production")',
-                      )
-                      .replace(
-                        '{{message}}',
-                        'Backup completed successfully in 1m 23s.\\nCompressed backup size: 256.00 MB',
-                      )
-                  : `{
-  "heading": "✅ Backup completed for database "my-database" (workspace "My workspace")",
-  "message": "Backup completed successfully in 1m 23s. Compressed backup size: 256.00 MB"
-}`}
+                {getExamplePostBody(notifier?.webhookNotifier?.bodyTemplate)}
               </div>
             </div>
           )}

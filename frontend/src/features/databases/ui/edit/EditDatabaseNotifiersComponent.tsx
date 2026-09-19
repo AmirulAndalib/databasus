@@ -1,8 +1,10 @@
 import { Button, Modal, Select, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type Database, databaseApi } from '../../../../entity/databases';
 import { type Notifier, notifierApi } from '../../../../entity/notifiers';
+import { translateApiError } from '../../../../shared/i18n';
 import { EditNotifierComponent } from '../../../notifiers/ui/edit/EditNotifierComponent';
 
 interface Props {
@@ -36,6 +38,7 @@ export const EditDatabaseNotifiersComponent = ({
   isSaveToApi,
   onSaved,
 }: Props) => {
+  const { t } = useTranslation();
   const [editingDatabase, setEditingDatabase] = useState<Database>();
   const [isUnsaved, setIsUnsaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,7 +58,7 @@ export const EditDatabaseNotifiersComponent = ({
         await databaseApi.updateDatabase(editingDatabase);
         setIsUnsaved(false);
       } catch (e) {
-        alert((e as Error).message);
+        alert(translateApiError(e, t));
       }
 
       setIsSaving(false);
@@ -71,7 +74,7 @@ export const EditDatabaseNotifiersComponent = ({
       const notifiers = await notifierApi.getNotifiers(workspaceId);
       setNotifiers(notifiers);
     } catch (e) {
-      alert((e as Error).message);
+      alert(translateApiError(e, t));
     }
 
     setIsNotifiersLoading(false);
@@ -95,14 +98,14 @@ export const EditDatabaseNotifiersComponent = ({
   return (
     <div>
       <div className="mb-5 max-w-[275px] text-gray-500 dark:text-gray-400">
-        Notifier - is a place where notifications will be sent (email, Slack, Telegram, etc.)
+        {t('databases.notifiers.description')}
         <br />
         <br />
-        You can select several notifiers, notifications will be sent to all of them.
+        {t('databases.notifiers.multipleHint')}
       </div>
 
       <div className="mb-5 flex w-full items-center">
-        <div className="min-w-[150px]">Notifiers</div>
+        <div className="min-w-[150px] pr-2">{t('databases.notifiers.title')}</div>
 
         <Select
           key={notifierSelectKey}
@@ -125,22 +128,22 @@ export const EditDatabaseNotifiersComponent = ({
           className="max-w-[200px] grow"
           options={[
             ...notifiers.map((n) => ({ label: n.name, value: n.id })),
-            { label: 'Create new notifier', value: 'create-new-notifier' },
+            { label: t('databases.notifiers.createNew'), value: 'create-new-notifier' },
           ]}
-          placeholder="Select notifiers"
+          placeholder={t('databases.notifiers.selectPlaceholder')}
         />
       </div>
 
       <div className="mt-5 flex">
         {isShowCancelButton && (
           <Button className="mr-1" danger ghost onClick={() => onCancel()}>
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
         )}
 
         {isShowBackButton && (
           <Button className="mr-auto" type="primary" ghost onClick={() => onBack()}>
-            Back
+            {t('common.actions.back')}
           </Button>
         )}
 
@@ -152,14 +155,14 @@ export const EditDatabaseNotifiersComponent = ({
             disabled={isSaving}
             className="mr-5"
           >
-            {saveButtonText || 'Save'}
+            {saveButtonText || t('common.actions.save')}
           </Button>
         )}
       </div>
 
       {isShowCreateNotifier && (
         <Modal
-          title="Add notifier"
+          title={t('databases.notifiers.addTitle')}
           footer={<div />}
           open={isShowCreateNotifier}
           onCancel={() => {
@@ -169,7 +172,7 @@ export const EditDatabaseNotifiersComponent = ({
           maskClosable={false}
         >
           <div className="my-3 max-w-[275px] text-gray-500 dark:text-gray-400">
-            Notifier - is a place where notifications will be sent (email, Slack, Telegram, etc.)
+            {t('databases.notifiers.description')}
           </div>
 
           <EditNotifierComponent

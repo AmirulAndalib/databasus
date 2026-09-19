@@ -1,7 +1,9 @@
 import { Button } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type Database, DatabaseType } from '../../../../entity/databases';
+import type { TranslationKey } from '../../../../shared/i18n';
 
 interface Props {
   database: Database;
@@ -10,17 +12,20 @@ interface Props {
   onSelected: (type: DatabaseType) => void;
 }
 
-const backupTypeOptions = [
+const backupTypeOptions: {
+  type: DatabaseType;
+  titleKey: TranslationKey;
+  descriptionKey: TranslationKey;
+}[] = [
   {
     type: DatabaseType.POSTGRES_LOGICAL,
-    title: 'Logical',
-    description: 'Recommended for databases under 50 GB. Simpler to set up.',
+    titleKey: 'databases.create.backupType.logical.title',
+    descriptionKey: 'databases.create.backupType.logical.description',
   },
   {
     type: DatabaseType.POSTGRES_PHYSICAL,
-    title: 'Physical',
-    description:
-      'For databases over 50 GB. Enables point-in-time recovery and better RPO/RTO, but needs extra setup.',
+    titleKey: 'databases.create.backupType.physical.title',
+    descriptionKey: 'databases.create.backupType.physical.description',
   },
 ];
 
@@ -30,6 +35,7 @@ export const ChoosePostgresBackupTypeComponent = ({
   onBack,
   onSelected,
 }: Props) => {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<DatabaseType>(
     database.type === DatabaseType.POSTGRES_PHYSICAL
       ? DatabaseType.POSTGRES_PHYSICAL
@@ -38,7 +44,7 @@ export const ChoosePostgresBackupTypeComponent = ({
 
   return (
     <div>
-      <div className="my-3 text-center text-lg">Choose backup type</div>
+      <div className="my-3 text-center text-lg">{t('databases.create.backupType.title')}</div>
 
       <div className="grid grid-cols-2 gap-3">
         {backupTypeOptions.map((option) => {
@@ -55,11 +61,11 @@ export const ChoosePostgresBackupTypeComponent = ({
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="font-semibold">{option.title}</span>
+                <span className="font-semibold">{t(option.titleKey)}</span>
               </div>
 
               <span className="text-sm leading-snug text-gray-500 dark:text-gray-400">
-                {option.description}
+                {t(option.descriptionKey)}
               </span>
             </div>
           );
@@ -68,11 +74,11 @@ export const ChoosePostgresBackupTypeComponent = ({
 
       <div className="mt-5 flex">
         <Button className="mr-auto" type="primary" ghost onClick={onBack}>
-          Back
+          {t('common.actions.back')}
         </Button>
 
         <Button type="primary" onClick={() => onSelected(selectedType)}>
-          {saveButtonText || 'Continue'}
+          {saveButtonText || t('common.actions.continue')}
         </Button>
       </div>
     </div>

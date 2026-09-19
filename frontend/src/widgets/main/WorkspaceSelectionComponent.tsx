@@ -1,5 +1,6 @@
 import { Button, Input } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type WorkspaceResponse } from '../../entity/workspaces';
 import { useIsMobile } from '../../shared/hooks';
@@ -17,6 +18,7 @@ export const WorkspaceSelectionComponent = ({
   onCreateWorkspace,
   onWorkspaceSelect,
 }: Props) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -55,7 +57,7 @@ export const WorkspaceSelectionComponent = ({
         size={isMobile ? 'small' : 'middle'}
         className="border-blue-600 bg-blue-600 hover:border-blue-700 hover:bg-blue-700"
       >
-        {isMobile ? 'Create' : 'Create workspace'}
+        {isMobile ? t('app.workspaceSelection.createShort') : t('app.workspaceSelection.create')}
       </Button>
     );
   }
@@ -66,7 +68,7 @@ export const WorkspaceSelectionComponent = ({
       ref={dropdownRef}
     >
       <div className="mb-1 hidden text-xs text-gray-400 md:block" style={{ lineHeight: 0.7 }}>
-        Selected workspace
+        {t('app.workspaceSelection.selected')}
       </div>
 
       <div className="relative">
@@ -76,11 +78,11 @@ export const WorkspaceSelectionComponent = ({
         >
           <div className="flex items-center justify-between text-sm dark:text-gray-200">
             <div className="flex-1 truncate pr-1">
-              {selectedWorkspace?.name || 'Select a workspace'}
+              {selectedWorkspace?.name || t('app.workspaceSelection.placeholder')}
             </div>
             <img
               src="/icons/menu/arrow-down-gray.svg"
-              alt="arrow-down"
+              alt=""
               className={`ml-1 flex-shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
               width={isMobile ? 14 : 15}
               height={isMobile ? 14 : 15}
@@ -92,7 +94,7 @@ export const WorkspaceSelectionComponent = ({
           <div className="absolute top-full right-0 left-0 z-50 mt-1 min-w-[250px] rounded-md border border-gray-200 bg-white shadow-lg md:right-auto md:left-0 md:min-w-full dark:border-gray-600 dark:bg-gray-800">
             <div className="border-b border-gray-100 p-2 dark:border-gray-700">
               <Input
-                placeholder="Search workspaces..."
+                placeholder={t('app.workspaceSelection.search')}
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 className="border-0 shadow-none"
@@ -114,7 +116,7 @@ export const WorkspaceSelectionComponent = ({
 
               {filteredWorkspaces.length === 0 && searchValue && (
                 <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                  No workspaces found
+                  {t('app.workspaceSelection.notFound')}
                 </div>
               )}
             </div>
@@ -128,7 +130,7 @@ export const WorkspaceSelectionComponent = ({
                   setSearchValue('');
                 }}
               >
-                + Create new workspace
+                {t('app.workspaceSelection.createNew')}
               </div>
             </div>
           </div>

@@ -1,8 +1,15 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  server: {
+    fs: {
+      // websitePages.test.ts reads ../website/app/i18n.ts to check the application's links to
+      // website pages against the pages the website translates.
+      allow: ['..'],
+    },
+  },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 });

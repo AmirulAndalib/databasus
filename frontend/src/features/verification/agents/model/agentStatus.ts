@@ -1,4 +1,7 @@
-// Thresholds for translating last_seen_at into a status badge.
+import type { TagProps } from 'antd';
+
+import type { TranslationKey } from '../../../../shared/i18n';
+
 // Agents are expected to heartbeat every 30 seconds; the 15-second list poll on
 // the page gives a snappy transition between Online and Stale.
 const ONLINE_WINDOW_MS = 90 * 1000;
@@ -18,16 +21,16 @@ export const getAgentStatus = (
   return 'offline';
 };
 
-export const AGENT_STATUS_COLORS: Record<AgentStatus, string> = {
+export const AGENT_STATUS_COLORS: Record<AgentStatus, TagProps['color']> = {
   'never-seen': 'default',
   online: 'green',
   stale: 'orange',
   offline: 'red',
 };
 
-export const AGENT_STATUS_LABELS: Record<AgentStatus, string> = {
-  'never-seen': 'Never seen',
-  online: 'Online',
-  stale: 'Stale',
-  offline: 'Offline',
+export const AGENT_STATUS_LABEL_KEYS: Record<AgentStatus, TranslationKey> = {
+  'never-seen': 'status.agent.neverSeen',
+  online: 'status.agent.online',
+  stale: 'status.agent.stale',
+  offline: 'status.agent.offline',
 };

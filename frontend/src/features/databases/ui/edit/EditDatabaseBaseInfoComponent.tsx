@@ -1,7 +1,9 @@
 import { Button, Input } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
+  DATABASE_TYPE_LABEL_KEYS,
   type Database,
   DatabaseType,
   databaseApi,
@@ -9,6 +11,7 @@ import {
   initializeDatabaseTypeData,
   isPostgresType,
 } from '../../../../entity/databases';
+import { translateApiError } from '../../../../shared/i18n';
 
 interface Props {
   database: Database;
@@ -25,11 +28,11 @@ interface Props {
 
 // PostgreSQL maps to the logical type as a tentative default; the backup-type
 // (logical vs physical) is chosen on the next step.
-const databaseEngineOptions = [
-  { type: DatabaseType.POSTGRES_LOGICAL, label: 'PostgreSQL' },
-  { type: DatabaseType.MYSQL, label: 'MySQL' },
-  { type: DatabaseType.MARIADB, label: 'MariaDB' },
-  { type: DatabaseType.MONGODB, label: 'MongoDB' },
+const databaseEngineTypes = [
+  DatabaseType.POSTGRES_LOGICAL,
+  DatabaseType.MYSQL,
+  DatabaseType.MARIADB,
+  DatabaseType.MONGODB,
 ];
 
 export const EditDatabaseBaseInfoComponent = ({
@@ -42,6 +45,7 @@ export const EditDatabaseBaseInfoComponent = ({
   isSaveToApi,
   onSaved,
 }: Props) => {
+  const { t } = useTranslation();
   const [editingDatabase, setEditingDatabase] = useState<Database>();
   const [isUnsaved, setIsUnsaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -68,7 +72,7 @@ export const EditDatabaseBaseInfoComponent = ({
         await databaseApi.updateDatabase(editingDatabase);
         setIsUnsaved(false);
       } catch (e) {
-        alert((e as Error).message);
+        alert(translateApiError(e, t));
       }
 
       setIsSaving(false);
@@ -90,12 +94,12 @@ export const EditDatabaseBaseInfoComponent = ({
     <div>
       {isShowName && (
         <div className="mb-3 flex items-center">
-          <div className="mr-3">Name</div>
+          <div className="mr-3">{t('common.fields.name')}</div>
           <Input
             value={editingDatabase.name || ''}
             onChange={(e) => updateDatabase({ name: e.target.value })}
             size="small"
-            placeholder="My favourite DB"
+            placeholder={t('databases.create.namePlaceholder')}
             className="grow"
           />
         </div>
@@ -103,15 +107,16 @@ export const EditDatabaseBaseInfoComponent = ({
 
       {isShowEngine && (
         <div className="grid grid-cols-2 gap-3">
-          {databaseEngineOptions.map((option) => {
-            const isSelected = isPostgresType(option.type)
+          {databaseEngineTypes.map((engineType) => {
+            const isSelected = isPostgresType(engineType)
               ? isPostgresType(editingDatabase.type)
-              : editingDatabase.type === option.type;
+              : editingDatabase.type === engineType;
+            const engineLabel = t(DATABASE_TYPE_LABEL_KEYS[engineType]);
 
             return (
               <div
-                key={option.type}
-                onClick={() => handleTypeChange(option.type)}
+                key={engineType}
+                onClick={() => handleTypeChange(engineType)}
                 className={`flex h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border text-center text-xs transition hover:border-blue-400 ${
                   isSelected
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/40'
@@ -119,12 +124,12 @@ export const EditDatabaseBaseInfoComponent = ({
                 }`}
               >
                 <img
-                  src={getDatabaseLogoFromType(option.type)}
-                  alt={option.label}
+                  src={getDatabaseLogoFromType(engineType)}
+                  alt={engineLabel}
                   className="h-7 w-7"
                 />
 
-                <span className="px-1 leading-tight">{option.label}</span>
+                <span className="px-1 leading-tight">{engineLabel}</span>
               </div>
             );
           })}
@@ -134,7 +139,7 @@ export const EditDatabaseBaseInfoComponent = ({
       <div className="mt-5 flex">
         {isShowCancelButton && (
           <Button danger ghost className="mr-1" onClick={onCancel}>
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
         )}
 
@@ -145,7 +150,7 @@ export const EditDatabaseBaseInfoComponent = ({
           loading={isSaving}
           disabled={(isSaveToApi && !isUnsaved) || !isAllFieldsFilled}
         >
-          {saveButtonText || 'Save'}
+          {saveButtonText || t('common.actions.save')}
         </Button>
       </div>
     </div>

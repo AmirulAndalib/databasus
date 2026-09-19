@@ -5,6 +5,7 @@ import { systemApi } from '../../entity/system';
 
 const VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const RELOAD_COOLDOWN_MS = 10 * 1000;
+// eslint-disable-next-line i18next/no-literal-string -- localStorage key
 const LAST_RELOAD_KEY = 'lastVersionReload';
 
 export function useVersionCheck() {

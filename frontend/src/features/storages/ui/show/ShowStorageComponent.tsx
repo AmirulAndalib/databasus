@@ -1,6 +1,7 @@
-import { type Storage, StorageType } from '../../../../entity/storages';
+import { useTranslation } from 'react-i18next';
+
+import { STORAGE_TYPE_LABEL_KEYS, type Storage, StorageType } from '../../../../entity/storages';
 import { getStorageLogoFromType } from '../../../../entity/storages/models/getStorageLogoFromType';
-import { getStorageNameFromType } from '../../../../entity/storages/models/getStorageNameFromType';
 import { ShowAzureBlobStorageComponent } from './storages/ShowAzureBlobStorageComponent';
 import { ShowFTPStorageComponent } from './storages/ShowFTPStorageComponent';
 import { ShowGoogleDriveStorageComponent } from './storages/ShowGoogleDriveStorageComponent';
@@ -14,20 +15,18 @@ interface Props {
 }
 
 export function ShowStorageComponent({ storage }: Props) {
+  const { t } = useTranslation();
+
   if (!storage) return null;
 
   return (
     <div>
       <div className="mb-1 flex items-center">
-        <div className="min-w-[110px]">Type</div>
+        <div className="min-w-[110px] pr-2">{t('common.fields.type')}</div>
 
-        {getStorageNameFromType(storage.type)}
+        {t(STORAGE_TYPE_LABEL_KEYS[storage.type])}
 
-        <img
-          src={getStorageLogoFromType(storage.type)}
-          alt="storageIcon"
-          className="ml-1 h-4 w-4"
-        />
+        <img src={getStorageLogoFromType(storage.type)} alt="" className="ml-1 h-4 w-4" />
       </div>
 
       <div>

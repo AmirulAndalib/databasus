@@ -1,6 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { userApi } from '../entity/users';
 import {
@@ -12,8 +13,10 @@ import {
   SignUpComponent,
 } from '../features/users';
 import { useScreenHeight } from '../shared/hooks';
+import { translateApiError } from '../shared/i18n';
 
 export function AuthPageComponent() {
+  const { t } = useTranslation();
   const [isAdminHasPassword, setIsAdminHasPassword] = useState(false);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp' | 'requestReset' | 'resetPassword'>(
     'signUp',
@@ -32,7 +35,7 @@ export function AuthPageComponent() {
         setLoading(false);
       })
       .catch((e) => {
-        alert('Failed to check admin password status: ' + (e as Error).message);
+        alert(t('app.auth.adminPasswordCheckFailed', { error: translateApiError(e, t) }));
       });
   };
 

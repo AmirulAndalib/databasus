@@ -8,3 +8,7 @@ export { LogicalBackupNotificationType } from './model/LogicalBackupNotification
 export { RestoreVerificationStatus } from './model/RestoreVerificationStatus';
 export { LogicalRetentionPolicyType } from './model/LogicalRetentionPolicyType';
 export type { GetLogicalBackupsResponse } from './model/GetLogicalBackupsResponse';
+export { LOGICAL_BACKUP_STATUS_LABEL_KEYS } from './model/LogicalBackupStatusLabelKeys';
+export { RESTORE_VERIFICATION_STATUS_LABEL_KEYS } from './model/RestoreVerificationStatusLabelKeys';
+export { LOGICAL_RETENTION_POLICY_TYPE_LABEL_KEYS } from './model/LogicalRetentionPolicyTypeLabelKeys';
+export { LOGICAL_BACKUP_NOTIFICATION_TYPE_LABEL_KEYS } from './model/LogicalBackupNotificationTypeLabelKeys';

@@ -1,11 +1,13 @@
 import { Button, Modal } from 'antd';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onConfirm(): void;
   onDecline(): void;
 
-  description: string;
+  // Rendered as React content, never as HTML: a sentence with inline markup is a Trans element.
+  description: ReactNode;
   actionButtonColor: 'blue' | 'red';
 
   actionText: string;
@@ -22,9 +24,16 @@ export function ConfirmationComponent({
   cancelText,
   hideCancelButton = false,
 }: Props): JSX.Element {
+  const { t } = useTranslation();
+
   return (
-    <Modal title="Confirmation" open onCancel={() => onDecline()} footer={<div />}>
-      <div dangerouslySetInnerHTML={{ __html: description }} />
+    <Modal
+      title={t('common.confirmation.title')}
+      open
+      onCancel={() => onDecline()}
+      footer={<div />}
+    >
+      <div>{description}</div>
 
       <div className="mt-5 flex">
         {!hideCancelButton && (
@@ -34,7 +43,7 @@ export function ConfirmationComponent({
             danger={actionButtonColor !== 'red'}
             type="primary"
           >
-            {cancelText || 'Cancel'}
+            {cancelText || t('common.actions.cancel')}
           </Button>
         )}
 

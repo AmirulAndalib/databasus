@@ -3,10 +3,12 @@ import { App, Spin, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { AuditLog } from '../../../entity/audit-logs/model/AuditLog';
 import { workspaceApi } from '../../../entity/workspaces/api/workspaceApi';
 import { useIsMobile } from '../../../shared/hooks';
+import { translateApiError, useLocale } from '../../../shared/i18n';
 import { getUserShortTimeFormat } from '../../../shared/time';
 
 interface Props {
@@ -18,6 +20,8 @@ export function WorkspaceAuditLogsComponent({
   workspaceId,
   scrollContainerRef: externalScrollRef,
 }: Props) {
+  const { t } = useTranslation();
+  const { formatRelativeTime } = useLocale();
   const { message } = App.useApp();
   const isMobile = useIsMobile();
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -79,9 +83,7 @@ export function WorkspaceAuditLogsComponent({
       setTotal(response.total);
       setHasMore(response.auditLogs.length === pageSize);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to load workspace audit logs';
-      message.error(errorMessage);
+      message.error(translateApiError(error, t));
     } finally {
       loadingRef.current = false;
       setIsLoading(false);
@@ -105,14 +107,14 @@ export function WorkspaceAuditLogsComponent({
 
   const columns: ColumnsType<AuditLog> = [
     {
-      title: 'User',
+      title: t('auditLogs.columns.user'),
       key: 'user',
       width: 300,
       render: (_, record: AuditLog) => {
         if (!record.userEmail && !record.userName) {
           return (
             <span className="inline-block rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-              System
+              {t('auditLogs.systemUser')}
             </span>
           );
         }
@@ -129,7 +131,7 @@ export function WorkspaceAuditLogsComponent({
       },
     },
     {
-      title: 'Message',
+      title: t('auditLogs.columns.message'),
       dataIndex: 'message',
       key: 'message',
       render: (message: string) => (
@@ -137,7 +139,7 @@ export function WorkspaceAuditLogsComponent({
       ),
     },
     {
-      title: 'Created',
+      title: t('auditLogs.columns.created'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 250,
@@ -146,7 +148,7 @@ export function WorkspaceAuditLogsComponent({
         const timeFormat = getUserShortTimeFormat();
         return (
           <span className="text-xs text-gray-700 dark:text-gray-300">
-            {`${date.format(timeFormat.format)} (${date.fromNow()})`}
+            {`${date.format(timeFormat.format)} (${formatRelativeTime(date)})`}
           </span>
         );
       },
@@ -161,7 +163,7 @@ export function WorkspaceAuditLogsComponent({
       if (!log.userEmail && !log.userName) {
         return (
           <span className="inline-block rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-            System
+            {t('auditLogs.systemUser')}
           </span>
         );
       }
@@ -184,7 +186,7 @@ export function WorkspaceAuditLogsComponent({
           <div className="flex-1">{getUserDisplay()}</div>
           <div className="text-right text-xs text-gray-500 dark:text-gray-400">
             <div>{date.format(timeFormat.format)}</div>
-            <div className="text-gray-400 dark:text-gray-500">{date.fromNow()}</div>
+            <div className="text-gray-400 dark:text-gray-500">{formatRelativeTime(date)}</div>
           </div>
         </div>
         <div className="mt-2 text-sm text-gray-900 dark:text-gray-100">{log.message}</div>
@@ -199,12 +201,12 @@ export function WorkspaceAuditLogsComponent({
   return (
     <div className="max-w-[1200px]">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Audit logs</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('auditLogs.title')}</h2>
         <div className="text-sm text-gray-500 dark:text-gray-400">
           {isLoading ? (
             <Spin indicator={<LoadingOutlined spin />} />
           ) : (
-            `${auditLogs.length} of ${total} logs`
+            t('auditLogs.loadedOfTotal', { loaded: auditLogs.length, total })
           )}
         </div>
       </div>
@@ -215,7 +217,7 @@ export function WorkspaceAuditLogsComponent({
         </div>
       ) : auditLogs.length === 0 ? (
         <div className="flex h-32 items-center justify-center text-gray-500 dark:text-gray-400">
-          No audit logs found for this workspace.
+          {t('workspaces.auditLogs.empty')}
         </div>
       ) : (
         <>
@@ -236,14 +238,14 @@ export function WorkspaceAuditLogsComponent({
             <div className="flex justify-center py-4">
               <Spin indicator={<LoadingOutlined spin />} />
               <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                Loading more logs...
+                {t('auditLogs.loadingMore')}
               </span>
             </div>
           )}
 
           {!hasMore && auditLogs.length > 0 && (
             <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-              All logs loaded ({auditLogs.length} total)
+              {t('auditLogs.allLoaded', { count: auditLogs.length })}
             </div>
           )}
         </>

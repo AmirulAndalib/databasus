@@ -2,6 +2,7 @@ import { CheckOutlined, CopyOutlined } from '@ant-design/icons';
 import { Alert, Button, DatePicker, Input, Segmented, Spin, Tabs } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { type JSX, useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { getApplicationServer } from '../../../../constants';
 import {
@@ -9,16 +10,24 @@ import {
   physicalBackupsApi,
 } from '../../../../entity/backups/physical';
 import type { Database } from '../../../../entity/databases';
+import { ApiError } from '../../../../shared/api';
+import { type TranslationKey, translateApiError } from '../../../../shared/i18n';
 import { ClipboardHelper } from '../../../../shared/lib/ClipboardHelper';
+import { InlineCodeComponent } from '../../../../shared/ui';
 import {
   type RestoreEnvironment,
+  buildChownCommand,
+  buildDockerRunCommand,
   buildDockerScriptCommand,
   buildManualSteps,
+  buildPgCtlStartCommand,
   buildScriptCommand,
   clusterDataDir,
   containerDataDir,
   containerVolumeDir,
   debianConfigDir,
+  defaultDockerImage,
+  defaultPgBinDir,
 } from '../lib/restoreCommands';
 
 interface Props {
@@ -29,35 +38,28 @@ interface Props {
 
 type RestoreMethod = 'script' | 'manual';
 
-// Surfaces a friendlier hint for the two known API failures: a concurrent download
-// (409) and an unreachable target time / WAL gap (422).
-const describeRestoreError = (message: string): string => {
-  if (message.includes('409') || message.toLowerCase().includes('in progress')) {
-    return `${message}\n\nA restore download is already in progress for this database. Wait for it to finish, then try again.`;
-  }
-
-  if (message.includes('422') || message.toLowerCase().includes('gap')) {
-    return `${message}\n\nThe requested target time cannot be reached - there is a WAL gap or the time is out of the available range. Pick a different time or restore the latest available point.`;
-  }
-
-  return message;
+// The two restore failures with a known cause get a hint after the message: a concurrent download
+// (409) and an unreachable target time or WAL gap (422). Decided by status, never by the text.
+const RESTORE_ERROR_HINT_KEYS: Partial<Record<number, TranslationKey>> = {
+  409: 'backups.physical.restore.errorHints.downloadInProgress',
+  422: 'backups.physical.restore.errorHints.targetTimeUnreachable',
 };
+
+const getRestoreErrorHintKey = (error: unknown): TranslationKey | undefined =>
+  error instanceof ApiError && error.status ? RESTORE_ERROR_HINT_KEYS[error.status] : undefined;
 
 // Rendered for host and Docker alike: whether the source keeps its configuration outside the data
 // directory cannot be known from here, and the resulting startup failure looks identical to a
 // wrong-directory mount, so the difference has to be spelled out.
 const missingConfigFilesNote = (pgVersion: string): JSX.Element => (
   <li>
-    A base backup copies only the data directory. If your source PostgreSQL keeps its configuration
-    outside it - the Debian/Ubuntu layout, <code>{debianConfigDir(pgVersion)}</code> - then{' '}
-    <code>postgresql.conf</code>, <code>pg_hba.conf</code> and <code>pg_ident.conf</code> are not in
-    the backup and the server will not start. Ask the source for their real paths with{' '}
-    <code>psql -Atc &quot;SHOW config_file&quot;</code>, copy all three in, then comment out{' '}
-    <code>data_directory</code>, <code>hba_file</code>, <code>ident_file</code>,{' '}
-    <code>external_pid_file</code> and the <code>ssl</code> / <code>ssl_*</code> lines, create{' '}
-    <code>conf.d</code>, and set <code>listen_addresses = &apos;*&apos;</code> for a container. If
-    those files are present and you still get the same error, it is the mounted directory that is
-    wrong, not the configuration.
+    <Trans
+      i18nKey="backups.physical.restore.afterItFinishes.missingConfigFiles"
+      components={{
+        code: <InlineCodeComponent />,
+        configDir: <InlineCodeComponent>{debianConfigDir(pgVersion)}</InlineCodeComponent>,
+      }}
+    />
   </li>
 );
 
@@ -76,6 +78,7 @@ const CopyableCommand = ({
   copiedKey,
   onCopy,
 }: CopyableCommandProps): JSX.Element => {
+  const { t } = useTranslation();
   const isCopied = copiedKey === id;
 
   return (
@@ -88,7 +91,7 @@ const CopyableCommand = ({
           icon={isCopied ? <CheckOutlined /> : <CopyOutlined />}
           onClick={() => onCopy(id, code)}
         >
-          {isCopied ? 'Copied' : 'Copy'}
+          {isCopied ? t('backups.physical.restore.copied') : t('common.actions.copy')}
         </Button>
       </div>
       <pre className="overflow-x-auto rounded bg-gray-100 p-3 text-xs whitespace-pre-wrap text-gray-700 dark:bg-gray-700 dark:text-gray-200">
@@ -99,6 +102,8 @@ const CopyableCommand = ({
 };
 
 export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): JSX.Element => {
+  const { t } = useTranslation();
+
   // The source cluster's major version, detected on connect. Physical databases are
   // always PostgreSQL 17 or 18; the fallback is only a defensive guard. Every shown
   // image tag, bin path and container PGDATA derives from this single value.
@@ -106,18 +111,18 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
 
   const [targetTime, setTargetTime] = useState<Dayjs | undefined>();
   const [isGenerating, setIsGenerating] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string>();
+  const [restoreError, setRestoreError] = useState<unknown>();
   const [bundleUrl, setBundleUrl] = useState<string>();
   const [restoreMethod, setRestoreMethod] = useState<RestoreMethod>('script');
   const [environment, setEnvironment] = useState<RestoreEnvironment>('host');
   const [outputDir, setOutputDir] = useState('./databasus-restore');
   const [pgBin, setPgBin] = useState('');
-  const [dockerImage, setDockerImage] = useState(`postgres:${pgVersion}`);
+  const [dockerImage, setDockerImage] = useState(defaultDockerImage(pgVersion));
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const generateRestore = async () => {
     setIsGenerating(true);
-    setErrorMessage(undefined);
+    setRestoreError(undefined);
     setBundleUrl(undefined);
     setCopiedKey(null);
 
@@ -131,7 +136,7 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
 
       setBundleUrl(`${getApplicationServer()}${response.url}`);
     } catch (e) {
-      setErrorMessage(describeRestoreError((e as Error).message));
+      setRestoreError(e);
     }
 
     setIsGenerating(false);
@@ -155,11 +160,14 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
   const dataDir = clusterDataDir(outputDir, pgVersion);
   const scriptUrl = `${getApplicationServer()}/api/v1/backups/physical/recovery-script`;
   const recoveryTargetTime = targetTime ? targetTime.utc().format('YYYY-MM-DD HH:mm:ssZ') : '';
+  const restoreErrorHintKey = getRestoreErrorHintKey(restoreError);
 
   const renderConfig = (env: RestoreEnvironment): JSX.Element => (
     <div className="mb-3">
       <div className="mb-2 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Restore directory</div>
+        <div className="mb-1 shrink-0 sm:mb-0 sm:w-[190px] sm:pr-2">
+          {t('backups.physical.restore.fields.restoreDirectory')}
+        </div>
         <Input
           value={outputDir}
           onChange={(e) => setOutputDir(e.target.value)}
@@ -168,17 +176,23 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
       </div>
       {env === 'host' ? (
         <div className="flex w-full flex-col items-start sm:flex-row sm:items-center">
-          <div className="mb-1 min-w-[150px] sm:mb-0">PostgreSQL bin path</div>
+          <div className="mb-1 shrink-0 sm:mb-0 sm:w-[190px] sm:pr-2">
+            {t('backups.physical.restore.fields.pgBinPath')}
+          </div>
           <Input
             value={pgBin}
             onChange={(e) => setPgBin(e.target.value)}
-            placeholder={`/usr/lib/postgresql/${pgVersion}/bin (optional)`}
+            placeholder={t('backups.physical.restore.fields.pgBinPathPlaceholder', {
+              path: defaultPgBinDir(pgVersion),
+            })}
             className="w-full max-w-[320px]"
           />
         </div>
       ) : (
         <div className="flex w-full flex-col items-start sm:flex-row sm:items-center">
-          <div className="mb-1 min-w-[150px] sm:mb-0">PostgreSQL image</div>
+          <div className="mb-1 shrink-0 sm:mb-0 sm:w-[190px] sm:pr-2">
+            {t('backups.physical.restore.fields.pgImage')}
+          </div>
           <Input
             value={dockerImage}
             onChange={(e) => setDockerImage(e.target.value)}
@@ -211,7 +225,11 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
       return (
         <CopyableCommand
           id={`script-${env}`}
-          title={env === 'host' ? 'Run on your restore host' : 'Run where Docker is available'}
+          title={
+            env === 'host'
+              ? t('backups.physical.restore.scriptTitles.host')
+              : t('backups.physical.restore.scriptTitles.docker')
+          }
           code={code}
           copiedKey={copiedKey}
           onCopy={copyText}
@@ -234,9 +252,9 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
       <>
         {steps.map((step, index) => (
           <CopyableCommand
-            key={step.title}
+            key={step.titleKey}
             id={`manual-${env}-${index}`}
-            title={`${index + 1}. ${step.title}`}
+            title={`${index + 1}. ${t(step.titleKey)}`}
             code={step.code}
             copiedKey={copiedKey}
             onCopy={copyText}
@@ -252,24 +270,31 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
       <Alert
         type="info"
         showIcon
-        message="Before you run"
+        message={t('backups.physical.restore.beforeYouRun.title')}
         description={
           env === 'host' ? (
             <ul className="ml-4 list-disc">
               <li>
-                Install the PostgreSQL {pgVersion} client tools - set the bin path above if they are
-                not on PATH.
+                {t('backups.physical.restore.beforeYouRun.host.clientTools', {
+                  version: pgVersion,
+                })}
               </li>
-              <li>zstd is required to decompress the backup{hasWal ? ' and its WAL' : ''}.</li>
-              <li>The restore directory must be empty and not an in-use cluster.</li>
+              <li>
+                {hasWal
+                  ? t('backups.physical.restore.beforeYouRun.host.zstdWithWal')
+                  : t('backups.physical.restore.beforeYouRun.host.zstd')}
+              </li>
+              <li>{t('backups.physical.restore.beforeYouRun.host.emptyDirectory')}</li>
             </ul>
           ) : (
             <ul className="ml-4 list-disc">
-              <li>Use a postgres:{pgVersion} image - the major version must match the source.</li>
               <li>
-                The host needs zstd, tar and curl: the download and all decompression - the base
-                backup{hasWal ? ' and the WAL' : ''} - run on the host, and only pg_combinebackup
-                runs in the container, so the postgres image needs no extra tools.
+                {t('backups.physical.restore.beforeYouRun.docker.image', { version: pgVersion })}
+              </li>
+              <li>
+                {hasWal
+                  ? t('backups.physical.restore.beforeYouRun.docker.hostToolsWithWal')
+                  : t('backups.physical.restore.beforeYouRun.docker.hostTools')}
               </li>
             </ul>
           )
@@ -280,57 +305,92 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
       <Alert
         type="info"
         showIcon
-        message="After it finishes"
+        message={t('backups.physical.restore.afterItFinishes.title')}
         description={
           env === 'host' ? (
             <ul className="ml-4 list-disc">
               <li>
-                The cluster is at <code>{dataDir}</code>.
+                <Trans
+                  i18nKey="backups.physical.restore.afterItFinishes.host.clusterLocation"
+                  components={{ dataDir: <InlineCodeComponent>{dataDir}</InlineCodeComponent> }}
+                />
               </li>
               <li>
-                Own it as root: <code>chown -R postgres:postgres {dataDir}</code>.
+                <Trans
+                  i18nKey="backups.physical.restore.afterItFinishes.host.changeOwner"
+                  components={{
+                    command: (
+                      <InlineCodeComponent>{buildChownCommand(dataDir)}</InlineCodeComponent>
+                    ),
+                  }}
+                />
               </li>
               <li>
-                Start it as postgres: <code>pg_ctl -D {dataDir} start</code>, or point
-                data_directory at it.
+                <Trans
+                  i18nKey="backups.physical.restore.afterItFinishes.host.start"
+                  components={{
+                    command: (
+                      <InlineCodeComponent>{buildPgCtlStartCommand(dataDir)}</InlineCodeComponent>
+                    ),
+                  }}
+                />
               </li>
-              {hasWal && (
-                <li>
-                  PostgreSQL replays WAL and promotes - watch the log for recovery completion.
-                </li>
-              )}
+              {hasWal && <li>{t('backups.physical.restore.afterItFinishes.host.walReplay')}</li>}
               {missingConfigFilesNote(pgVersion)}
             </ul>
           ) : (
             <ul className="ml-4 list-disc">
               <li>
-                <code>{dataDir}</code> on the host is the restored cluster.
+                <Trans
+                  i18nKey="backups.physical.restore.afterItFinishes.docker.clusterLocation"
+                  components={{ dataDir: <InlineCodeComponent>{dataDir}</InlineCodeComponent> }}
+                />
               </li>
               {Number(pgVersion) >= 18 ? (
                 <li>
-                  PostgreSQL {pgVersion} keeps its data directory at{' '}
-                  <code>{containerDataDir(pgVersion)}</code>, under the volume{' '}
-                  <code>{containerVolumeDir(pgVersion)}</code>. Mount the output dir as that volume
-                  root - this is what a docker-compose <code>./pgdata:/var/lib/postgresql</code>{' '}
-                  expects:
+                  <Trans
+                    i18nKey="backups.physical.restore.afterItFinishes.docker.volumeMount"
+                    values={{ version: pgVersion }}
+                    components={{
+                      code: <InlineCodeComponent />,
+                      dataDir: (
+                        <InlineCodeComponent>{containerDataDir(pgVersion)}</InlineCodeComponent>
+                      ),
+                      volumeDir: (
+                        <InlineCodeComponent>{containerVolumeDir(pgVersion)}</InlineCodeComponent>
+                      ),
+                    }}
+                  />
                   <br />
-                  <code>
-                    {`docker run -e POSTGRES_PASSWORD=... -v "$PWD/${outputDir}:${containerVolumeDir(pgVersion)}" postgres:${pgVersion}`}
-                  </code>
+                  <InlineCodeComponent>
+                    {buildDockerRunCommand({
+                      hostDir: outputDir,
+                      containerDir: containerVolumeDir(pgVersion),
+                      pgVersion,
+                    })}
+                  </InlineCodeComponent>
                 </li>
               ) : (
                 <li>
-                  Bind-mount the cluster at the image&apos;s data directory{' '}
-                  <code>{containerDataDir(pgVersion)}</code>:
+                  <Trans
+                    i18nKey="backups.physical.restore.afterItFinishes.docker.dataDirectoryMount"
+                    components={{
+                      dataDir: (
+                        <InlineCodeComponent>{containerDataDir(pgVersion)}</InlineCodeComponent>
+                      ),
+                    }}
+                  />
                   <br />
-                  <code>
-                    {`docker run -e POSTGRES_PASSWORD=... -v "$PWD/${dataDir}:${containerDataDir(pgVersion)}" postgres:${pgVersion}`}
-                  </code>
+                  <InlineCodeComponent>
+                    {buildDockerRunCommand({
+                      hostDir: dataDir,
+                      containerDir: containerDataDir(pgVersion),
+                      pgVersion,
+                    })}
+                  </InlineCodeComponent>
                 </li>
               )}
-              <li>
-                Ownership must match the postgres uid inside the image (999 in the official one).
-              </li>
+              <li>{t('backups.physical.restore.afterItFinishes.docker.ownership')}</li>
               {missingConfigFilesNote(pgVersion)}
             </ul>
           )
@@ -343,38 +403,39 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
     <div>
       {backup ? (
         <div className="mb-3 text-sm text-gray-600 dark:text-gray-400">
-          Restore command for this backup. A full backup restores itself; an incremental restores
-          its full backup and all incremental ancestors.
+          {t('backups.physical.restore.backupIntro')}
         </div>
       ) : (
         <>
           <div className="mb-3 text-sm text-gray-600 dark:text-gray-400">
-            Point-in-time restore. Pick a target time, or leave it empty to restore the latest
-            available point.
+            {t('backups.physical.restore.pointInTimeIntro')}
           </div>
           <div className="mb-3 flex w-full flex-col items-start sm:flex-row sm:items-center">
-            <div className="mb-1 min-w-[120px] sm:mb-0">Target time</div>
+            <div className="mb-1 min-w-[120px] sm:mb-0 sm:pr-2">
+              {t('backups.physical.restore.targetTime')}
+            </div>
             <DatePicker
               showTime
               value={targetTime}
               onChange={(value) => setTargetTime(value ?? undefined)}
               className="w-full max-w-[260px] grow"
-              placeholder="Latest available"
+              placeholder={t('backups.physical.restore.latestAvailable')}
             />
           </div>
         </>
       )}
 
-      {errorMessage && (
+      {restoreError !== undefined && (
         <div className="mt-3 rounded border border-red-300/50 bg-red-50 px-3 py-2 text-sm whitespace-pre-line text-red-700 dark:border-red-600/30 dark:bg-red-900/20 dark:text-red-400">
-          {errorMessage}
+          <div>{translateApiError(restoreError, t)}</div>
+          {restoreErrorHintKey && <div className="mt-5">{t(restoreErrorHintKey)}</div>}
         </div>
       )}
 
       {isGenerating && (
         <div className="mt-5 flex items-center gap-2 border-t border-gray-200 pt-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
           <Spin size="small" />
-          Preparing restore command...
+          {t('backups.physical.restore.preparing')}
         </div>
       )}
 
@@ -384,8 +445,8 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
             value={restoreMethod}
             onChange={setRestoreMethod}
             options={[
-              { label: 'Via script', value: 'script' },
-              { label: 'Manual', value: 'manual' },
+              { label: t('backups.physical.restore.methods.script'), value: 'script' },
+              { label: t('backups.physical.restore.methods.manual'), value: 'manual' },
             ]}
           />
           <Tabs
@@ -395,26 +456,26 @@ export const PhysicalRestoreComponent = ({ database, backup, onClose }: Props): 
             items={[
               {
                 key: 'host',
-                label: 'Host PostgreSQL',
+                label: t('backups.physical.restore.environments.host'),
                 children: renderEnvironmentPanel('host', bundleUrl),
               },
               {
                 key: 'docker',
+                // eslint-disable-next-line i18next/no-literal-string -- product name
                 label: 'Docker',
                 children: renderEnvironmentPanel('docker', bundleUrl),
               },
             ]}
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            The download link is single-use and expires in 15 minutes. If a command fails with a
-            401, reopen this dialog to mint a fresh one.
+            {t('backups.physical.restore.linkExpiry')}
           </p>
         </div>
       )}
 
       <div className="mt-4 flex">
         <Button className="ml-auto" onClick={onClose}>
-          Close
+          {t('common.actions.close')}
         </Button>
       </div>
     </div>

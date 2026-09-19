@@ -1,4 +1,11 @@
-import { type Database, MariadbVersion } from '../../../../entity/databases';
+import { useTranslation } from 'react-i18next';
+
+import {
+  DATABASE_TYPE_LABEL_KEYS,
+  type Database,
+  DatabaseType,
+  MariadbVersion,
+} from '../../../../entity/databases';
 import { ShowSshTunnelComponent } from './ShowSshTunnelComponent';
 
 interface Props {
@@ -20,61 +27,67 @@ const mariadbVersionLabels: Record<MariadbVersion, string> = {
 };
 
 export const ShowMariaDbSpecificDataComponent = ({ database }: Props) => {
+  const { t } = useTranslation();
+
   return (
     <div>
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">MariaDB version</div>
+        <div className="min-w-[150px] pr-2">
+          {t('databases.fields.version', {
+            engine: t(DATABASE_TYPE_LABEL_KEYS[DatabaseType.MARIADB]),
+          })}
+        </div>
         <div>{database.mariadb?.version ? mariadbVersionLabels[database.mariadb.version] : ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px] break-all">Host</div>
+        <div className="min-w-[150px] pr-2 break-all">{t('common.fields.host')}</div>
         <div>{database.mariadb?.host || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Port</div>
+        <div className="min-w-[150px] pr-2">{t('common.fields.port')}</div>
         <div>{database.mariadb?.port || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Username</div>
+        <div className="min-w-[150px] pr-2">{t('common.fields.username')}</div>
         <div>{database.mariadb?.username || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Password</div>
+        <div className="min-w-[150px] pr-2">{t('common.fields.password')}</div>
         <div>{'*************'}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">DB name</div>
+        <div className="min-w-[150px] pr-2">{t('databases.fields.databaseName')}</div>
         <div>{database.mariadb?.database || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Use HTTPS</div>
-        <div>{database.mariadb?.isHttps ? 'Yes' : 'No'}</div>
+        <div className="min-w-[150px] pr-2">{t('databases.fields.useHttps')}</div>
+        <div>{database.mariadb?.isHttps ? t('common.answers.yes') : t('common.answers.no')}</div>
       </div>
       <ShowSshTunnelComponent sshTunnel={database.mariadb?.sshTunnel} />
 
       {database.mariadb?.isExcludeEvents && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Exclude events</div>
-          <div>Yes</div>
+          <div className="min-w-[150px] pr-2">{t('databases.fields.excludeEvents')}</div>
+          <div>{t('common.answers.yes')}</div>
         </div>
       )}
 
       {database.mariadb?.isSkipGaleraDisable && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Galera replication</div>
-          <div>Skip disabling on restore</div>
+          <div className="min-w-[150px] pr-2">{t('databases.fields.galeraReplication')}</div>
+          <div>{t('databases.show.galeraDisableSkipped')}</div>
         </div>
       )}
 
       {!!database.mariadb?.excludeTables?.length && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Exclude tables</div>
+          <div className="min-w-[150px] pr-2">{t('databases.fields.excludeTables')}</div>
           <div>{database.mariadb.excludeTables.join(', ')}</div>
         </div>
       )}

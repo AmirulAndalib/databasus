@@ -13,3 +13,8 @@ export type { ChainsRetention } from './model/ChainsRetention';
 export type { FullBackupsRetention } from './model/FullBackupsRetention';
 export type { PhysicalBackupConfig } from './model/PhysicalBackupConfig';
 export type { PhysicalRestoreTokenResponse } from './model/PhysicalRestoreTokenResponse';
+export { PHYSICAL_BACKUP_STATUS_LABEL_KEYS } from './model/PhysicalBackupStatusLabelKeys';
+export { PHYSICAL_RETENTION_LABEL_KEYS } from './model/PhysicalRetentionLabelKeys';
+export { PHYSICAL_BACKUP_TYPE_LABEL_KEYS } from './model/PhysicalBackupTypeLabelKeys';
+export { PHYSICAL_FULL_BACKUPS_POLICY_LABEL_KEYS } from './model/PhysicalFullBackupsPolicyLabelKeys';
+export { PHYSICAL_BACKUP_NOTIFICATION_TYPE_LABEL_KEYS } from './model/PhysicalBackupNotificationTypeLabelKeys';

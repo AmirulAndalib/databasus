@@ -1,6 +1,7 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Input, Switch, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import type { Notifier } from '../../../../../entity/notifiers';
 
@@ -10,7 +11,10 @@ interface Props {
   setUnsaved: () => void;
 }
 
+const chatIdBotLink = <a href="https://t.me/getmyid_bot" target="_blank" rel="noreferrer" />;
+
 export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsaved }: Props) {
+  const { t } = useTranslation();
   const [isShowHowToGetChatId, setIsShowHowToGetChatId] = useState(false);
 
   useEffect(() => {
@@ -28,7 +32,7 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
   return (
     <>
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Bot token</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">{t('notifiers.fields.botToken')}</div>
         <Input
           value={notifier?.telegramNotifier?.botToken || ''}
           onChange={(e) => {
@@ -44,6 +48,7 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
           }}
           size="small"
           className="w-full max-w-[250px]"
+          // eslint-disable-next-line i18next/no-literal-string -- example token, not copy
           placeholder="1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         />
       </div>
@@ -55,12 +60,14 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
           target="_blank"
           rel="noreferrer"
         >
-          How to get Telegram bot API token?
+          {t('notifiers.telegram.botTokenHelpLink')}
         </a>
       </div>
 
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Target chat ID</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+          {t('notifiers.fields.targetChatId')}
+        </div>
         <div className="flex items-center">
           <Input
             value={notifier?.telegramNotifier?.targetChatId || ''}
@@ -81,10 +88,7 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
             placeholder="-1001234567890"
           />
 
-          <Tooltip
-            className="cursor-pointer"
-            title="The chat where you want to receive the message (it can be your private chat or a group)"
-          >
+          <Tooltip className="cursor-pointer" title={t('notifiers.telegram.targetChatIdTooltip')}>
             <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
           </Tooltip>
         </div>
@@ -96,28 +100,26 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
             className="mt-1 cursor-pointer text-xs text-blue-600"
             onClick={() => setIsShowHowToGetChatId(true)}
           >
-            How to get Telegram chat ID?
+            {t('notifiers.telegram.chatIdHelp.toggle')}
           </div>
         ) : (
           <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            To get your chat ID, message{' '}
-            <a href="https://t.me/getmyid_bot" target="_blank" rel="noreferrer">
-              @getmyid_bot
-            </a>{' '}
-            in Telegram. <u>Make sure you started chat with the bot</u>
+            <Trans
+              i18nKey="notifiers.telegram.chatIdHelp.privateChat"
+              components={{ botLink: chatIdBotLink, underline: <u /> }}
+            />
             <br />
             <br />
-            If you want to get chat ID of a group, add your bot with{' '}
-            <a href="https://t.me/getmyid_bot" target="_blank" rel="noreferrer">
-              @getmyid_bot
-            </a>{' '}
-            to the group and write /start (you will see chat ID)
+            <Trans
+              i18nKey="notifiers.telegram.chatIdHelp.group"
+              components={{ botLink: chatIdBotLink }}
+            />
           </div>
         )}
       </div>
 
       <div className="mt-4 mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Use proxy</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">{t('notifiers.telegram.useProxy')}</div>
         <div className="flex items-center">
           <Switch
             checked={notifier?.telegramNotifier?.isProxyEnabled || false}
@@ -137,7 +139,7 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
             size="small"
           />
 
-          <Tooltip className="cursor-pointer" title="Use a proxy for Telegram API requests">
+          <Tooltip className="cursor-pointer" title={t('notifiers.telegram.useProxyTooltip')}>
             <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
           </Tooltip>
         </div>
@@ -145,7 +147,9 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
 
       {notifier?.telegramNotifier?.isProxyEnabled && (
         <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-          <div className="mb-1 min-w-[150px] sm:mb-0">Proxy URL</div>
+          <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+            {t('notifiers.telegram.proxyUrl')}
+          </div>
           <div className="flex items-center">
             <Input
               value={notifier?.telegramNotifier?.proxyUrl || ''}
@@ -163,13 +167,11 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
               }}
               size="small"
               className="w-full max-w-[250px]"
+              // eslint-disable-next-line i18next/no-literal-string -- example proxy URL
               placeholder="socks5://user:pass@host:1080"
             />
 
-            <Tooltip
-              className="cursor-pointer"
-              title="Supports http, https, socks5, socks5h. May include username and password"
-            >
+            <Tooltip className="cursor-pointer" title={t('notifiers.telegram.proxyUrlTooltip')}>
               <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
             </Tooltip>
           </div>
@@ -177,7 +179,9 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
       )}
 
       <div className="mt-4 mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Send to group topic</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+          {t('notifiers.telegram.sendToGroupTopic')}
+        </div>
         <div className="flex items-center">
           <Switch
             checked={notifier?.telegramNotifier?.isSendToThreadEnabled || false}
@@ -200,7 +204,7 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
 
           <Tooltip
             className="cursor-pointer"
-            title="Enable this to send messages to a specific thread in a group chat"
+            title={t('notifiers.telegram.sendToGroupTopicTooltip')}
           >
             <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
           </Tooltip>
@@ -210,7 +214,9 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
       {notifier?.telegramNotifier?.isSendToThreadEnabled && (
         <>
           <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-            <div className="mb-1 min-w-[150px] sm:mb-0">Thread ID</div>
+            <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+              {t('notifiers.telegram.threadId')}
+            </div>
             <div className="flex items-center">
               <Input
                 value={notifier?.telegramNotifier?.threadId?.toString() || ''}
@@ -236,10 +242,7 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
                 min="1"
               />
 
-              <Tooltip
-                className="cursor-pointer"
-                title="The ID of the thread where messages should be sent"
-              >
+              <Tooltip className="cursor-pointer" title={t('notifiers.telegram.threadIdTooltip')}>
                 <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
               </Tooltip>
             </div>
@@ -247,18 +250,22 @@ export function EditTelegramNotifierComponent({ notifier, setNotifier, setUnsave
 
           <div className="max-w-[250px] sm:ml-[150px]">
             <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              To get the thread ID, go to the thread in your Telegram group, tap on the thread name
-              at the top, then tap &ldquo;Thread Info&rdquo;. Copy the thread link and take the last
-              number from the URL.
+              {t('notifiers.telegram.threadIdHelp.steps')}
               <br />
               <br />
-              <strong>Example:</strong> If the thread link is{' '}
-              <code className="rounded bg-gray-100 px-1">https://t.me/c/2831948048/3</code>, the
-              thread ID is <code className="rounded bg-gray-100 px-1">3</code>
+              <Trans
+                i18nKey="notifiers.telegram.threadIdHelp.example"
+                components={{
+                  bold: <strong />,
+                  code: <code className="rounded bg-gray-100 px-1" />,
+                }}
+              />
               <br />
               <br />
-              <strong>Note:</strong> Thread functionality only works in group chats, not in private
-              chats.
+              <Trans
+                i18nKey="notifiers.telegram.threadIdHelp.note"
+                components={{ bold: <strong /> }}
+              />
             </div>
           </div>
         </>

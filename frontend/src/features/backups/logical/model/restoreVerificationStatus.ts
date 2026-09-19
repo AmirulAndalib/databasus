@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string -- Tailwind class names */
 import { RestoreVerificationStatus } from '../../../../entity/backups/logical';
 
 interface RestoreVerificationBadgeStyle {
@@ -20,11 +21,4 @@ export const RESTORE_VERIFICATION_STATUS_BADGE_STYLES: Partial<
       'bg-rose-500/10 text-rose-700 ring-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300 dark:ring-rose-400/30',
     dotClasses: 'bg-rose-500 dark:bg-rose-400',
   },
-};
-
-export const RESTORE_VERIFICATION_STATUS_LABELS: Partial<
-  Record<RestoreVerificationStatus, string>
-> = {
-  [RestoreVerificationStatus.VERIFIED_SUCCESSFUL]: 'Verified',
-  [RestoreVerificationStatus.VERIFICATION_FAILED]: 'Verification failed',
 };

@@ -1,9 +1,11 @@
 import { Button, Modal, Select, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { logicalBackupConfigApi } from '../../../entity/backups/logical';
 import { type Storage, storageApi } from '../../../entity/storages';
 import { type WorkspaceResponse, workspaceApi } from '../../../entity/workspaces';
+import { translateApiError } from '../../../shared/i18n';
 
 interface Props {
   storage: Storage;
@@ -12,6 +14,7 @@ interface Props {
 }
 
 export const StorageTransferDialogComponent = ({ storage, onClose, onTransferred }: Props) => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [isStorageInUse, setIsStorageInUse] = useState(false);
   const [workspaces, setWorkspaces] = useState<WorkspaceResponse[]>([]);
@@ -31,7 +34,7 @@ export const StorageTransferDialogComponent = ({ storage, onClose, onTransferred
         setWorkspaces(filteredWorkspaces);
       }
     } catch (e) {
-      alert((e as Error).message);
+      alert(translateApiError(e, t));
     }
 
     setIsLoading(false);
@@ -46,7 +49,7 @@ export const StorageTransferDialogComponent = ({ storage, onClose, onTransferred
       await storageApi.transferStorage(storage.id, selectedWorkspaceId);
       onTransferred();
     } catch (e) {
-      alert((e as Error).message);
+      alert(translateApiError(e, t));
     }
 
     setIsTransferring(false);
@@ -58,7 +61,7 @@ export const StorageTransferDialogComponent = ({ storage, onClose, onTransferred
 
   return (
     <Modal
-      title="Transfer storage to another workspace"
+      title={t('storages.transfer.title')}
       footer={null}
       open={true}
       onCancel={onClose}
@@ -71,37 +74,36 @@ export const StorageTransferDialogComponent = ({ storage, onClose, onTransferred
       ) : isStorageInUse ? (
         <div className="py-3">
           <div className="text-gray-700 dark:text-gray-300">
-            This storage is used by some databases. Please transfer or remove related databases
-            first.
+            {t('storages.transfer.blockedByDatabases')}
           </div>
 
           <div className="mt-5">
             <Button type="primary" onClick={onClose}>
-              OK
+              {t('common.actions.ok')}
             </Button>
           </div>
         </div>
       ) : (
         <div className="py-3">
           <div className="mb-3 text-gray-500 dark:text-gray-400">
-            Select a workspace to transfer this storage to.
+            {t('storages.transfer.description')}
           </div>
 
           <div className="mb-5 flex items-center">
-            <div className="min-w-[120px]">Target workspace</div>
+            <div className="min-w-[120px] pr-2">{t('storages.transfer.targetWorkspace')}</div>
 
             <Select
               value={selectedWorkspaceId}
               onChange={setSelectedWorkspaceId}
               className="min-w-[200px] grow"
-              placeholder="Select workspace"
+              placeholder={t('storages.transfer.selectWorkspace')}
               options={workspaces.map((w) => ({ label: w.name, value: w.id }))}
             />
           </div>
 
           <div className="flex gap-2">
             <Button type="default" onClick={onClose}>
-              Cancel
+              {t('common.actions.cancel')}
             </Button>
 
             <Button
@@ -110,7 +112,7 @@ export const StorageTransferDialogComponent = ({ storage, onClose, onTransferred
               loading={isTransferring}
               disabled={!selectedWorkspaceId || isTransferring}
             >
-              Transfer
+              {t('storages.transfer.submit')}
             </Button>
           </div>
         </div>

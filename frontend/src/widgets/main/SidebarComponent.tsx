@@ -1,18 +1,29 @@
 import { CloseOutlined } from '@ant-design/icons';
 import { Drawer, Tooltip } from 'antd';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type DiskUsage } from '../../entity/disk';
 import { type UserProfile, UserRole } from '../../entity/users';
 import { useIsMobile } from '../../shared/hooks';
+import { getWebsitePageUrl, useLocale } from '../../shared/i18n';
 import { useTheme } from '../../shared/theme';
-import { SponsorshipLinkComponent } from '../../shared/ui';
+import { LanguageThemeControlComponent, SponsorshipLinkComponent } from '../../shared/ui';
 import { StarButtonComponent } from '../../shared/ui/StarButtonComponent';
-import { ThemeToggleComponent } from '../../shared/ui/ThemeToggleComponent';
+import { getDiskUsageValues } from './getDiskUsageValues';
 
-interface TabItem {
+export type MainTab =
+  | 'notifiers'
+  | 'storages'
+  | 'databases'
+  | 'profile'
+  | 'databasus-settings'
+  | 'users'
+  | 'settings';
+
+export interface SidebarTab {
   text: string;
-  name: string;
+  name: MainTab;
   icon: string;
   selectedIcon: string;
   onClick: () => void;
@@ -24,8 +35,8 @@ interface TabItem {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  selectedTab: string;
-  tabs: TabItem[];
+  selectedTab: MainTab;
+  tabs: SidebarTab[];
   user?: UserProfile;
   diskUsage?: DiskUsage;
   contentHeight: number;
@@ -40,6 +51,8 @@ export const SidebarComponent = ({
   diskUsage,
   contentHeight,
 }: Props) => {
+  const { t } = useTranslation();
+  const { locale, formatNumber } = useLocale();
   const isMobile = useIsMobile();
   const { resolvedTheme } = useTheme();
 
@@ -67,7 +80,7 @@ export const SidebarComponent = ({
     .filter((tab) => !tab.isAdminOnly || user?.role === UserRole.ADMIN)
     .filter((tab) => tab.isVisible);
 
-  const handleTabClick = (tab: TabItem) => {
+  const handleTabClick = (tab: SidebarTab) => {
     tab.onClick();
     if (isMobile) {
       onClose();
@@ -129,7 +142,7 @@ export const SidebarComponent = ({
       <div className="flex h-full flex-col">
         {/* Custom Close Button */}
         <div className="flex items-center justify-between border-b border-gray-200 px-3 py-3 dark:border-gray-700">
-          <ThemeToggleComponent />
+          <LanguageThemeControlComponent />
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -170,15 +183,13 @@ export const SidebarComponent = ({
         <div className="border-t border-gray-200 bg-gray-50 px-3 py-4 dark:border-gray-700 dark:bg-gray-800">
           {diskUsage && (
             <div className="mb-4">
-              <Tooltip title="To make backups locally and restore them, you need to have enough space on your disk. For restore, you need to have same amount of space that the backup size.">
+              <Tooltip title={t('app.diskUsage.hint')}>
                 <div
                   className={`cursor-pointer text-xs ${isUsedMoreThan95Percent ? 'text-red-500' : 'text-gray-600 dark:text-gray-400'}`}
                 >
-                  <div className="font-medium">Disk Usage</div>
+                  <div className="font-medium">{t('app.diskUsage.title')}</div>
                   <div className="mt-1">
-                    {(diskUsage.usedSpaceBytes / 1024 ** 3).toFixed(1)} of{' '}
-                    {(diskUsage.totalSpaceBytes / 1024 ** 3).toFixed(1)} GB used (
-                    {((diskUsage.usedSpaceBytes / diskUsage.totalSpaceBytes) * 100).toFixed(1)}%)
+                    {t('app.diskUsage.summary', getDiskUsageValues(diskUsage, formatNumber))}
                   </div>
                 </div>
               </Tooltip>
@@ -188,11 +199,11 @@ export const SidebarComponent = ({
           <div className="space-y-2">
             <a
               className="block rounded text-sm font-medium !text-gray-700 hover:bg-gray-100 hover:!text-blue-600 dark:!text-gray-300 dark:hover:bg-gray-700"
-              href="https://databasus.com/installation"
+              href={getWebsitePageUrl('installation', locale)}
               target="_blank"
               rel="noreferrer"
             >
-              Documentation
+              {t('app.navigation.documentation')}
             </a>
 
             <a
@@ -201,7 +212,7 @@ export const SidebarComponent = ({
               target="_blank"
               rel="noreferrer"
             >
-              Community
+              {t('app.navigation.community')}
             </a>
 
             <SponsorshipLinkComponent className="block rounded text-sm font-medium !text-gray-700 hover:bg-gray-100 hover:!text-blue-600 dark:!text-gray-300 dark:hover:bg-gray-700" />

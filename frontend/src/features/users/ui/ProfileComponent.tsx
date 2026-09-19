@@ -1,30 +1,22 @@
 import { EyeInvisibleOutlined, EyeTwoTone, LoadingOutlined } from '@ant-design/icons';
 import { App, Button, Input, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { USER_ROLE_LABEL_KEYS } from '../../../entity/users';
 import { userApi } from '../../../entity/users/api/userApi';
 import type { ChangePasswordRequest } from '../../../entity/users/model/ChangePasswordRequest';
 import type { SignInRequest } from '../../../entity/users/model/SignInRequest';
 import type { UpdateUserInfoRequest } from '../../../entity/users/model/UpdateUserInfoRequest';
 import type { UserProfile } from '../../../entity/users/model/UserProfile';
-import { UserRole } from '../../../entity/users/model/UserRole';
+import { translateApiError } from '../../../shared/i18n';
 
 interface Props {
   contentHeight: number;
 }
 
-const getRoleDisplayText = (role: UserRole): string => {
-  switch (role) {
-    case UserRole.ADMIN:
-      return 'Admin';
-    case UserRole.MEMBER:
-      return 'Member';
-    default:
-      return role;
-  }
-};
-
 export function ProfileComponent({ contentHeight }: Props) {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const [user, setUser] = useState<UserProfile | undefined>(undefined);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -59,7 +51,7 @@ export function ProfileComponent({ contentHeight }: Props) {
         setEditEmail(user.email);
       })
       .catch((error) => {
-        message.error(error.message);
+        message.error(translateApiError(error, t));
       });
   };
 
@@ -71,7 +63,7 @@ export function ProfileComponent({ contentHeight }: Props) {
       isValid = false;
     } else if (newPassword.length < 6) {
       setNewPasswordError(true);
-      message.error('Password must be at least 6 characters long');
+      message.error(t('users.validation.passwordTooShort', { minLength: 6 }));
       isValid = false;
     } else {
       setNewPasswordError(false);
@@ -82,7 +74,7 @@ export function ProfileComponent({ contentHeight }: Props) {
       isValid = false;
     } else if (newPassword !== confirmPassword) {
       setConfirmPasswordError(true);
-      message.error('New passwords do not match');
+      message.error(t('users.profile.changePassword.passwordsDoNotMatch'));
       isValid = false;
     } else {
       setConfirmPasswordError(false);
@@ -117,13 +109,9 @@ export function ProfileComponent({ contentHeight }: Props) {
             password: newPassword,
           };
           await userApi.signIn(signInRequest);
-          message.success('Successfully signed in with new password');
+          message.success(t('users.profile.changePassword.signedInWithNewPassword'));
         } catch (signInError: unknown) {
-          const errorMessage =
-            signInError instanceof Error
-              ? signInError.message
-              : 'Failed to sign in with new password';
-          message.error(errorMessage);
+          message.error(translateApiError(signInError, t));
           // If sign in fails, logout and redirect to login page
           userApi.logout();
           userApi.notifyAuthListeners();
@@ -131,8 +119,7 @@ export function ProfileComponent({ contentHeight }: Props) {
         }
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to change password';
-      message.error(errorMessage);
+      message.error(translateApiError(error, t));
     } finally {
       setIsChangingPassword(false);
     }
@@ -142,7 +129,7 @@ export function ProfileComponent({ contentHeight }: Props) {
     // Validate name
     if (!editName || editName.trim() === '') {
       setEditNameError(true);
-      message.error('Name is required');
+      message.error(t('users.validation.nameRequired'));
       return;
     }
     setEditNameError(false);
@@ -151,7 +138,7 @@ export function ProfileComponent({ contentHeight }: Props) {
     if (user?.email !== 'admin') {
       if (!editEmail || editEmail.trim() === '') {
         setEditEmailError(true);
-        message.error('Email is required');
+        message.error(t('users.validation.emailRequired'));
         return;
       }
       setEditEmailError(false);
@@ -173,19 +160,18 @@ export function ProfileComponent({ contentHeight }: Props) {
 
       // If nothing changed, just show a message
       if (Object.keys(request).length === 0) {
-        message.info('No changes to save');
+        message.info(t('users.profile.noChanges'));
         setIsUpdatingProfile(false);
         return;
       }
 
       await userApi.updateUserInfo(request);
-      message.success('Profile updated successfully');
+      message.success(t('users.profile.updated'));
 
       // Reload user profile
       loadUserProfile();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
-      message.error(errorMessage);
+      message.error(translateApiError(error, t));
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -203,20 +189,24 @@ export function ProfileComponent({ contentHeight }: Props) {
           className="grow overflow-y-auto rounded bg-white p-5 shadow dark:bg-gray-800"
           style={{ height: contentHeight }}
         >
-          <h1 className="text-2xl font-bold dark:text-white">Profile</h1>
+          <h1 className="text-2xl font-bold dark:text-white">{t('users.profile.title')}</h1>
 
           <div className="mt-5">
             {user ? (
               <>
                 <div className="mb-6">
                   <h3 className="mb-4 text-lg font-semibold dark:text-white">
-                    Profile Information
+                    {t('users.profile.information')}
                   </h3>
                   <div className="max-w-md">
-                    <div className="text-xs font-semibold dark:text-gray-200">User ID</div>
+                    <div className="text-xs font-semibold dark:text-gray-200">
+                      {t('users.profile.userId')}
+                    </div>
                     <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">{user.id}</div>
 
-                    <div className="mb-1 text-xs font-semibold dark:text-gray-200">Name</div>
+                    <div className="mb-1 text-xs font-semibold dark:text-gray-200">
+                      {t('users.fields.name')}
+                    </div>
                     <Input
                       value={editName}
                       onChange={(e) => {
@@ -224,11 +214,13 @@ export function ProfileComponent({ contentHeight }: Props) {
                         setEditName(e.currentTarget.value);
                       }}
                       status={editNameError ? 'error' : undefined}
-                      placeholder="Enter your name"
+                      placeholder={t('users.profile.namePlaceholder')}
                       className="mb-4"
                     />
 
-                    <div className="mt-2 mb-1 text-xs font-semibold dark:text-gray-200">Email</div>
+                    <div className="mt-2 mb-1 text-xs font-semibold dark:text-gray-200">
+                      {t('users.fields.email')}
+                    </div>
                     <Input
                       value={editEmail}
                       onChange={(e) => {
@@ -236,21 +228,23 @@ export function ProfileComponent({ contentHeight }: Props) {
                         setEditEmail(e.currentTarget.value.trim().toLowerCase());
                       }}
                       status={editEmailError ? 'error' : undefined}
-                      placeholder="Enter your email"
+                      placeholder={t('users.profile.emailPlaceholder')}
                       type="email"
                       className="mb-4"
                       disabled={user.email === 'admin'}
                     />
                     {user.email === 'admin' && (
                       <div className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-                        Admin email cannot be changed
+                        {t('users.profile.adminEmailReadOnly')}
                       </div>
                     )}
 
-                    <div className="mt-2 mb-1 text-xs font-semibold dark:text-gray-200">Role</div>
+                    <div className="mt-2 mb-1 text-xs font-semibold dark:text-gray-200">
+                      {t('users.profile.role')}
+                    </div>
                     <div className="mb-4">
                       <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        {getRoleDisplayText(user.role)}
+                        {t(USER_ROLE_LABEL_KEYS[user.role])}
                       </span>
                     </div>
 
@@ -262,7 +256,7 @@ export function ProfileComponent({ contentHeight }: Props) {
                         disabled={isUpdatingProfile}
                         className="border-blue-600 bg-blue-600 hover:border-blue-700 hover:bg-blue-700"
                       >
-                        Save changes
+                        {t('users.profile.saveChanges')}
                       </Button>
                     )}
                   </div>
@@ -270,19 +264,21 @@ export function ProfileComponent({ contentHeight }: Props) {
 
                 <div className="mb-8">
                   <Button type="primary" ghost onClick={handleLogout} danger>
-                    Logout
+                    {t('users.profile.logout')}
                   </Button>
                 </div>
 
                 <div className="max-w-xs">
-                  <h3 className="mb-4 text-lg font-semibold dark:text-white">Change Password</h3>
+                  <h3 className="mb-4 text-lg font-semibold dark:text-white">
+                    {t('users.profile.changePassword.title')}
+                  </h3>
 
                   <div className="max-w-sm">
                     <div className="my-1 text-xs font-semibold dark:text-gray-200">
-                      New Password
+                      {t('users.fields.newPassword')}
                     </div>
                     <Input.Password
-                      placeholder="Enter new password"
+                      placeholder={t('users.profile.changePassword.newPasswordPlaceholder')}
                       value={newPassword}
                       onChange={(e) => {
                         setNewPasswordError(false);
@@ -300,10 +296,10 @@ export function ProfileComponent({ contentHeight }: Props) {
                     />
 
                     <div className="mt-2 mb-1 text-xs font-semibold dark:text-gray-200">
-                      Confirm New Password
+                      {t('users.profile.changePassword.confirmPassword')}
                     </div>
                     <Input.Password
-                      placeholder="Confirm new password"
+                      placeholder={t('users.profile.changePassword.confirmPasswordPlaceholder')}
                       value={confirmPassword}
                       onChange={(e) => {
                         setConfirmPasswordError(false);
@@ -330,7 +326,9 @@ export function ProfileComponent({ contentHeight }: Props) {
                         disabled={isChangingPassword}
                         className="border-blue-600 bg-blue-600 hover:border-blue-700 hover:bg-blue-700"
                       >
-                        {isChangingPassword ? 'Changing password...' : 'Change password'}
+                        {isChangingPassword
+                          ? t('users.profile.changePassword.changing')
+                          : t('users.profile.changePassword.submit')}
                       </Button>
                     )}
                   </div>

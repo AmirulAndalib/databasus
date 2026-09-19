@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { useLocale } from '../i18n';
 
 const StarIcon = () => (
   <svg
@@ -17,6 +20,8 @@ const StarIcon = () => (
 );
 
 export function StarButtonComponent() {
+  const { t } = useTranslation();
+  const { formatNumber } = useLocale();
   const [starCount, setStarCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -44,17 +49,15 @@ export function StarButtonComponent() {
       target="_blank"
       rel="noopener noreferrer"
       className="flex cursor-pointer items-center rounded-md border !border-gray-200 !bg-white text-sm !text-gray-700 transition-colors hover:!bg-gray-50 dark:!border-gray-600 dark:!bg-gray-700 dark:!text-gray-200 dark:hover:!bg-gray-600"
-      aria-label="Star databasus/databasus on GitHub"
+      aria-label={t('app.starButton.ariaLabel')}
     >
       <div className="flex items-center gap-2 border-r border-gray-200 px-2.5 py-1 !text-black dark:border-gray-600 dark:!text-white">
         <StarIcon />
-        <span>Star on GitHub</span>
+        <span>{t('app.starButton.label')}</span>
       </div>
 
       {!isLoading && starCount !== null && (
-        <span className="px-2.5 py-1 !text-black dark:!text-white">
-          {starCount.toLocaleString()}
-        </span>
+        <span className="px-2.5 py-1 !text-black dark:!text-white">{formatNumber(starCount)}</span>
       )}
     </a>
   );

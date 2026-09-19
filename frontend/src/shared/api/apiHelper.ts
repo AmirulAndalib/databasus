@@ -1,5 +1,5 @@
 import { accessTokenHelper } from '.';
-import { ApiError } from './ApiError';
+import { API_ERROR_CODES, ApiError } from './ApiError';
 import { RateLimiter } from './RateLimiter';
 import RequestOptions from './RequestOptions';
 
@@ -7,44 +7,42 @@ const REPEAT_TRIES_COUNT = 30;
 const REPEAT_INTERVAL_MS = 3_000;
 const rateLimiter = new RateLimiter(30, 1_000);
 
-const handleOrThrowMessageIfResponseError = async (
-  url: string,
-  response: Response,
-  handleNotAuthorizedError = true,
-) => {
-  if (handleNotAuthorizedError && response.status === 401) {
+const clearTokenAndReloadIfUnauthorized = (response: Response) => {
+  if (response.status === 401) {
     accessTokenHelper?.cleanAccessToken();
     window.location.reload();
   }
+};
 
+const throwIfErrorResponse = async (response: Response) => {
   if (response.status === 502 || response.status === 504) {
-    throw new Error('failed to fetch');
+    throw new ApiError({ code: API_ERROR_CODES.requestFailed, status: response.status });
   }
 
   if (response.status >= 400 && response.status <= 600) {
-    let errorMessage: string | undefined;
-    let errorCode: string | undefined;
+    let body: { message?: string; error?: string; code?: string } | null;
 
     try {
-      const json = (await response.json()) as {
-        message?: string;
-        error?: string;
-        code?: string;
-      };
-      errorMessage = json.message || json.error;
-      errorCode = json.code;
+      body = await response.json();
     } catch {
-      try {
-        errorMessage = await response.text();
-      } catch {
-        /* ignore */
-      }
+      throw new ApiError({ code: API_ERROR_CODES.requestFailed, status: response.status });
     }
 
-    throw new ApiError(
-      errorMessage ?? errorCode ?? `${url}: request failed with status ${response.status}`,
-      errorCode,
-    );
+    throw new ApiError({
+      message: body?.message || body?.error,
+      code: body?.code,
+      status: response.status,
+    });
+  }
+};
+
+// Only the rejection of fetch itself means the server was never reached. ApiErrors thrown for an
+// answered request must not be mistaken for it.
+const fetchOrThrowNetworkError = async (url: string, optionsWrapper: RequestOptions) => {
+  try {
+    return await fetch(url, optionsWrapper.toRequestInit());
+  } catch {
+    throw new ApiError({ code: API_ERROR_CODES.networkUnreachable });
   }
 };
 
@@ -56,8 +54,9 @@ const makeRequest = async (
   await rateLimiter.acquire();
 
   try {
-    const response = await fetch(url, optionsWrapper.toRequestInit());
-    await handleOrThrowMessageIfResponseError(url, response);
+    const response = await fetchOrThrowNetworkError(url, optionsWrapper);
+    clearTokenAndReloadIfUnauthorized(response);
+    await throwIfErrorResponse(response);
     return response;
   } catch (e) {
     if (currentTry < REPEAT_TRIES_COUNT) {

@@ -4,6 +4,7 @@ import { APP_VERSION } from '../../constants';
 import { compareVersions, parseGitHubTag } from '../lib';
 
 const GITHUB_RELEASES_API = 'https://api.github.com/repos/databasus/databasus/releases/latest';
+// eslint-disable-next-line i18next/no-literal-string -- localStorage key
 const CACHE_KEY = 'githubLatestVersion';
 const CACHE_TTL_MS = 15 * 60 * 1000;
 

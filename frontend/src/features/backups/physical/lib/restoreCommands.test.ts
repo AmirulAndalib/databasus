@@ -101,7 +101,10 @@ describe('buildDockerScriptCommand', () => {
 });
 
 describe('buildManualSteps', () => {
-  const configCheckTitle = "Check the cluster's configuration files";
+  const reconstructTitleKey = 'backups.physical.restore.manualSteps.reconstruct';
+  const configCheckTitleKey = 'backups.physical.restore.manualSteps.checkConfig';
+  const wireUpRecoveryTitleKey = 'backups.physical.restore.manualSteps.wireUpRecovery';
+  const recoveryParametersTitleKey = 'backups.physical.restore.manualSteps.recoveryParameters';
   const base = {
     bundleUrl,
     outputDir: './databasus-restore',
@@ -113,25 +116,23 @@ describe('buildManualSteps', () => {
 
   it('decompresses each backup blob before pg_combinebackup and skips recovery when there is no WAL', () => {
     const steps = buildManualSteps({ ...base, environment: 'host', hasWal: false });
-    const titles = steps.map((step) => step.title);
-    const combine = steps.find((step) => step.title === 'Reconstruct the data directory');
+    const titleKeys = steps.map((step) => step.titleKey);
+    const combine = steps.find((step) => step.titleKey === reconstructTitleKey);
 
     expect(combine?.code).toContain('base.tar');
     expect(combine?.code).toContain('pg_combinebackup bundle/recon/full');
     expect(combine!.code.indexOf('base.tar')).toBeLessThan(
       combine!.code.indexOf('pg_combinebackup'),
     );
-    expect(titles).not.toContain('Decompress WAL and wire up recovery');
-    expect(titles).not.toContain('If recovery stops on parameter settings');
+    expect(titleKeys).not.toContain(wireUpRecoveryTitleKey);
+    expect(titleKeys).not.toContain(recoveryParametersTitleKey);
   });
 
   it('adds a recovery-parameter note pointing at pg_controldata when there is WAL', () => {
     const host = buildManualSteps({ ...base, environment: 'host', hasWal: true });
     const docker = buildManualSteps({ ...base, environment: 'docker', hasWal: true });
-    const hostNote = host.find((step) => step.title === 'If recovery stops on parameter settings');
-    const dockerNote = docker.find(
-      (step) => step.title === 'If recovery stops on parameter settings',
-    );
+    const hostNote = host.find((step) => step.titleKey === recoveryParametersTitleKey);
+    const dockerNote = docker.find((step) => step.titleKey === recoveryParametersTitleKey);
 
     expect(hostNote?.code).toContain('pg_controldata "./databasus-restore/18/docker"');
     expect(hostNote?.code).toContain('max_connections');
@@ -143,8 +144,8 @@ describe('buildManualSteps', () => {
   it('builds the cluster at the version-specific path', () => {
     const pg18 = buildManualSteps({ ...base, pgVersion: '18', environment: 'host', hasWal: false });
     const pg17 = buildManualSteps({ ...base, pgVersion: '17', environment: 'host', hasWal: false });
-    const combine18 = pg18.find((step) => step.title === 'Reconstruct the data directory');
-    const combine17 = pg17.find((step) => step.title === 'Reconstruct the data directory');
+    const combine18 = pg18.find((step) => step.titleKey === reconstructTitleKey);
+    const combine17 = pg17.find((step) => step.titleKey === reconstructTitleKey);
 
     expect(combine18?.code).toContain('-o "./databasus-restore/18/docker"');
     expect(combine17?.code).toContain('-o "./databasus-restore/data"');
@@ -152,7 +153,7 @@ describe('buildManualSteps', () => {
 
   it('includes the WAL recovery step with a PGDATA-relative restore_command when there is WAL', () => {
     const steps = buildManualSteps({ ...base, environment: 'host', hasWal: true });
-    const recovery = steps.find((step) => step.title === 'Decompress WAL and wire up recovery');
+    const recovery = steps.find((step) => step.titleKey === wireUpRecoveryTitleKey);
 
     expect(recovery).toBeDefined();
     expect(recovery?.code).toContain('./databasus-restore/18/docker/recovery.signal');
@@ -168,17 +169,13 @@ describe('buildManualSteps', () => {
       hasWal: true,
       targetTime: '2026-06-12 14:30:00+00:00',
     });
-    const recovery = withTarget.find(
-      (step) => step.title === 'Decompress WAL and wire up recovery',
-    );
+    const recovery = withTarget.find((step) => step.titleKey === wireUpRecoveryTitleKey);
 
     expect(recovery?.code).toContain("recovery_target_time = '2026-06-12 14:30:00+00:00'");
     expect(recovery?.code).toContain("recovery_target_action = 'promote'");
 
     const withoutTarget = buildManualSteps({ ...base, environment: 'host', hasWal: true });
-    const latestRecovery = withoutTarget.find(
-      (step) => step.title === 'Decompress WAL and wire up recovery',
-    );
+    const latestRecovery = withoutTarget.find((step) => step.titleKey === wireUpRecoveryTitleKey);
 
     expect(latestRecovery?.code).not.toContain('recovery_target_time');
   });
@@ -186,8 +183,8 @@ describe('buildManualSteps', () => {
   it('reports missing configuration files rather than writing them, for both environments', () => {
     const hostSteps = buildManualSteps({ ...base, environment: 'host', hasWal: false });
     const dockerSteps = buildManualSteps({ ...base, environment: 'docker', hasWal: false });
-    const hostCheckStep = hostSteps.find((step) => step.title === configCheckTitle);
-    const dockerCheckStep = dockerSteps.find((step) => step.title === configCheckTitle);
+    const hostCheckStep = hostSteps.find((step) => step.titleKey === configCheckTitleKey);
+    const dockerCheckStep = dockerSteps.find((step) => step.titleKey === configCheckTitleKey);
 
     for (const checkStep of [hostCheckStep, dockerCheckStep]) {
       expect(checkStep?.code).toContain('echo "MISSING: $f"');
@@ -211,8 +208,8 @@ describe('buildManualSteps', () => {
       environment: 'host',
       hasWal: false,
     });
-    const pg17CheckStep = pg17Steps.find((step) => step.title === configCheckTitle);
-    const pg18CheckStep = pg18Steps.find((step) => step.title === configCheckTitle);
+    const pg17CheckStep = pg17Steps.find((step) => step.titleKey === configCheckTitleKey);
+    const pg18CheckStep = pg18Steps.find((step) => step.titleKey === configCheckTitleKey);
 
     expect(pg17CheckStep?.code).toContain('"./databasus-restore/data/$f"');
     expect(pg17CheckStep?.code).toContain('/etc/postgresql/17/main');
@@ -221,21 +218,21 @@ describe('buildManualSteps', () => {
   });
 
   it('checks the configuration after reconstruction and before recovery is wired up', () => {
-    const titles = buildManualSteps({ ...base, environment: 'host', hasWal: true }).map(
-      (step) => step.title,
+    const titleKeys = buildManualSteps({ ...base, environment: 'host', hasWal: true }).map(
+      (step) => step.titleKey,
     );
 
-    expect(titles.indexOf(configCheckTitle)).toBeGreaterThan(
-      titles.indexOf('Reconstruct the data directory'),
+    expect(titleKeys.indexOf(configCheckTitleKey)).toBeGreaterThan(
+      titleKeys.indexOf(reconstructTitleKey),
     );
-    expect(titles.indexOf(configCheckTitle)).toBeLessThan(
-      titles.indexOf('Decompress WAL and wire up recovery'),
+    expect(titleKeys.indexOf(configCheckTitleKey)).toBeLessThan(
+      titleKeys.indexOf(wireUpRecoveryTitleKey),
     );
   });
 
   it('decompresses on the host then runs pg_combinebackup through docker in the docker environment', () => {
     const steps = buildManualSteps({ ...base, environment: 'docker', hasWal: false });
-    const combine = steps.find((step) => step.title === 'Reconstruct the data directory');
+    const combine = steps.find((step) => step.titleKey === reconstructTitleKey);
 
     expect(combine?.code).toContain(
       'docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work postgres:18',
