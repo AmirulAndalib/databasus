@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Audits a plan or a working-tree diff against the repo's AGENTS.md standards. Invoke after producing an implementation plan and again after finishing an implementation.
+description: Audits a plan or a working-tree diff against the repo's AGENTS.md standards. The review hooks run the same audit automatically; invoke this only when hooks are disabled or when the user asks for a manual review.
 tools: Read, Grep, Glob, Bash
 ---
 
