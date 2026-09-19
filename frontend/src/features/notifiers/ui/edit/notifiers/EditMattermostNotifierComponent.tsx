@@ -1,12 +1,15 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Checkbox, Input, Select, Tooltip } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
+  MATTERMOST_DELIVERY_MODE_LABEL_KEYS,
   MattermostDeliveryMode,
   type MattermostNotifier,
   type Notifier,
 } from '../../../../../entity/notifiers';
+import { getWebsitePageUrl, useLocale } from '../../../../../shared/i18n';
 
 interface Props {
   notifier: Notifier;
@@ -15,6 +18,8 @@ interface Props {
 }
 
 export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsaved }: Props) {
+  const { t } = useTranslation();
+  const { locale } = useLocale();
   const mattermostNotifier = notifier.mattermostNotifier;
 
   const [isShowOptional, setIsShowOptional] = useState(
@@ -44,22 +49,24 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
       <div className="mb-1 max-w-[250px] sm:ml-[150px]" style={{ lineHeight: 1 }}>
         <a
           className="text-xs !text-blue-600"
-          href="https://databasus.com/notifiers/mattermost"
+          href={getWebsitePageUrl('notifiersMattermost', locale)}
           target="_blank"
           rel="noreferrer"
         >
-          How to connect Mattermost?
+          {t('notifiers.mattermost.howToConnect')}
         </a>
       </div>
 
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Connect via</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+          {t('notifiers.mattermost.connectVia')}
+        </div>
         <Select
           value={mattermostNotifier.deliveryMode}
-          options={[
-            { label: 'Incoming webhook', value: MattermostDeliveryMode.WEBHOOK },
-            { label: 'Bot account', value: MattermostDeliveryMode.BOT },
-          ]}
+          options={Object.values(MattermostDeliveryMode).map((deliveryMode) => ({
+            label: t(MATTERMOST_DELIVERY_MODE_LABEL_KEYS[deliveryMode]),
+            value: deliveryMode,
+          }))}
           onChange={(deliveryMode) => updateMattermostNotifier({ deliveryMode })}
           size="small"
           className="w-full max-w-[250px]"
@@ -68,7 +75,9 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
 
       {isWebhookMode ? (
         <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-          <div className="mb-1 min-w-[150px] sm:mb-0">Incoming webhook URL</div>
+          <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+            {t('notifiers.mattermost.incomingWebhookUrl')}
+          </div>
           <Input
             value={mattermostNotifier.webhookUrl}
             onChange={(e) => updateMattermostNotifier({ webhookUrl: e.target.value.trim() })}
@@ -80,7 +89,9 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
       ) : (
         <>
           <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-            <div className="mb-1 min-w-[150px] sm:mb-0">Server URL</div>
+            <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+              {t('notifiers.mattermost.serverUrl')}
+            </div>
             <Input
               value={mattermostNotifier.serverUrl}
               onChange={(e) => updateMattermostNotifier({ serverUrl: e.target.value.trim() })}
@@ -91,18 +102,23 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
           </div>
 
           <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-            <div className="mb-1 min-w-[150px] sm:mb-0">Bot token</div>
+            <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+              {t('notifiers.fields.botToken')}
+            </div>
             <Input
               value={mattermostNotifier.botToken}
               onChange={(e) => updateMattermostNotifier({ botToken: e.target.value.trim() })}
               size="small"
               className="w-full max-w-[250px]"
+              // eslint-disable-next-line i18next/no-literal-string -- example token, not copy
               placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxx"
             />
           </div>
 
           <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-            <div className="mb-1 min-w-[150px] sm:mb-0">Channel ID</div>
+            <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+              {t('notifiers.fields.channelId')}
+            </div>
             <div className="flex items-center">
               <Input
                 value={mattermostNotifier.targetChannelId}
@@ -111,12 +127,13 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
                 }
                 size="small"
                 className="w-full max-w-[250px]"
+                // eslint-disable-next-line i18next/no-literal-string -- example channel ID
                 placeholder="8f4ycxjmztbwmcy1o3xasjrxha"
               />
 
               <Tooltip
                 className="cursor-pointer"
-                title="26-character channel ID, not the channel name. Open the channel, click its name and choose View Info."
+                title={t('notifiers.mattermost.channelIdTooltip')}
               >
                 <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
               </Tooltip>
@@ -131,7 +148,9 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
           onClick={() => setIsShowOptional(!isShowOptional)}
           className="text-xs text-blue-600 hover:underline"
         >
-          {isShowOptional ? 'Hide optional settings' : 'Show optional settings'}
+          {isShowOptional
+            ? t('notifiers.mattermost.hideOptionalSettings')
+            : t('notifiers.mattermost.showOptionalSettings')}
         </button>
       </div>
 
@@ -139,7 +158,9 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
         <>
           {isWebhookMode && (
             <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-              <div className="mb-1 min-w-[150px] sm:mb-0">Channel override</div>
+              <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+                {t('notifiers.mattermost.channelOverride')}
+              </div>
               <div className="flex items-center">
                 <Input
                   value={mattermostNotifier.targetChannelName}
@@ -148,12 +169,13 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
                   }
                   size="small"
                   className="w-full max-w-[250px]"
+                  // eslint-disable-next-line i18next/no-literal-string -- example channel name
                   placeholder="town-square"
                 />
 
                 <Tooltip
                   className="cursor-pointer"
-                  title="Post to this channel instead of the one the webhook was created for. Mattermost ignores it when the webhook is locked to a channel."
+                  title={t('notifiers.mattermost.channelOverrideTooltip')}
                 >
                   <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
                 </Tooltip>
@@ -162,7 +184,9 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
           )}
 
           <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-            <div className="mb-1 min-w-[150px] sm:mb-0">Post as username</div>
+            <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+              {t('notifiers.mattermost.postAsUsername')}
+            </div>
             <div className="flex items-center">
               <Input
                 value={mattermostNotifier.overrideUsername}
@@ -171,12 +195,13 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
                 }
                 size="small"
                 className="w-full max-w-[250px]"
+                // eslint-disable-next-line i18next/no-literal-string -- product name as an example username
                 placeholder="Databasus"
               />
 
               <Tooltip
                 className="cursor-pointer"
-                title="Requires Enable integrations to override usernames in the Mattermost system console, otherwise it is ignored."
+                title={t('notifiers.mattermost.postAsUsernameTooltip')}
               >
                 <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
               </Tooltip>
@@ -184,7 +209,9 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
           </div>
 
           <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-            <div className="mb-1 min-w-[150px] sm:mb-0">Post as icon URL</div>
+            <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+              {t('notifiers.mattermost.postAsIconUrl')}
+            </div>
             <div className="flex items-center">
               <Input
                 value={mattermostNotifier.overrideIconUrl}
@@ -198,7 +225,7 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
 
               <Tooltip
                 className="cursor-pointer"
-                title="Requires Enable integrations to override profile picture icons in the Mattermost system console, otherwise it is ignored."
+                title={t('notifiers.mattermost.postAsIconUrlTooltip')}
               >
                 <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
               </Tooltip>
@@ -206,7 +233,9 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
           </div>
 
           <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-            <div className="mb-1 min-w-[150px] sm:mb-0">Skip TLS verify</div>
+            <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+              {t('notifiers.fields.skipTlsVerify')}
+            </div>
             <div className="flex items-center">
               <Checkbox
                 checked={mattermostNotifier.isInsecureSkipVerify}
@@ -214,13 +243,10 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
                   updateMattermostNotifier({ isInsecureSkipVerify: e.target.checked })
                 }
               >
-                Skip TLS
+                {t('notifiers.fields.skipTls')}
               </Checkbox>
 
-              <Tooltip
-                className="cursor-pointer"
-                title="Skip TLS certificate verification. Enable this if your Mattermost server uses a self-signed certificate. Warning: this reduces security."
-              >
+              <Tooltip className="cursor-pointer" title={t('notifiers.mattermost.skipTlsTooltip')}>
                 <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
               </Tooltip>
             </div>
@@ -231,25 +257,25 @@ export function EditMattermostNotifierComponent({ notifier, setNotifier, setUnsa
       <div className="mt-1 max-w-[250px] text-xs text-gray-500 sm:ml-[150px] dark:text-gray-400">
         {isWebhookMode ? (
           <>
-            <strong>How to get an incoming webhook URL:</strong>
+            <strong>{t('notifiers.mattermost.webhookHowTo.title')}</strong>
             <br />
             <br />
-            1. Main menu - Integrations - Incoming Webhooks
+            {t('notifiers.mattermost.webhookHowTo.openIncomingWebhooks')}
             <br />
-            2. Add Incoming Webhook, pick the channel
+            {t('notifiers.mattermost.webhookHowTo.addWebhook')}
             <br />
-            3. Copy the generated URL
+            {t('notifiers.mattermost.webhookHowTo.copyUrl')}
           </>
         ) : (
           <>
-            <strong>How to get a bot token:</strong>
+            <strong>{t('notifiers.mattermost.botHowTo.title')}</strong>
             <br />
             <br />
-            1. Integrations - Bot Accounts - Add Bot Account
+            {t('notifiers.mattermost.botHowTo.addBotAccount')}
             <br />
-            2. Copy the token shown once after creation
+            {t('notifiers.mattermost.botHowTo.copyToken')}
             <br />
-            3. Add the bot to the team and to the channel
+            {t('notifiers.mattermost.botHowTo.addBotToChannel')}
           </>
         )}
       </div>

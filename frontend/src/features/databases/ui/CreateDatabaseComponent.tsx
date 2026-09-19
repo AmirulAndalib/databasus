@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   type LogicalBackupConfig,
@@ -18,6 +19,7 @@ import {
   initializeDatabaseTypeData,
   isPostgresType,
 } from '../../../entity/databases';
+import { translateApiError } from '../../../shared/i18n';
 import { EditLogicalBackupConfigComponent } from '../../backups/logical';
 import { EditPhysicalBackupConfigComponent } from '../../backups/physical';
 import { ChoosePostgresBackupTypeComponent } from './edit/ChoosePostgresBackupTypeComponent';
@@ -31,6 +33,7 @@ interface Props {
   onCreated: (databaseId: string) => void;
   onClose: () => void;
   onConnectionErrorChange?: (hasConnectionError: boolean) => void;
+  onWideStepChange?: (isWideStep: boolean) => void;
 }
 
 const createInitialDatabase = (workspaceId: string): Database =>
@@ -53,7 +56,9 @@ export const CreateDatabaseComponent = ({
   onCreated,
   onClose,
   onConnectionErrorChange,
+  onWideStepChange,
 }: Props) => {
+  const { t } = useTranslation();
   const [isCreating, setIsCreating] = useState(false);
   const [backupConfig, setBackupConfig] = useState<LogicalBackupConfig | undefined>();
   const [physicalBackupConfig, setPhysicalBackupConfig] = useState<
@@ -72,6 +77,12 @@ export const CreateDatabaseComponent = ({
 
   const isPhysical = database.type === DatabaseType.POSTGRES_PHYSICAL;
   const isPostgres = isPostgresType(database.type);
+
+  // The read-only user step explains its choice in long sentences and puts three buttons in one
+  // row, which the narrow wizard width cannot hold.
+  useEffect(() => {
+    onWideStepChange?.(step === 'create-readonly-user');
+  }, [step]);
 
   const createDatabase = async (database: Database) => {
     if (isPhysical ? !physicalBackupConfig : !backupConfig) return;
@@ -101,7 +112,7 @@ export const CreateDatabaseComponent = ({
       onCreated(createdDatabase.id);
       onClose();
     } catch (error) {
-      alert(error);
+      alert(translateApiError(error, t));
     }
 
     setIsCreating(false);
@@ -115,7 +126,7 @@ export const CreateDatabaseComponent = ({
           isShowName
           isShowEngine
           isSaveToApi={false}
-          saveButtonText="Continue"
+          saveButtonText={t('common.actions.continue')}
           onCancel={() => onClose()}
           onSaved={(db) => {
             const initializedDb = initializeDatabaseTypeData(db);
@@ -131,7 +142,7 @@ export const CreateDatabaseComponent = ({
     return (
       <ChoosePostgresBackupTypeComponent
         database={database}
-        saveButtonText="Continue"
+        saveButtonText={t('common.actions.continue')}
         onBack={() => setStep('base-info')}
         onSelected={(type) => {
           const initializedDb = initializeDatabaseTypeData({ ...database, type });
@@ -150,7 +161,7 @@ export const CreateDatabaseComponent = ({
         onCancel={() => onClose()}
         isShowBackButton
         onBack={() => setStep(isPostgres ? 'postgres-backup-type' : 'base-info')}
-        saveButtonText="Continue"
+        saveButtonText={t('common.actions.continue')}
         isSaveToApi={false}
         onConnectionErrorChange={onConnectionErrorChange}
         onSaved={(database) => {
@@ -186,7 +197,7 @@ export const CreateDatabaseComponent = ({
           onCancel={() => onClose()}
           isShowBackButton
           onBack={() => setStep('db-settings')}
-          saveButtonText="Continue"
+          saveButtonText={t('common.actions.continue')}
           isSaveToApi={false}
           onSaved={(physicalBackupConfig) => {
             setPhysicalBackupConfig(physicalBackupConfig);
@@ -203,7 +214,7 @@ export const CreateDatabaseComponent = ({
         onCancel={() => onClose()}
         isShowBackButton
         onBack={() => setStep('db-settings')}
-        saveButtonText="Continue"
+        saveButtonText={t('common.actions.continue')}
         isSaveToApi={false}
         onSaved={(backupConfig) => {
           setBackupConfig(backupConfig);
@@ -215,7 +226,7 @@ export const CreateDatabaseComponent = ({
 
   if (step === 'notifiers') {
     if (isCreating) {
-      return <div>Creating database...</div>;
+      return <div>{t('databases.create.creating')}</div>;
     }
 
     return (
@@ -227,7 +238,7 @@ export const CreateDatabaseComponent = ({
         isShowBackButton
         onBack={() => setStep('backup-config')}
         isShowSaveOnlyForUnsaved={false}
-        saveButtonText="Complete"
+        saveButtonText={t('databases.create.complete')}
         isSaveToApi={false}
         onSaved={(database) => {
           if (isCreating) return;

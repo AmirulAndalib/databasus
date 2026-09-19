@@ -1,12 +1,15 @@
 import { Button, Input, Select } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
+  STORAGE_TYPE_LABEL_KEYS,
   type Storage,
   StorageType,
   getStorageLogoFromType,
   storageApi,
 } from '../../../../entity/storages';
+import { translateApiError } from '../../../../shared/i18n';
 import { ToastHelper } from '../../../../shared/toast';
 import { EditAzureBlobStorageComponent } from './storages/EditAzureBlobStorageComponent';
 import { EditFTPStorageComponent } from './storages/EditFTPStorageComponent';
@@ -37,13 +40,14 @@ export function EditStorageComponent({
   editingStorage,
   onChanged,
 }: Props) {
+  const { t } = useTranslation();
   const [storage, setStorage] = useState<Storage | undefined>();
   const [isUnsaved, setIsUnsaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [isTestConnectionSuccess, setIsTestConnectionSuccess] = useState(false);
-  const [connectionError, setConnectionError] = useState<string | undefined>();
+  const [connectionError, setConnectionError] = useState<unknown>();
 
   const save = async () => {
     if (!storage) return;
@@ -55,7 +59,7 @@ export function EditStorageComponent({
       onChanged(savedStorage);
       setIsUnsaved(false);
     } catch (e) {
-      alert((e as Error).message);
+      alert(translateApiError(e, t));
     }
 
     setIsSaving(false);
@@ -71,13 +75,12 @@ export function EditStorageComponent({
       await storageApi.testStorageConnectionDirect(storage);
       setIsTestConnectionSuccess(true);
       ToastHelper.showToast({
-        title: 'Connection test successful!',
-        description: 'Storage connection tested successfully',
+        title: t('storages.connectionTestSucceeded.title'),
+        description: t('storages.connectionTestSucceeded.description'),
       });
     } catch (e) {
-      const errorMessage = (e as Error).message;
-      setConnectionError(errorMessage);
-      alert(errorMessage);
+      setConnectionError(e);
+      alert(translateApiError(e, t));
     }
 
     setIsTestingConnection(false);
@@ -312,22 +315,16 @@ export function EditStorageComponent({
 
   if (!storage) return <div />;
 
-  const storageTypeOptions = [
-    { label: 'Local storage', value: StorageType.LOCAL },
-    { label: 'S3', value: StorageType.S3 },
-    { label: 'Google Drive', value: StorageType.GOOGLE_DRIVE },
-    { label: 'NAS', value: StorageType.NAS },
-    { label: 'Azure Blob Storage', value: StorageType.AZURE_BLOB },
-    { label: 'FTP', value: StorageType.FTP },
-    { label: 'SFTP', value: StorageType.SFTP },
-    { label: 'Rclone', value: StorageType.RCLONE },
-  ];
+  const storageTypeOptions = Object.values(StorageType).map((storageType) => ({
+    label: t(STORAGE_TYPE_LABEL_KEYS[storageType]),
+    value: storageType,
+  }));
 
   return (
     <div>
       {isShowName && (
         <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-          <div className="mb-1 min-w-[110px] sm:mb-0">Name</div>
+          <div className="mb-1 min-w-[110px] sm:mb-0 sm:pr-2">{t('common.fields.name')}</div>
 
           <Input
             value={storage?.name || ''}
@@ -337,13 +334,13 @@ export function EditStorageComponent({
             }}
             size="small"
             className="w-full max-w-[250px]"
-            placeholder="My Storage"
+            placeholder={t('storages.edit.namePlaceholder')}
           />
         </div>
       )}
 
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[110px] sm:mb-0">Type</div>
+        <div className="mb-1 min-w-[110px] sm:mb-0 sm:pr-2">{t('common.fields.type')}</div>
 
         <div className="flex items-center">
           <Select
@@ -455,7 +452,7 @@ export function EditStorageComponent({
             type="primary"
             onClick={testConnection}
           >
-            Test connection
+            {t('storages.actions.testConnection')}
           </Button>
         ) : (
           <div />
@@ -469,7 +466,7 @@ export function EditStorageComponent({
             type="primary"
             onClick={save}
           >
-            Save
+            {t('common.actions.save')}
           </Button>
         ) : (
           <div />
@@ -484,7 +481,7 @@ export function EditStorageComponent({
             ghost
             onClick={onClose}
           >
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
         ) : (
           <div />

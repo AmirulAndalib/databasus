@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { ThemeContext } from './themeContext';
 import type { ResolvedTheme, ThemeMode } from './themeContext';
 
+// eslint-disable-next-line i18next/no-literal-string -- localStorage key
 const THEME_STORAGE_KEY = 'databasus-theme';
 
 function getSystemTheme(): ResolvedTheme {

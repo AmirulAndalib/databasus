@@ -25,6 +25,7 @@ export function getApplicationServer() {
   }
 }
 
+// eslint-disable-next-line i18next/no-literal-string -- version identifier of a development build
 export const APP_VERSION = (import.meta.env.VITE_APP_VERSION as string) || 'dev';
 
 export const GITHUB_CLIENT_ID =
@@ -42,8 +43,9 @@ export const CLOUDFLARE_TURNSTILE_SITE_KEY =
   import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY ||
   '';
 
+// eslint-disable-next-line i18next/no-literal-string -- CPU architecture identifiers
 const archMap: Record<string, string> = { amd64: 'x64', arm64: 'arm64' };
-const rawArch = window.__RUNTIME_CONFIG__?.CONTAINER_ARCH || 'unknown';
+const rawArch = window.__RUNTIME_CONFIG__?.CONTAINER_ARCH ?? '';
 export const CONTAINER_ARCH = archMap[rawArch] || rawArch;
 
 export function getOAuthRedirectUri(): string {

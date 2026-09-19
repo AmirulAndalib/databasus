@@ -1,6 +1,7 @@
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { App, Button, Input } from 'antd';
 import { type JSX, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { useCloudflareTurnstile } from '../../../shared/hooks/useCloudflareTurnstile';
 
@@ -10,7 +11,7 @@ import {
   GOOGLE_CLIENT_ID,
 } from '../../../constants';
 import { userApi } from '../../../entity/users';
-import { StringUtils } from '../../../shared/lib';
+import { translateApiError } from '../../../shared/i18n';
 import { FormValidator } from '../../../shared/lib/FormValidator';
 import { CloudflareTurnstileWidget } from '../../../shared/ui/CloudflareTurnstileWidget';
 import { GithubOAuthComponent } from './oauth/GithubOAuthComponent';
@@ -21,6 +22,7 @@ interface SignUpComponentProps {
 }
 
 export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX.Element {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,14 +38,14 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
   const [passwordError, setPasswordError] = useState(false);
   const [confirmPasswordError, setConfirmPasswordError] = useState(false);
 
-  const [signUpError, setSignUpError] = useState('');
+  const [signUpError, setSignUpError] = useState<unknown>();
 
   const { token, containerRef, resetCloudflareTurnstile } = useCloudflareTurnstile();
 
   const validateFieldsForSignUp = (): boolean => {
     if (!name || name.trim() === '') {
       setNameError(true);
-      message.error('Name is required');
+      message.error(t('users.validation.nameRequired'));
       return false;
     }
     setNameError(false);
@@ -65,7 +67,7 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
 
     if (password.length < 8) {
       setPasswordError(true);
-      message.error('Password must be at least 8 characters long');
+      message.error(t('users.validation.passwordTooShort', { minLength: 8 }));
       return false;
     }
     setPasswordError(false);
@@ -84,7 +86,7 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
   };
 
   const onSignUp = async () => {
-    setSignUpError('');
+    setSignUpError(undefined);
 
     if (validateFieldsForSignUp()) {
       setLoading(true);
@@ -97,7 +99,7 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
           cloudflareTurnstileToken: token,
         });
       } catch (e) {
-        setSignUpError(StringUtils.capitalizeFirstLetter((e as Error).message));
+        setSignUpError(e);
         resetCloudflareTurnstile();
       }
     }
@@ -107,7 +109,7 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
 
   return (
     <div className="w-full max-w-[300px]">
-      <div className="mb-5 text-center text-2xl font-bold">Sign up</div>
+      <div className="mb-5 text-center text-2xl font-bold">{t('users.signUp.title')}</div>
 
       <div className="mt-4">
         <div className="space-y-2">
@@ -123,15 +125,15 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
           </div>
           <div className="relative flex justify-center text-sm">
             <span className="bg-white px-2 text-gray-500 dark:bg-gray-900 dark:text-gray-400">
-              or continue
+              {t('users.oauth.divider')}
             </span>
           </div>
         </div>
       )}
 
-      <div className="my-1 text-xs font-semibold">Your name</div>
+      <div className="my-1 text-xs font-semibold">{t('users.fields.yourName')}</div>
       <Input
-        placeholder="John Doe"
+        placeholder={t('users.signUp.namePlaceholder')}
         value={name}
         onChange={(e) => {
           setNameError(false);
@@ -140,7 +142,7 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
         status={nameError ? 'error' : undefined}
       />
 
-      <div className="my-1 text-xs font-semibold">Your email</div>
+      <div className="my-1 text-xs font-semibold">{t('users.fields.yourEmail')}</div>
       <Input
         placeholder="your@email.com"
         value={email}
@@ -152,7 +154,7 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
         type="email"
       />
 
-      <div className="my-1 text-xs font-semibold">Password</div>
+      <div className="my-1 text-xs font-semibold">{t('common.fields.password')}</div>
       <Input.Password
         placeholder="********"
         value={password}
@@ -165,7 +167,7 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
         visibilityToggle={{ visible: passwordVisible, onVisibleChange: setPasswordVisible }}
       />
 
-      <div className="my-1 text-xs font-semibold">Confirm password</div>
+      <div className="my-1 text-xs font-semibold">{t('users.fields.confirmPassword')}</div>
       <Input.Password
         placeholder="********"
         value={confirmPassword}
@@ -194,25 +196,29 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
         }}
         type="primary"
       >
-        Sign up
+        {t('users.signUp.submit')}
       </Button>
 
-      {signUpError && (
+      {signUpError !== undefined && (
         <div className="mt-3 flex justify-center text-center text-sm text-red-600">
-          {signUpError}
+          {translateApiError(signUpError, t)}
         </div>
       )}
 
       {onSwitchToSignIn && (
         <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          Already have an account?{' '}
-          <button
-            type="button"
-            onClick={onSwitchToSignIn}
-            className="cursor-pointer font-medium text-blue-600 hover:text-blue-700 dark:!text-blue-500"
-          >
-            Sign in
-          </button>
+          <Trans
+            i18nKey="users.signUp.hasAccount"
+            components={{
+              signInLink: (
+                <button
+                  type="button"
+                  onClick={onSwitchToSignIn}
+                  className="cursor-pointer font-medium text-blue-600 hover:text-blue-700 dark:!text-blue-500"
+                />
+              ),
+            }}
+          />
         </div>
       )}
 

@@ -3,13 +3,15 @@ import { App, Button, Drawer, Input, Select, Spin, Switch, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { USER_ROLE_LABEL_KEYS, UserRole } from '../../../entity/users';
 import { userManagementApi } from '../../../entity/users/api/userManagementApi';
 import type { ChangeUserRoleRequest } from '../../../entity/users/model/ChangeUserRoleRequest';
 import type { ListUsersRequest } from '../../../entity/users/model/ListUsersRequest';
 import type { UserProfile } from '../../../entity/users/model/UserProfile';
-import { UserRole } from '../../../entity/users/model/UserRole';
 import { useIsMobile } from '../../../shared/hooks';
+import { translateApiError, useLocale } from '../../../shared/i18n';
 import { getUserTimeFormat } from '../../../shared/time';
 import { UserAuditLogsSidebarComponent } from './UserAuditLogsSidebarComponent';
 
@@ -29,6 +31,8 @@ const getRoleColor = (role: UserRole): string => {
 };
 
 export function UsersComponent({ contentHeight }: Props) {
+  const { t } = useTranslation();
+  const { formatRelativeTime } = useLocale();
   const { message } = App.useApp();
   const isMobile = useIsMobile();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -123,8 +127,7 @@ export function UsersComponent({ contentHeight }: Props) {
       setTotal(response.total);
       setHasMore(response.users.length === pageSize);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load users';
-      message.error(errorMessage);
+      message.error(translateApiError(error, t));
     } finally {
       loadingRef.current = false;
       setIsLoading(false);
@@ -142,14 +145,13 @@ export function UsersComponent({ contentHeight }: Props) {
     try {
       if (isActive) {
         await userManagementApi.deactivateUser(userId);
-        message.success('User deactivated successfully');
+        message.success(t('users.list.deactivated'));
       } else {
         await userManagementApi.activateUser(userId);
-        message.success('User activated successfully');
+        message.success(t('users.list.activated'));
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Operation failed';
-      message.error(errorMessage);
+      message.error(translateApiError(error, t));
 
       setUsers((prev) =>
         prev.map((user) => (user.id === userId ? { ...user, isActive: isActive } : user)),
@@ -176,10 +178,9 @@ export function UsersComponent({ contentHeight }: Props) {
     try {
       const request: ChangeUserRoleRequest = { role: newRole };
       await userManagementApi.changeUserRole(userId, request);
-      message.success('User role changed successfully');
+      message.success(t('users.list.roleChanged'));
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to change user role';
-      message.error(errorMessage);
+      message.error(translateApiError(error, t));
 
       if (originalRole) {
         setUsers((prev) =>
@@ -205,9 +206,14 @@ export function UsersComponent({ contentHeight }: Props) {
     setSelectedUser(null);
   };
 
+  const roleOptions = Object.values(UserRole).map((role) => ({
+    label: <span style={{ color: getRoleColor(role) }}>{t(USER_ROLE_LABEL_KEYS[role])}</span>,
+    value: role,
+  }));
+
   const columns: ColumnsType<UserProfile> = [
     {
-      title: 'User',
+      title: t('users.list.columns.user'),
       key: 'user',
       width: 350,
       render: (_, record: UserProfile) => (
@@ -217,7 +223,7 @@ export function UsersComponent({ contentHeight }: Props) {
       ),
     },
     {
-      title: 'System role',
+      title: t('users.list.columns.systemRole'),
       dataIndex: 'role',
       key: 'role',
       width: 200,
@@ -228,25 +234,16 @@ export function UsersComponent({ contentHeight }: Props) {
           loading={changingRoleUsers.has(record.id)}
           disabled={changingRoleUsers.has(record.id)}
           size="small"
-          className="w-24"
+          className="w-36"
           style={{
             color: getRoleColor(role),
           }}
-          options={[
-            {
-              label: <span style={{ color: getRoleColor(UserRole.ADMIN) }}>Admin</span>,
-              value: UserRole.ADMIN,
-            },
-            {
-              label: <span style={{ color: getRoleColor(UserRole.MEMBER) }}>Member</span>,
-              value: UserRole.MEMBER,
-            },
-          ]}
+          options={roleOptions}
         />
       ),
     },
     {
-      title: 'Is active?',
+      title: t('users.list.columns.isActive'),
       dataIndex: 'isActive',
       key: 'isActive',
       width: 200,
@@ -264,7 +261,7 @@ export function UsersComponent({ contentHeight }: Props) {
       ),
     },
     {
-      title: 'Created',
+      title: t('users.list.columns.created'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 300,
@@ -274,7 +271,9 @@ export function UsersComponent({ contentHeight }: Props) {
         return (
           <div className="text-sm text-gray-600 dark:text-gray-400">
             <div>{date.format(timeFormat.format)}</div>
-            <div className="text-xs text-gray-400 dark:text-gray-500">{date.fromNow()}</div>
+            <div className="text-xs text-gray-400 dark:text-gray-500">
+              {formatRelativeTime(date)}
+            </div>
           </div>
         );
       },
@@ -285,7 +284,7 @@ export function UsersComponent({ contentHeight }: Props) {
       render: (_, record: UserProfile) => (
         <div>
           <Button type="primary" ghost size="small" onClick={() => handleRowClick(record)}>
-            View audit logs
+            {t('users.list.viewAuditLogs')}
           </Button>
         </div>
       ),
@@ -308,37 +307,32 @@ export function UsersComponent({ contentHeight }: Props) {
           </div>
           <div className="text-right text-xs text-gray-500 dark:text-gray-400">
             <div>{date.format(timeFormat.format)}</div>
-            <div className="text-gray-400">{date.fromNow()}</div>
+            <div className="text-gray-400">{formatRelativeTime(date)}</div>
           </div>
         </div>
 
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Role:</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {t('users.list.roleLabel')}
+            </span>
             <Select
               value={user.role}
               onChange={(value) => handleRoleChange(user.id, value)}
               loading={changingRoleUsers.has(user.id)}
               disabled={changingRoleUsers.has(user.id)}
               size="small"
-              className="w-24"
+              className="w-36"
               style={{
                 color: getRoleColor(user.role),
               }}
-              options={[
-                {
-                  label: <span style={{ color: getRoleColor(UserRole.ADMIN) }}>Admin</span>,
-                  value: UserRole.ADMIN,
-                },
-                {
-                  label: <span style={{ color: getRoleColor(UserRole.MEMBER) }}>Member</span>,
-                  value: UserRole.MEMBER,
-                },
-              ]}
+              options={roleOptions}
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Active:</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {t('users.list.activeLabel')}
+            </span>
             <Switch
               checked={user.isActive}
               onChange={() => handleActivationToggle(user.id, user.isActive)}
@@ -359,7 +353,7 @@ export function UsersComponent({ contentHeight }: Props) {
           onClick={() => handleRowClick(user)}
           className="w-full"
         >
-          View audit logs
+          {t('users.list.viewAuditLogs')}
         </Button>
       </div>
     );
@@ -374,15 +368,17 @@ export function UsersComponent({ contentHeight }: Props) {
           style={{ height: contentHeight }}
         >
           <div className="mb-4 flex items-center justify-between">
-            <h1 className="text-2xl font-bold dark:text-white">Databasus users</h1>
+            <h1 className="text-2xl font-bold dark:text-white">{t('users.list.title')}</h1>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {isLoading ? 'Loading...' : `${users.length} of ${total} users`}
+              {isLoading
+                ? t('common.states.loading')
+                : t('users.list.loadedOfTotal', { loaded: users.length, total })}
             </div>
           </div>
 
           <div className="mb-4">
             <Input
-              placeholder="Search by email or name..."
+              placeholder={t('users.list.searchPlaceholder')}
               allowClear
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -396,7 +392,7 @@ export function UsersComponent({ contentHeight }: Props) {
             </div>
           ) : users.length === 0 ? (
             <div className="flex h-32 items-center justify-center text-gray-500 dark:text-gray-400">
-              No users found.
+              {t('users.list.empty')}
             </div>
           ) : (
             <>
@@ -421,7 +417,7 @@ export function UsersComponent({ contentHeight }: Props) {
 
               {!hasMore && users.length > 0 && (
                 <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                  All users loaded ({total} total)
+                  {t('users.list.allLoaded', { count: total })}
                 </div>
               )}
             </>
@@ -434,7 +430,7 @@ export function UsersComponent({ contentHeight }: Props) {
         title={
           <div>
             <div className="text-lg font-semibold text-gray-900 dark:text-white">
-              User Audit Logs
+              {t('users.auditLogs.title')}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">{selectedUser?.email}</div>
           </div>

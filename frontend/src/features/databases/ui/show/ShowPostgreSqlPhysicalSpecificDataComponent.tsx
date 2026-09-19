@@ -1,6 +1,10 @@
+import { useTranslation } from 'react-i18next';
+
 import {
   type Database,
-  PhysicalDatabaseBackupType,
+  PHYSICAL_DATABASE_BACKUP_TYPE_LABEL_KEYS,
+  POSTGRESQL_SHORT_NAME,
+  POSTGRES_SSL_MODE_LABEL_KEYS,
   PostgresSslMode,
   PostgresqlVersion,
 } from '../../../../entity/databases';
@@ -20,24 +24,15 @@ const postgresqlVersionLabels: Record<string, string> = {
   [PostgresqlVersion.PostgresqlVersion18]: '18',
 };
 
-const backupTypeLabels: Record<string, string> = {
-  [PhysicalDatabaseBackupType.FULL]: 'Full backups only',
-  [PhysicalDatabaseBackupType.FULL_INCREMENTAL]: 'Full + incremental',
-  [PhysicalDatabaseBackupType.FULL_INCREMENTAL_WAL_STREAM]: 'Full + incremental + WAL streaming',
-};
-
-const sslModeLabels: Record<string, string> = {
-  [PostgresSslMode.Disable]: 'Disable',
-  [PostgresSslMode.Require]: 'Require',
-  [PostgresSslMode.VerifyCa]: 'Verify CA',
-  [PostgresSslMode.VerifyFull]: 'Verify full',
-};
-
 export const ShowPostgreSqlPhysicalSpecificDataComponent = ({ database }: Props) => {
+  const { t } = useTranslation();
+
   return (
     <div>
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">PG version</div>
+        <div className="min-w-[150px] pr-2">
+          {t('databases.fields.version', { engine: POSTGRESQL_SHORT_NAME })}
+        </div>
         <div>
           {database.postgresqlPhysical?.version
             ? postgresqlVersionLabels[database.postgresqlPhysical.version]
@@ -46,43 +41,49 @@ export const ShowPostgreSqlPhysicalSpecificDataComponent = ({ database }: Props)
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Backup type</div>
+        <div className="min-w-[150px] pr-2">{t('databases.fields.backupType')}</div>
         <div>
           {database.postgresqlPhysical?.backupType
-            ? backupTypeLabels[database.postgresqlPhysical.backupType]
+            ? t(PHYSICAL_DATABASE_BACKUP_TYPE_LABEL_KEYS[database.postgresqlPhysical.backupType])
             : ''}
         </div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px] break-all">Host</div>
+        <div className="min-w-[150px] pr-2 break-all">{t('common.fields.host')}</div>
         <div>{database.postgresqlPhysical?.host || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Port</div>
+        <div className="min-w-[150px] pr-2">{t('common.fields.port')}</div>
         <div>{database.postgresqlPhysical?.port || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Username</div>
+        <div className="min-w-[150px] pr-2">{t('common.fields.username')}</div>
         <div>{database.postgresqlPhysical?.username || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Password</div>
+        <div className="min-w-[150px] pr-2">{t('common.fields.password')}</div>
         <div>{'*************'}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">SSL mode</div>
-        <div>{sslModeLabels[database.postgresqlPhysical?.sslMode ?? PostgresSslMode.Disable]}</div>
+        <div className="min-w-[150px] pr-2">{t('databases.fields.sslMode')}</div>
+        <div>
+          {t(
+            POSTGRES_SSL_MODE_LABEL_KEYS[
+              database.postgresqlPhysical?.sslMode ?? PostgresSslMode.Disable
+            ],
+          )}
+        </div>
       </div>
 
       {!!database.postgresqlPhysical?.sslClientCert &&
         database.postgresqlPhysical?.sslMode !== PostgresSslMode.Disable && (
           <div className="mb-1 flex w-full items-center">
-            <div className="min-w-[150px]">Client certificate</div>
+            <div className="min-w-[150px] pr-2">{t('databases.fields.clientCertificate')}</div>
             <div>*************</div>
           </div>
         )}

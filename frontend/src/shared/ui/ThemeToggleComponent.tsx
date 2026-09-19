@@ -1,7 +1,8 @@
 import { Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
+import { useTranslation } from 'react-i18next';
 
-import { type ThemeMode, useTheme } from '../theme';
+import { THEME_MODE_LABEL_KEYS, useTheme } from '../theme';
 
 const SunIcon = () => (
   <svg
@@ -61,7 +62,12 @@ const SystemIcon = () => (
   </svg>
 );
 
-export function ThemeToggleComponent() {
+interface Props {
+  isSplitEnd?: boolean;
+}
+
+export function ThemeToggleComponent({ isSplitEnd = false }: Props) {
+  const { t } = useTranslation();
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   const items: MenuProps['items'] = [
@@ -70,7 +76,7 @@ export function ThemeToggleComponent() {
       label: (
         <div className="flex items-center gap-2">
           <SunIcon />
-          <span>Light</span>
+          <span>{t(THEME_MODE_LABEL_KEYS.light)}</span>
         </div>
       ),
       onClick: () => setTheme('light'),
@@ -80,7 +86,7 @@ export function ThemeToggleComponent() {
       label: (
         <div className="flex items-center gap-2">
           <MoonIcon />
-          <span>Dark</span>
+          <span>{t(THEME_MODE_LABEL_KEYS.dark)}</span>
         </div>
       ),
       onClick: () => setTheme('dark'),
@@ -90,7 +96,7 @@ export function ThemeToggleComponent() {
       label: (
         <div className="flex items-center gap-2">
           <SystemIcon />
-          <span>System</span>
+          <span>{t(THEME_MODE_LABEL_KEYS.system)}</span>
         </div>
       ),
       onClick: () => setTheme('system'),
@@ -104,25 +110,16 @@ export function ThemeToggleComponent() {
     return resolvedTheme === 'dark' ? <MoonIcon /> : <SunIcon />;
   };
 
-  const getLabel = (mode: ThemeMode) => {
-    switch (mode) {
-      case 'light':
-        return 'Light';
-      case 'dark':
-        return 'Dark';
-      case 'system':
-        return 'System';
-    }
-  };
-
   return (
     <Dropdown menu={{ items, selectedKeys: [theme] }} trigger={['click']} placement="bottomRight">
       <button
-        className="flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-        title={`Theme: ${getLabel(theme)}`}
+        className={`flex cursor-pointer items-center gap-1.5 border border-gray-200 bg-white px-2.5 py-1 text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 ${
+          isSplitEnd ? 'rounded-r-md border-l-0' : 'rounded-md'
+        }`}
+        title={t('app.theme.title', { theme: t(THEME_MODE_LABEL_KEYS[theme]) })}
       >
         {getCurrentIcon()}
-        <span className="hidden sm:inline">{getLabel(theme)}</span>
+        <span className="hidden sm:inline">{t(THEME_MODE_LABEL_KEYS[theme])}</span>
       </button>
     </Dropdown>
   );

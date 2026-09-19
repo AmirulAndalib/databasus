@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string -- dayjs format tokens, not copy */
 // Detect date order (MDY, DMY, YMD) and separator from user's locale
 const getLocaleDateFormat = () => {
   const locale = navigator.language || 'en-US';

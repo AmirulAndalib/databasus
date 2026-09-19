@@ -1,6 +1,7 @@
 import { LoadingOutlined, MenuOutlined } from '@ant-design/icons';
 import { App, Button, Spin, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { APP_VERSION, CONTAINER_ARCH } from '../../constants';
 import { type DiskUsage, diskApi } from '../../entity/disk';
@@ -23,22 +24,23 @@ import {
   WorkspaceSettingsComponent,
 } from '../../features/workspaces';
 import { useIsMobile, useIsNewGitHubVersionAvailable, useScreenHeight } from '../../shared/hooks';
-import { SponsorshipLinkComponent } from '../../shared/ui';
+import { getWebsitePageUrl, translateApiError, useLocale } from '../../shared/i18n';
+import { LanguageThemeControlComponent, SponsorshipLinkComponent } from '../../shared/ui';
 import { StarButtonComponent } from '../../shared/ui/StarButtonComponent';
-import { ThemeToggleComponent } from '../../shared/ui/ThemeToggleComponent';
-import { SidebarComponent } from './SidebarComponent';
+import { type MainTab, SidebarComponent, type SidebarTab } from './SidebarComponent';
 import { WorkspaceSelectionComponent } from './WorkspaceSelectionComponent';
+import { getDiskUsageValues } from './getDiskUsageValues';
 
 export const MainScreenComponent = () => {
+  const { t } = useTranslation();
+  const { locale, formatNumber } = useLocale();
   const { message } = App.useApp();
   const screenHeight = useScreenHeight();
   const isMobile = useIsMobile();
   const isNewGitHubVersionAvailable = useIsNewGitHubVersionAvailable();
   const contentHeight = screenHeight - (isMobile ? 70 : 95);
 
-  const [selectedTab, setSelectedTab] = useState<
-    'notifiers' | 'storages' | 'databases' | 'profile' | 'databasus-settings' | 'users' | 'settings'
-  >('databases');
+  const [selectedTab, setSelectedTab] = useState<MainTab>('databases');
   const [diskUsage, setDiskUsage] = useState<DiskUsage | undefined>(undefined);
   const [user, setUser] = useState<UserProfile | undefined>(undefined);
   const [globalSettings, setGlobalSettings] = useState<UsersSettings | undefined>(undefined);
@@ -68,7 +70,7 @@ export const MainScreenComponent = () => {
       setWorkspaces(workspaces.workspaces);
       setGlobalSettings(settings);
     } catch (e) {
-      message.error((e as Error).message);
+      message.error(translateApiError(e, t));
     }
 
     setIsLoading(false);
@@ -108,7 +110,7 @@ export const MainScreenComponent = () => {
       setSelectedWorkspace(newWorkspace);
       setSelectedTab('databases');
     } catch (e) {
-      message.error((e as Error).message);
+      message.error(translateApiError(e, t));
     }
   };
 
@@ -120,9 +122,9 @@ export const MainScreenComponent = () => {
 
   const isCanManageDBs = selectedWorkspace?.userRole !== WorkspaceRole.VIEWER;
 
-  const tabs = [
+  const tabs: SidebarTab[] = [
     {
-      text: 'Databases',
+      text: t('app.navigation.databases'),
       name: 'databases',
       icon: '/icons/menu/database-gray.svg',
       selectedIcon: '/icons/menu/database-white.svg',
@@ -132,7 +134,7 @@ export const MainScreenComponent = () => {
       isVisible: true,
     },
     {
-      text: 'Storages',
+      text: t('app.navigation.storages'),
       name: 'storages',
       icon: '/icons/menu/storage-gray.svg',
       selectedIcon: '/icons/menu/storage-white.svg',
@@ -142,7 +144,7 @@ export const MainScreenComponent = () => {
       isVisible: !!selectedWorkspace,
     },
     {
-      text: 'Notifiers',
+      text: t('app.navigation.notifiers'),
       name: 'notifiers',
       icon: '/icons/menu/notifier-gray.svg',
       selectedIcon: '/icons/menu/notifier-white.svg',
@@ -152,7 +154,7 @@ export const MainScreenComponent = () => {
       isVisible: !!selectedWorkspace,
     },
     {
-      text: 'Settings',
+      text: t('app.navigation.workspaceSettings'),
       name: 'settings',
       icon: '/icons/menu/workspace-settings-gray.svg',
       selectedIcon: '/icons/menu/workspace-settings-white.svg',
@@ -162,7 +164,7 @@ export const MainScreenComponent = () => {
       isVisible: !!selectedWorkspace,
     },
     {
-      text: 'Profile',
+      text: t('app.navigation.profile'),
       name: 'profile',
       icon: '/icons/menu/profile-gray.svg',
       selectedIcon: '/icons/menu/profile-white.svg',
@@ -172,7 +174,7 @@ export const MainScreenComponent = () => {
       isVisible: true,
     },
     {
-      text: 'Databasus settings',
+      text: t('app.navigation.databasusSettings'),
       name: 'databasus-settings',
       icon: '/icons/menu/global-settings-gray.svg',
       selectedIcon: '/icons/menu/global-settings-white.svg',
@@ -182,7 +184,7 @@ export const MainScreenComponent = () => {
       isVisible: true,
     },
     {
-      text: 'Users',
+      text: t('app.navigation.users'),
       name: 'users',
       icon: '/icons/menu/user-card-gray.svg',
       selectedIcon: '/icons/menu/user-card-white.svg',
@@ -197,7 +199,7 @@ export const MainScreenComponent = () => {
     <div style={{ height: screenHeight }} className="bg-[#f5f5f5] p-2 md:p-3 dark:bg-gray-900">
       <div className="mb-2 flex h-[50px] items-center rounded bg-white px-2 py-2 shadow md:mb-3 md:h-[60px] md:p-3 dark:bg-gray-800">
         <div className="flex items-center gap-2 hover:opacity-80 md:gap-3">
-          <a href="https://databasus.com" target="_blank" rel="noreferrer">
+          <a href={getWebsitePageUrl('home', locale)} target="_blank" rel="noreferrer">
             <img className="h-[30px] w-[30px] p-1 md:h-[40px] md:w-[40px]" src="/logo.svg" />
           </a>
         </div>
@@ -216,11 +218,11 @@ export const MainScreenComponent = () => {
         <div className="ml-auto hidden items-center gap-5 md:flex">
           <a
             className="!text-black hover:opacity-80 dark:!text-gray-200"
-            href="https://databasus.com/installation"
+            href={getWebsitePageUrl('installation', locale)}
             target="_blank"
             rel="noreferrer"
           >
-            Docs
+            {t('app.navigation.docs')}
           </a>
 
           <a
@@ -229,21 +231,21 @@ export const MainScreenComponent = () => {
             target="_blank"
             rel="noreferrer"
           >
-            Community
+            {t('app.navigation.community')}
           </a>
 
           <SponsorshipLinkComponent className="!text-black hover:opacity-80 dark:!text-gray-200" />
 
           {isUsedMoreThan85Percent && (
-            <Tooltip title="To make backups locally and restore them, you need to have enough space on your disk. For restore, you need to have same amount of space that the backup size.">
+            <Tooltip title={t('app.diskUsage.hint')}>
               <div
                 className={`cursor-pointer text-center text-xs ${isUsedMoreThan95Percent ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}
               >
-                {(diskUsage.usedSpaceBytes / 1024 ** 3).toFixed(1)} of{' '}
-                {(diskUsage.totalSpaceBytes / 1024 ** 3).toFixed(1)} GB
-                <br />
-                ROM used (
-                {((diskUsage.usedSpaceBytes / diskUsage.totalSpaceBytes) * 100).toFixed(1)}%)
+                <Trans
+                  i18nKey="app.diskUsage.compactSummary"
+                  values={getDiskUsageValues(diskUsage, formatNumber)}
+                  components={{ lineBreak: <br /> }}
+                />
               </div>
             </Tooltip>
           )}
@@ -251,7 +253,7 @@ export const MainScreenComponent = () => {
           <div className="flex items-center gap-2">
             <StarButtonComponent />
 
-            <ThemeToggleComponent />
+            <LanguageThemeControlComponent />
           </div>
         </div>
 
@@ -316,7 +318,7 @@ export const MainScreenComponent = () => {
                       onClick={handleCreateWorkspace}
                       className="border-blue-600 bg-blue-600 hover:border-blue-700 hover:bg-blue-700"
                     >
-                      Create workspace
+                      {t('app.workspaceSelection.create')}
                     </Button>
                   </div>
                 </div>
@@ -365,12 +367,13 @@ export const MainScreenComponent = () => {
           )}
 
           <div className="absolute bottom-1 left-2 mb-[0px] hidden text-sm text-gray-400 md:block">
-            v{APP_VERSION}
+            {/* eslint-disable-next-line i18next/no-literal-string -- version prefix */}
+            {`v${APP_VERSION}`}
             <br />
             <span className="inline-flex items-center gap-1.5">
               {CONTAINER_ARCH}
               {isNewGitHubVersionAvailable && (
-                <Tooltip title="New version available">
+                <Tooltip title={t('app.navigation.newVersionAvailable')}>
                   <a
                     href="https://github.com/databasus/databasus/releases/latest"
                     target="_blank"

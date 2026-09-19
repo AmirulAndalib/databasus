@@ -4,18 +4,24 @@ import { CronExpressionParser } from 'cron-parser';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
+  LOGICAL_BACKUP_NOTIFICATION_TYPE_LABEL_KEYS,
   type LogicalBackupConfig,
-  LogicalBackupNotificationType,
   LogicalRetentionPolicyType,
   logicalBackupConfigApi,
 } from '../../../../entity/backups/logical';
-import { BackupEncryption } from '../../../../entity/backups/shared';
-import type { Database } from '../../../../entity/databases';
-import { Period } from '../../../../entity/databases/model/Period';
-import { IntervalType } from '../../../../entity/intervals';
+import { BACKUP_ENCRYPTION_LABEL_KEYS } from '../../../../entity/backups/shared';
+import { type Database, PERIOD_LABEL_KEYS } from '../../../../entity/databases';
+import {
+  INTERVAL_TYPE_LABEL_KEYS,
+  IntervalType,
+  WEEKDAY_LABEL_KEYS,
+  type Weekday,
+} from '../../../../entity/intervals';
 import { getStorageLogoFromType } from '../../../../entity/storages/models/getStorageLogoFromType';
+import { type LocalizedText, translateLocalizedText, useLocale } from '../../../../shared/i18n';
 import { getUserTimeFormat } from '../../../../shared/time';
 import {
   getUserTimeFormat as getIs12Hour,
@@ -27,57 +33,40 @@ interface Props {
   database: Database;
 }
 
-const weekdayLabels = {
-  1: 'Mon',
-  2: 'Tue',
-  3: 'Wed',
-  4: 'Thu',
-  5: 'Fri',
-  6: 'Sat',
-  7: 'Sun',
-};
+const getGfsRetentionTexts = (config: LogicalBackupConfig): LocalizedText[] => {
+  const texts: LocalizedText[] = [];
 
-const intervalLabels = {
-  [IntervalType.HOURLY]: 'Hourly',
-  [IntervalType.DAILY]: 'Daily',
-  [IntervalType.WEEKLY]: 'Weekly',
-  [IntervalType.MONTHLY]: 'Monthly',
-  [IntervalType.CRON]: 'Cron',
-};
+  if (config.retentionGfsHours > 0) {
+    texts.push({ key: 'backups.config.gfs.hourly', params: { count: config.retentionGfsHours } });
+  }
+  if (config.retentionGfsDays > 0) {
+    texts.push({ key: 'backups.config.gfs.daily', params: { count: config.retentionGfsDays } });
+  }
+  if (config.retentionGfsWeeks > 0) {
+    texts.push({ key: 'backups.config.gfs.weekly', params: { count: config.retentionGfsWeeks } });
+  }
+  if (config.retentionGfsMonths > 0) {
+    texts.push({ key: 'backups.config.gfs.monthly', params: { count: config.retentionGfsMonths } });
+  }
+  if (config.retentionGfsYears > 0) {
+    texts.push({ key: 'backups.config.gfs.yearly', params: { count: config.retentionGfsYears } });
+  }
 
-const periodLabels = {
-  [Period.DAY]: '1 day',
-  [Period.WEEK]: '1 week',
-  [Period.MONTH]: '1 month',
-  [Period.THREE_MONTH]: '3 months',
-  [Period.SIX_MONTH]: '6 months',
-  [Period.YEAR]: '1 year',
-  [Period.TWO_YEARS]: '2 years',
-  [Period.THREE_YEARS]: '3 years',
-  [Period.FOUR_YEARS]: '4 years',
-  [Period.FIVE_YEARS]: '5 years',
-  [Period.FOREVER]: 'Forever',
-};
-
-const notificationLabels = {
-  [LogicalBackupNotificationType.BackupFailed]: 'Backup failed',
-  [LogicalBackupNotificationType.BackupSuccess]: 'Backup success',
-};
-
-const formatGfsRetention = (config: LogicalBackupConfig): string => {
-  const parts: string[] = [];
-
-  if (config.retentionGfsHours > 0) parts.push(`${config.retentionGfsHours} hourly`);
-  if (config.retentionGfsDays > 0) parts.push(`${config.retentionGfsDays} daily`);
-  if (config.retentionGfsWeeks > 0) parts.push(`${config.retentionGfsWeeks} weekly`);
-  if (config.retentionGfsMonths > 0) parts.push(`${config.retentionGfsMonths} monthly`);
-  if (config.retentionGfsYears > 0) parts.push(`${config.retentionGfsYears} yearly`);
-
-  return parts.length > 0 ? parts.join(', ') : 'Not configured';
+  return texts;
 };
 
 export const ShowLogicalBackupConfigComponent = ({ database }: Props) => {
+  const { t } = useTranslation();
+  const { formatRelativeTime } = useLocale();
+  const listSeparator = t('common.listSeparator');
   const [backupConfig, setBackupConfig] = useState<LogicalBackupConfig>();
+
+  const describeGfsRetention = (config: LogicalBackupConfig): string => {
+    const texts = getGfsRetentionTexts(config);
+    if (texts.length === 0) return t('backups.config.gfs.notConfigured');
+
+    return texts.map((text) => translateLocalizedText(text, t)).join(listSeparator);
+  };
 
   const timeFormat = useMemo(() => {
     const is12Hour = getIs12Hour();
@@ -127,33 +116,33 @@ export const ShowLogicalBackupConfigComponent = ({ database }: Props) => {
   return (
     <div>
       <div className="mb-1 flex w-full items-center">
-        <div className="min-w-[150px]">Backups enabled</div>
+        <div className="min-w-[150px] pr-2">{t('backups.config.backupsEnabled')}</div>
         <div className={backupConfig.isBackupsEnabled ? '' : 'font-bold text-red-600'}>
-          {backupConfig.isBackupsEnabled ? 'Yes' : 'No'}
+          {backupConfig.isBackupsEnabled ? t('common.answers.yes') : t('common.answers.no')}
         </div>
       </div>
 
       {backupConfig.isBackupsEnabled ? (
         <>
           <div className="mt-4 mb-1 flex w-full items-center">
-            <div className="min-w-[150px]">Backup interval</div>
-            <div>{backupInterval?.type ? intervalLabels[backupInterval.type] : ''}</div>
+            <div className="min-w-[150px] pr-2">{t('backups.logical.config.interval')}</div>
+            <div>
+              {backupInterval?.type ? t(INTERVAL_TYPE_LABEL_KEYS[backupInterval.type]) : ''}
+            </div>
           </div>
 
           {backupInterval?.type === IntervalType.WEEKLY && (
             <div className="mb-1 flex w-full items-center">
-              <div className="min-w-[150px]">Backup weekday</div>
+              <div className="min-w-[150px] pr-2">{t('backups.logical.config.weekday')}</div>
               <div>
-                {displayedWeekday
-                  ? weekdayLabels[displayedWeekday as keyof typeof weekdayLabels]
-                  : ''}
+                {displayedWeekday ? t(WEEKDAY_LABEL_KEYS[displayedWeekday as Weekday]) : ''}
               </div>
             </div>
           )}
 
           {backupInterval?.type === IntervalType.MONTHLY && (
             <div className="mb-1 flex w-full items-center">
-              <div className="min-w-[150px]">Backup day of month</div>
+              <div className="min-w-[150px] pr-2">{t('backups.logical.config.dayOfMonth')}</div>
               <div>{displayedDayOfMonth || ''}</div>
             </div>
           )}
@@ -161,7 +150,9 @@ export const ShowLogicalBackupConfigComponent = ({ database }: Props) => {
           {backupInterval?.type === IntervalType.CRON && (
             <>
               <div className="mb-1 flex w-full items-center">
-                <div className="min-w-[150px]">Cron expression (UTC)</div>
+                <div className="min-w-[150px] pr-2">
+                  {t('backups.config.schedule.cronExpression')}
+                </div>
                 <code className="rounded bg-gray-100 px-2 py-0.5 text-sm dark:bg-gray-700">
                   {backupInterval?.cronExpression || ''}
                 </code>
@@ -175,10 +166,12 @@ export const ShowLogicalBackupConfigComponent = ({ database }: Props) => {
                     const nextRun = interval.next().toDate();
                     return (
                       <div className="mb-1 flex w-full items-center text-xs text-gray-600 dark:text-gray-400">
-                        <div className="min-w-[150px]" />
+                        <div className="min-w-[150px] pr-2" />
                         <div>
-                          Next run {dayjs(nextRun).local().format(dateTimeFormat.format)}
-                          <br />({dayjs(nextRun).fromNow()})
+                          {t('backups.config.schedule.nextRun', {
+                            time: dayjs(nextRun).local().format(dateTimeFormat.format),
+                          })}
+                          <br />({formatRelativeTime(nextRun)})
                         </div>
                       </div>
                     );
@@ -192,40 +185,48 @@ export const ShowLogicalBackupConfigComponent = ({ database }: Props) => {
           {backupInterval?.type !== IntervalType.HOURLY &&
             backupInterval?.type !== IntervalType.CRON && (
               <div className="mb-1 flex w-full items-center">
-                <div className="min-w-[150px]">Backup time of day</div>
+                <div className="min-w-[150px] pr-2">{t('backups.logical.config.timeOfDay')}</div>
                 <div>{formattedTime}</div>
               </div>
             )}
 
           <div className="mb-1 flex w-full items-center">
-            <div className="min-w-[150px]">Retry if failed</div>
-            <div>{backupConfig.isRetryIfFailed ? 'Yes' : 'No'}</div>
+            <div className="min-w-[150px] pr-2">
+              {t('backups.logical.config.retryIfFailedShort')}
+            </div>
+            <div>
+              {backupConfig.isRetryIfFailed ? t('common.answers.yes') : t('common.answers.no')}
+            </div>
           </div>
 
           {backupConfig.isRetryIfFailed && (
             <div className="mb-1 flex w-full items-center">
-              <div className="min-w-[150px]">Max failed tries count</div>
+              <div className="min-w-[150px] pr-2">{t('backups.logical.config.maxFailedTries')}</div>
               <div>{backupConfig.maxFailedTriesCount}</div>
             </div>
           )}
 
           <div className="mb-1 flex w-full items-center">
-            <div className="min-w-[150px]">Retention policy</div>
+            <div className="min-w-[150px] pr-2">{t('backups.logical.config.retentionPolicy')}</div>
             <div className="flex items-center gap-1">
               {retentionPolicyType === LogicalRetentionPolicyType.TimePeriod && (
                 <span>
                   {backupConfig.retentionTimePeriod
-                    ? periodLabels[backupConfig.retentionTimePeriod]
+                    ? t(PERIOD_LABEL_KEYS[backupConfig.retentionTimePeriod])
                     : ''}
                 </span>
               )}
               {retentionPolicyType === LogicalRetentionPolicyType.Count && (
-                <span>Keep last {backupConfig.retentionCount} backups</span>
+                <span>
+                  {t('backups.logical.config.retention.countValue', {
+                    count: backupConfig.retentionCount,
+                  })}
+                </span>
               )}
               {retentionPolicyType === LogicalRetentionPolicyType.GFS && (
                 <span className="flex items-center gap-1">
-                  {formatGfsRetention(backupConfig)}
-                  <Tooltip title="Grandfather-Father-Son rotation: keep the last N hourly, daily, weekly, monthly and yearly backups.">
+                  {describeGfsRetention(backupConfig)}
+                  <Tooltip title={t('backups.logical.config.retention.gfsTooltip')}>
                     <InfoCircleOutlined style={{ color: 'gray' }} />
                   </Tooltip>
                 </span>
@@ -234,13 +235,13 @@ export const ShowLogicalBackupConfigComponent = ({ database }: Props) => {
           </div>
 
           <div className="mb-1 flex w-full items-center">
-            <div className="min-w-[150px]">Storage</div>
+            <div className="min-w-[150px] pr-2">{t('backups.config.storage')}</div>
             <div className="flex items-center">
               <div>{backupConfig.storage?.name || ''}</div>
               {backupConfig.storage?.type && (
                 <img
                   src={getStorageLogoFromType(backupConfig.storage.type)}
-                  alt="storageIcon"
+                  alt=""
                   className="ml-1 h-4 w-4"
                 />
               )}
@@ -248,25 +249,25 @@ export const ShowLogicalBackupConfigComponent = ({ database }: Props) => {
           </div>
 
           <div className="mb-1 flex w-full items-center">
-            <div className="min-w-[150px]">Encryption</div>
-            <div>{backupConfig.encryption === BackupEncryption.ENCRYPTED ? 'Enabled' : 'None'}</div>
+            <div className="min-w-[150px] pr-2">{t('backups.config.encryption')}</div>
+            <div>{t(BACKUP_ENCRYPTION_LABEL_KEYS[backupConfig.encryption])}</div>
 
             <Tooltip
               className="cursor-pointer"
-              title="If backup is encrypted, backup files in your storage (S3, local, etc.) cannot be used directly. You can restore backups through Databasus or download them unencrypted via the 'Download' button."
+              title={t('backups.logical.config.encryptionTooltip')}
             >
               <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
             </Tooltip>
           </div>
 
           <div className="mb-1 flex w-full items-center">
-            <div className="min-w-[150px]">Notifications</div>
+            <div className="min-w-[150px] pr-2">{t('backups.config.notifications')}</div>
             <div>
               {backupConfig.sendNotificationsOn.length > 0
                 ? backupConfig.sendNotificationsOn
-                    .map((type) => notificationLabels[type])
-                    .join(', ')
-                : 'None'}
+                    .map((type) => t(LOGICAL_BACKUP_NOTIFICATION_TYPE_LABEL_KEYS[type]))
+                    .join(listSeparator)
+                : t('backups.config.noNotifications')}
             </div>
           </div>
         </>

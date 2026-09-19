@@ -183,7 +183,7 @@ describe('MySqlConnectionStringParser', () => {
         MySqlConnectionStringParser.parse('jdbc:mysql://host:3306/db?password=secret'),
       );
 
-      expect(result.error).toContain('user');
+      expect(result.error.key).toBe('databases.connectionString.errors.jdbc.usernameMissing');
       expect(result.format).toBe('JDBC');
     });
 
@@ -192,7 +192,7 @@ describe('MySqlConnectionStringParser', () => {
         MySqlConnectionStringParser.parse('jdbc:mysql://host:3306/db?user=admin'),
       );
 
-      expect(result.error).toContain('Password');
+      expect(result.error.key).toBe('databases.connectionString.errors.jdbc.passwordMissing');
       expect(result.format).toBe('JDBC');
     });
   });
@@ -351,7 +351,7 @@ describe('MySqlConnectionStringParser', () => {
         MySqlConnectionStringParser.parse('port=3306 database=mydb user=admin password=secret'),
       );
 
-      expect(result.error).toContain('Host');
+      expect(result.error.key).toBe('databases.connectionString.errors.keyValue.hostMissing');
       expect(result.format).toBe('key-value');
     });
 
@@ -360,7 +360,7 @@ describe('MySqlConnectionStringParser', () => {
         MySqlConnectionStringParser.parse('host=localhost database=mydb password=secret'),
       );
 
-      expect(result.error).toContain('Username');
+      expect(result.error.key).toBe('databases.connectionString.errors.keyValue.usernameMissing');
       expect(result.format).toBe('key-value');
     });
 
@@ -369,7 +369,7 @@ describe('MySqlConnectionStringParser', () => {
         MySqlConnectionStringParser.parse('host=localhost database=mydb user=admin'),
       );
 
-      expect(result.error).toContain('Password');
+      expect(result.error.key).toBe('databases.connectionString.errors.keyValue.passwordMissing');
       expect(result.format).toBe('key-value');
     });
 
@@ -378,7 +378,7 @@ describe('MySqlConnectionStringParser', () => {
         MySqlConnectionStringParser.parse('host=localhost user=admin password=secret'),
       );
 
-      expect(result.error).toContain('Database');
+      expect(result.error.key).toBe('databases.connectionString.errors.keyValue.databaseMissing');
       expect(result.format).toBe('key-value');
     });
   });
@@ -387,19 +387,19 @@ describe('MySqlConnectionStringParser', () => {
     it('should return error for empty string', () => {
       const result = expectError(MySqlConnectionStringParser.parse(''));
 
-      expect(result.error).toContain('empty');
+      expect(result.error.key).toBe('databases.connectionString.errors.empty');
     });
 
     it('should return error for whitespace-only string', () => {
       const result = expectError(MySqlConnectionStringParser.parse('   '));
 
-      expect(result.error).toContain('empty');
+      expect(result.error.key).toBe('databases.connectionString.errors.empty');
     });
 
     it('should return error for unrecognized format', () => {
       const result = expectError(MySqlConnectionStringParser.parse('some random text'));
 
-      expect(result.error).toContain('Unrecognized');
+      expect(result.error.key).toBe('databases.connectionString.errors.unrecognizedFormat');
     });
 
     it('should return error for missing username in URI', () => {
@@ -407,24 +407,25 @@ describe('MySqlConnectionStringParser', () => {
         MySqlConnectionStringParser.parse('mysql://:password@host:3306/db'),
       );
 
-      expect(result.error).toContain('Username');
+      expect(result.error.key).toBe('databases.connectionString.errors.usernameMissing');
     });
 
     it('should return error for missing password in URI', () => {
       const result = expectError(MySqlConnectionStringParser.parse('mysql://user@host:3306/db'));
 
-      expect(result.error).toContain('Password');
+      expect(result.error.key).toBe('databases.connectionString.errors.passwordMissing');
     });
 
     it('should return error for missing database in URI', () => {
       const result = expectError(MySqlConnectionStringParser.parse('mysql://user:pass@host:3306/'));
 
-      expect(result.error).toContain('Database');
+      expect(result.error.key).toBe('databases.connectionString.errors.databaseMissing');
     });
 
     it('should return error for invalid JDBC format', () => {
       const result = expectError(MySqlConnectionStringParser.parse('jdbc:mysql://invalid'));
 
+      expect(result.error.key).toBe('databases.connectionString.errors.jdbc.invalidFormat');
       expect(result.format).toBe('JDBC');
     });
 
@@ -433,7 +434,7 @@ describe('MySqlConnectionStringParser', () => {
         MySqlConnectionStringParser.parse('postgresql://user:pass@host:5432/db'),
       );
 
-      expect(result.error).toContain('Unrecognized');
+      expect(result.error.key).toBe('databases.connectionString.errors.unrecognizedFormat');
     });
   });
 

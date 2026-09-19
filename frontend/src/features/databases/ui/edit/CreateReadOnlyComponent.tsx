@@ -1,13 +1,21 @@
 import { App, Button, Modal, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import {
+  DATABASE_TYPE_LABEL_KEYS,
   type Database,
   DatabaseType,
   type ShouldSuggestReadOnlyUserResponse,
   databaseApi,
-  getDatabaseTypeLabel,
 } from '../../../../entity/databases';
+import {
+  TransByKey,
+  type TranslationKey,
+  getWebsitePageUrl,
+  translateApiError,
+  useLocale,
+} from '../../../../shared/i18n';
 
 interface Props {
   database: Database;
@@ -22,6 +30,38 @@ const PRIVILEGES_TRUNCATE_LENGTH = 50;
 
 const FORCED_WAL_ROTATION_WARNING_SECONDS = 15;
 
+// Physical PostgreSQL gets a replication-only user and every other engine a read-only one. The two
+// nouns inflect differently in other languages, so each kind has its own sentences.
+interface RestrictedUserCopyKeys {
+  checking: TranslationKey;
+  title: TranslationKey;
+  description: TranslationKey;
+  noWriteCredentials: TranslationKey;
+  create: TranslationKey;
+  skipTitle: TranslationKey;
+  skipQuestion: TranslationKey;
+}
+
+const READ_ONLY_USER_COPY_KEYS: RestrictedUserCopyKeys = {
+  checking: 'databases.readOnlyUser.readOnly.checking',
+  title: 'databases.readOnlyUser.readOnly.title',
+  description: 'databases.readOnlyUser.readOnly.description',
+  noWriteCredentials: 'databases.readOnlyUser.readOnly.noWriteCredentials',
+  create: 'databases.readOnlyUser.readOnly.create',
+  skipTitle: 'databases.readOnlyUser.readOnly.skipTitle',
+  skipQuestion: 'databases.readOnlyUser.readOnly.skipQuestion',
+};
+
+const REPLICATION_ONLY_USER_COPY_KEYS: RestrictedUserCopyKeys = {
+  checking: 'databases.readOnlyUser.replicationOnly.checking',
+  title: 'databases.readOnlyUser.replicationOnly.title',
+  description: 'databases.readOnlyUser.replicationOnly.description',
+  noWriteCredentials: 'databases.readOnlyUser.replicationOnly.noWriteCredentials',
+  create: 'databases.readOnlyUser.replicationOnly.create',
+  skipTitle: 'databases.readOnlyUser.replicationOnly.skipTitle',
+  skipQuestion: 'databases.readOnlyUser.replicationOnly.skipQuestion',
+};
+
 export const CreateReadOnlyComponent = ({
   database,
   onReadOnlyUserUpdated,
@@ -29,6 +69,8 @@ export const CreateReadOnlyComponent = ({
   onSkipped,
   onReadOnlyUserNotSuggested,
 }: Props) => {
+  const { t } = useTranslation();
+  const { locale } = useLocale();
   const { message } = App.useApp();
 
   const [isCheckingReadOnlyUserSuggestion, setIsCheckingReadOnlyUserSuggestion] = useState(false);
@@ -42,17 +84,17 @@ export const CreateReadOnlyComponent = ({
   const isMysql = database.type === DatabaseType.MYSQL;
   const isMariadb = database.type === DatabaseType.MARIADB;
   const isMongodb = database.type === DatabaseType.MONGODB;
-  const databaseTypeName = getDatabaseTypeLabel(database.type);
-
-  const privilegesLabel = isMongodb ? 'roles' : 'privileges';
-  const userKindNoun = isPhysicalPostgres ? 'replication-only user' : 'read-only user';
+  const databaseTypeName = t(DATABASE_TYPE_LABEL_KEYS[database.type]);
+  const userKindKeys = isPhysicalPostgres
+    ? REPLICATION_ONLY_USER_COPY_KEYS
+    : READ_ONLY_USER_COPY_KEYS;
 
   const fetchReadOnlyUserSuggestion =
     async (): Promise<ShouldSuggestReadOnlyUserResponse | null> => {
       try {
         return await databaseApi.shouldSuggestReadOnlyUser(database);
       } catch (e) {
-        message.error((e as Error).message);
+        message.error(translateApiError(e, t));
         return null;
       }
     };
@@ -81,9 +123,7 @@ export const CreateReadOnlyComponent = ({
 
     if (!response.isForcedWalRotationAvailable) {
       message.warning(
-        'This source would not grant EXECUTE on pg_switch_wal() to the new user, which ' +
-          'continuous WAL streaming needs to keep the recovery point close to the present. ' +
-          'Full and incremental backups work normally with these credentials.',
+        t('databases.readOnlyUser.forcedWalRotationUnavailable'),
         FORCED_WAL_ROTATION_WARNING_SECONDS,
       );
     }
@@ -119,7 +159,7 @@ export const CreateReadOnlyComponent = ({
 
       onReadOnlyUserUpdated(database);
     } catch (e) {
-      message.error((e as Error).message);
+      message.error(translateApiError(e, t));
     }
 
     setIsCreatingReadOnlyUser(false);
@@ -156,7 +196,7 @@ export const CreateReadOnlyComponent = ({
     return (
       <div className="flex items-center">
         <Spin />
-        <span className="ml-3">Checking {userKindNoun}...</span>
+        <span className="ml-3">{t(userKindKeys.checking)}</span>
       </div>
     );
   }
@@ -164,45 +204,51 @@ export const CreateReadOnlyComponent = ({
   return (
     <div>
       <div className="mb-5">
-        <p className="mb-3 text-lg font-bold">Create a {userKindNoun} for Databasus?</p>
+        <p className="mb-3 text-lg font-bold">{t(userKindKeys.title)}</p>
 
-        <p className="mb-2">
-          A {userKindNoun} is a {databaseTypeName} user with limited permissions that can only read
-          data from your database, not modify it. This is recommended for backup operations because:
-        </p>
+        <p className="mb-2">{t(userKindKeys.description, { databaseType: databaseTypeName })}</p>
 
         <ul className="mb-2 ml-5 list-disc">
-          <li>it prevents accidental data modifications during backup</li>
-          <li>it follows the principle of least privilege</li>
-          <li>it&apos;s a security best practice</li>
+          <li>{t('databases.readOnlyUser.reasons.preventsModifications')}</li>
+          <li>{t('databases.readOnlyUser.reasons.leastPrivilege')}</li>
+          <li>{t('databases.readOnlyUser.reasons.bestPractice')}</li>
         </ul>
 
         <p className="mb-2">
-          Databasus enforce enterprise-grade security (
-          <a
-            href="https://databasus.com/security"
-            target="_blank"
-            rel="noreferrer"
-            className="!text-blue-600 dark:!text-blue-400"
-          >
-            read in details here
-          </a>
-          ). However, it is not possible to be covered from all possible risks.
+          <Trans
+            i18nKey="databases.readOnlyUser.securityNote"
+            components={{
+              docsLink: (
+                <a
+                  href={getWebsitePageUrl('security', locale)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="!text-blue-600 dark:!text-blue-400"
+                />
+              ),
+            }}
+          />
         </p>
 
         <p className="mt-3">
-          <b>A {userKindNoun} allows to avoid storing credentials with write access at all</b>. Even
-          in the worst case of hacking, nobody will be able to corrupt your data.
+          <TransByKey i18nKey={userKindKeys.noWriteCredentials} components={{ bold: <b /> }} />
         </p>
 
         <p className="mt-3">
           {privileges.length === 0 ? (
-            <>
-              Current user has <b>no write {privilegesLabel}</b>.
-            </>
+            <Trans
+              i18nKey={
+                isMongodb
+                  ? 'databases.readOnlyUser.noWriteRoles'
+                  : 'databases.readOnlyUser.noWritePrivileges'
+              }
+              components={{ bold: <b /> }}
+            />
           ) : (
             <>
-              Current user has the following write {privilegesLabel}:{' '}
+              {isMongodb
+                ? t('databases.readOnlyUser.writeRoles')
+                : t('databases.readOnlyUser.writePrivileges')}{' '}
               <span
                 className={shouldShowExpandToggle() ? 'cursor-pointer hover:opacity-80' : ''}
                 onClick={() =>
@@ -212,7 +258,9 @@ export const CreateReadOnlyComponent = ({
                 {getPrivilegesDisplay()}
                 {shouldShowExpandToggle() && (
                   <span className="ml-1 text-xs text-blue-600 hover:opacity-80">
-                    ({isPrivilegesExpanded ? 'collapse' : 'expand'})
+                    {isPrivilegesExpanded
+                      ? t('databases.readOnlyUser.collapse')
+                      : t('databases.readOnlyUser.expand')}
                   </span>
                 )}
               </span>
@@ -223,11 +271,11 @@ export const CreateReadOnlyComponent = ({
 
       <div className="mt-5 flex">
         <Button className="mr-auto" type="primary" ghost onClick={() => onGoBack()}>
-          Back
+          {t('common.actions.back')}
         </Button>
 
         <Button className="mr-2 ml-auto" danger ghost onClick={handleSkip}>
-          Skip
+          {t('databases.readOnlyUser.skip')}
         </Button>
 
         <Button
@@ -236,38 +284,32 @@ export const CreateReadOnlyComponent = ({
           loading={isCreatingReadOnlyUser}
           disabled={isCreatingReadOnlyUser}
         >
-          Yes, create {userKindNoun}
+          {t(userKindKeys.create)}
         </Button>
       </div>
 
       <Modal
-        title={`Skip ${userKindNoun} creation?`}
+        title={t(userKindKeys.skipTitle)}
         open={isShowSkipConfirmation}
         onCancel={() => setShowSkipConfirmation(false)}
         footer={null}
         width={450}
       >
         <div className="mb-5">
-          <p className="mb-2">Are you sure you want to skip creating a {userKindNoun}?</p>
+          <p className="mb-2">{t(userKindKeys.skipQuestion)}</p>
 
-          <p className="mb-2">
-            Using a user with full permissions for backups is not recommended and may pose security
-            risks. Databasus is highly recommending you to not skip this step.
-          </p>
+          <p className="mb-2">{t('databases.readOnlyUser.skipRisk')}</p>
 
-          <p>
-            100% protection is never possible. It&apos;s better to be safe in case of 0.01% risk of
-            full hacking. So it is better to follow the secure way with read-only user.
-          </p>
+          <p>{t('databases.readOnlyUser.skipAdvice')}</p>
         </div>
 
         <div className="flex justify-end">
           <Button className="mr-2" danger ghost onClick={handleSkipConfirmed}>
-            Yes, I accept risks
+            {t('databases.readOnlyUser.acceptRisks')}
           </Button>
 
           <Button type="primary" onClick={() => setShowSkipConfirmation(false)}>
-            Let&apos;s continue with the secure way
+            {t('databases.readOnlyUser.continueSecurely')}
           </Button>
         </div>
       </Modal>

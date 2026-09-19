@@ -156,7 +156,7 @@ describe('ConnectionStringParser', () => {
         ConnectionStringParser.parse('jdbc:postgresql://host:5432/db?password=secret'),
       );
 
-      expect(result.error).toContain('user');
+      expect(result.error.key).toBe('databases.connectionString.errors.jdbc.usernameMissing');
       expect(result.format).toBe('JDBC');
     });
 
@@ -165,7 +165,7 @@ describe('ConnectionStringParser', () => {
         ConnectionStringParser.parse('jdbc:postgresql://host:5432/db?user=admin'),
       );
 
-      expect(result.error).toContain('Password');
+      expect(result.error.key).toBe('databases.connectionString.errors.jdbc.passwordMissing');
       expect(result.format).toBe('JDBC');
     });
   });
@@ -428,7 +428,7 @@ describe('ConnectionStringParser', () => {
         ConnectionStringParser.parse('port=5432 dbname=mydb user=admin password=secret'),
       );
 
-      expect(result.error).toContain('Host');
+      expect(result.error.key).toBe('databases.connectionString.errors.keyValue.hostMissing');
       expect(result.format).toBe('libpq');
     });
 
@@ -437,7 +437,7 @@ describe('ConnectionStringParser', () => {
         ConnectionStringParser.parse('host=localhost dbname=mydb password=secret'),
       );
 
-      expect(result.error).toContain('Username');
+      expect(result.error.key).toBe('databases.connectionString.errors.keyValue.usernameMissing');
       expect(result.format).toBe('libpq');
     });
 
@@ -446,7 +446,7 @@ describe('ConnectionStringParser', () => {
         ConnectionStringParser.parse('host=localhost dbname=mydb user=admin'),
       );
 
-      expect(result.error).toContain('Password');
+      expect(result.error.key).toBe('databases.connectionString.errors.keyValue.passwordMissing');
       expect(result.format).toBe('libpq');
     });
 
@@ -455,7 +455,7 @@ describe('ConnectionStringParser', () => {
         ConnectionStringParser.parse('host=localhost user=admin password=secret'),
       );
 
-      expect(result.error).toContain('Database');
+      expect(result.error.key).toBe('databases.connectionString.errors.libpq.databaseMissing');
       expect(result.format).toBe('libpq');
     });
   });
@@ -464,19 +464,19 @@ describe('ConnectionStringParser', () => {
     it('should return error for empty string', () => {
       const result = expectError(ConnectionStringParser.parse(''));
 
-      expect(result.error).toContain('empty');
+      expect(result.error.key).toBe('databases.connectionString.errors.empty');
     });
 
     it('should return error for whitespace-only string', () => {
       const result = expectError(ConnectionStringParser.parse('   '));
 
-      expect(result.error).toContain('empty');
+      expect(result.error.key).toBe('databases.connectionString.errors.empty');
     });
 
     it('should return error for unrecognized format', () => {
       const result = expectError(ConnectionStringParser.parse('some random text'));
 
-      expect(result.error).toContain('Unrecognized');
+      expect(result.error.key).toBe('databases.connectionString.errors.unrecognizedFormat');
     });
 
     it('should return error for missing username in URI', () => {
@@ -484,24 +484,34 @@ describe('ConnectionStringParser', () => {
         ConnectionStringParser.parse('postgresql://:password@host:5432/db'),
       );
 
-      expect(result.error).toContain('Username');
+      expect(result.error.key).toBe('databases.connectionString.errors.usernameMissing');
     });
 
     it('should return error for missing password in URI', () => {
       const result = expectError(ConnectionStringParser.parse('postgresql://user@host:5432/db'));
 
-      expect(result.error).toContain('Password');
+      expect(result.error.key).toBe('databases.connectionString.errors.passwordMissing');
     });
 
     it('should return error for missing database in URI', () => {
       const result = expectError(ConnectionStringParser.parse('postgresql://user:pass@host:5432/'));
 
-      expect(result.error).toContain('Database');
+      expect(result.error.key).toBe('databases.connectionString.errors.databaseMissing');
+    });
+
+    it('should return the parse failure without the thrown error text', () => {
+      const result = expectError(
+        ConnectionStringParser.parse('postgresql://user:pass@host:notaport/db'),
+      );
+
+      expect(result.error).toEqual({ key: 'databases.connectionString.errors.parseFailed' });
+      expect(result.format).toBe('URI');
     });
 
     it('should return error for invalid JDBC format', () => {
       const result = expectError(ConnectionStringParser.parse('jdbc:postgresql://invalid'));
 
+      expect(result.error.key).toBe('databases.connectionString.errors.jdbc.invalidFormat');
       expect(result.format).toBe('JDBC');
     });
   });

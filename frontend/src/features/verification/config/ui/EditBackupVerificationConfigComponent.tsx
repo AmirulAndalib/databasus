@@ -13,14 +13,23 @@ import {
 import { CronExpressionParser } from 'cron-parser';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
-import { type Interval, IntervalType } from '../../../../entity/intervals';
+import {
+  INTERVAL_TYPE_LABEL_KEYS,
+  type Interval,
+  IntervalType,
+  WEEKDAYS,
+  WEEKDAY_LABEL_KEYS,
+} from '../../../../entity/intervals';
 import {
   type BackupVerificationConfig,
+  VERIFICATION_NOTIFICATION_TYPE_LABEL_KEYS,
   VerificationNotificationType,
   VerificationScheduleType,
   verificationConfigApi,
 } from '../../../../entity/verification/config';
+import { getWebsitePageUrl, translateApiError, useLocale } from '../../../../shared/i18n';
 import { getUserTimeFormat } from '../../../../shared/time';
 import {
   getUserTimeFormat as getIs12Hour,
@@ -35,17 +44,9 @@ interface Props {
   onClose: () => void;
 }
 
-const weekdayOptions = [
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-  { value: 7, label: 'Sun' },
-];
-
 export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: Props) => {
+  const { t } = useTranslation();
+  const { locale, formatRelativeTime } = useLocale();
   const [config, setConfig] = useState<BackupVerificationConfig>();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -109,7 +110,7 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
       setIsUnsaved(false);
       onClose();
     } catch (e) {
-      alert((e as Error).message);
+      alert(translateApiError(e, t));
     }
 
     setIsSaving(false);
@@ -120,7 +121,7 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
     verificationConfigApi
       .getByDatabaseId(databaseId)
       .then(setConfig)
-      .catch((error: Error) => alert(error.message))
+      .catch((error: unknown) => alert(translateApiError(error, t)))
       .finally(() => setIsLoading(false));
   }, [databaseId]);
 
@@ -169,7 +170,9 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
   return (
     <div className="space-y-3">
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[180px] sm:mb-0">Scheduled verification</div>
+        <div className="mb-1 min-w-[180px] sm:mb-0 sm:pr-2">
+          {t('verification.config.scheduledVerification')}
+        </div>
         <Switch
           checked={config.isScheduledVerificationEnabled}
           onChange={(checked) => updateConfig({ isScheduledVerificationEnabled: checked })}
@@ -178,18 +181,19 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
         <Tooltip
           className="cursor-pointer"
           title={
-            <>
-              Periodically restore the latest backup into an ephemeral Postgres container to verify
-              it is restorable.{' '}
-              <a
-                href="https://databasus.com/restore-verification"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                Read here how it works
-              </a>
-            </>
+            <Trans
+              i18nKey="verification.config.scheduledVerificationTooltip"
+              components={{
+                docsLink: (
+                  <a
+                    href={getWebsitePageUrl('restoreVerification', locale)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  />
+                ),
+              }}
+            />
           }
         >
           <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
@@ -199,7 +203,9 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
       {config.isScheduledVerificationEnabled && (
         <>
           <div className="mt-5 mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-            <div className="mb-1 min-w-[180px] sm:mb-0">Verification interval</div>
+            <div className="mb-1 min-w-[180px] sm:mb-0 sm:pr-2">
+              {t('verification.config.interval')}
+            </div>
             <Select
               value={
                 isAfterBackup ? VerificationScheduleType.AFTER_BACKUP : verificationInterval?.type
@@ -208,30 +214,30 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
               size="small"
               className="w-full max-w-[200px] grow"
               options={[
-                { label: 'After backup', value: VerificationScheduleType.AFTER_BACKUP },
-                { label: 'Hourly', value: IntervalType.HOURLY },
-                { label: 'Daily', value: IntervalType.DAILY },
-                { label: 'Weekly', value: IntervalType.WEEKLY },
-                { label: 'Monthly', value: IntervalType.MONTHLY },
-                { label: 'Cron', value: IntervalType.CRON },
+                {
+                  label: t('verification.config.afterBackup'),
+                  value: VerificationScheduleType.AFTER_BACKUP,
+                },
+                ...Object.values(IntervalType).map((intervalType) => ({
+                  label: t(INTERVAL_TYPE_LABEL_KEYS[intervalType]),
+                  value: intervalType,
+                })),
               ]}
             />
           </div>
 
           {isAfterBackup && (
             <div className="mb-1 flex w-full flex-col items-start text-xs text-gray-600 sm:flex-row sm:items-center dark:text-gray-400">
-              <div className="mb-1 min-w-[180px] sm:mb-0" />
-              <div>
-                Runs automatically after each successful backup. If there are pending in the queue,
-                they are canceled to not cause infinite queue when backups are faster than
-                verifications.
-              </div>
+              <div className="mb-1 min-w-[180px] sm:mb-0 sm:pr-2" />
+              <div>{t('verification.config.afterBackupHint')}</div>
             </div>
           )}
 
           {!isAfterBackup && verificationInterval?.type === IntervalType.WEEKLY && (
             <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-              <div className="mb-1 min-w-[180px] sm:mb-0">Verification weekday</div>
+              <div className="mb-1 min-w-[180px] sm:mb-0 sm:pr-2">
+                {t('verification.config.weekday')}
+              </div>
               <Select
                 value={displayedWeekday}
                 onChange={(localWeekday) => {
@@ -241,14 +247,19 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
                 }}
                 size="small"
                 className="w-full max-w-[200px] grow"
-                options={weekdayOptions}
+                options={WEEKDAYS.map((weekday) => ({
+                  value: weekday,
+                  label: t(WEEKDAY_LABEL_KEYS[weekday]),
+                }))}
               />
             </div>
           )}
 
           {!isAfterBackup && verificationInterval?.type === IntervalType.MONTHLY && (
             <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-              <div className="mb-1 min-w-[180px] sm:mb-0">Verification day of month</div>
+              <div className="mb-1 min-w-[180px] sm:mb-0 sm:pr-2">
+                {t('verification.config.dayOfMonth')}
+              </div>
               <InputNumber
                 min={1}
                 max={31}
@@ -267,7 +278,9 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
           {!isAfterBackup && verificationInterval?.type === IntervalType.CRON && (
             <>
               <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-                <div className="mb-1 min-w-[180px] sm:mb-0">Cron expression (UTC)</div>
+                <div className="mb-1 min-w-[180px] sm:mb-0 sm:pr-2">
+                  {t('verification.config.cron.expression')}
+                </div>
                 <div className="flex items-center">
                   <Input
                     value={verificationInterval?.cronExpression || ''}
@@ -280,12 +293,18 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
                     className="cursor-pointer"
                     title={
                       <div>
-                        <div className="font-bold">
-                          Cron format: minute hour day month weekday (UTC)
+                        <div className="font-bold">{t('verification.config.cron.format')}</div>
+                        <div className="mt-1">{t('verification.config.cron.examples')}</div>
+                        <div>
+                          {t('verification.config.cron.exampleEverySunday', {
+                            expression: '0 4 * * 0',
+                          })}
                         </div>
-                        <div className="mt-1">Examples:</div>
-                        <div>- 0 4 * * 0 - Every Sunday at 4:00 AM UTC</div>
-                        <div>- 0 */6 * * * - Every 6 hours</div>
+                        <div>
+                          {t('verification.config.cron.exampleEverySixHours', {
+                            expression: '0 */6 * * *',
+                          })}
+                        </div>
                       </div>
                     }
                   >
@@ -305,18 +324,24 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
                     const nextRun = interval.next().toDate();
                     return (
                       <div className="mb-1 flex w-full flex-col items-start text-xs text-gray-600 sm:flex-row sm:items-center dark:text-gray-400">
-                        <div className="mb-1 min-w-[180px] sm:mb-0" />
+                        <div className="mb-1 min-w-[180px] sm:mb-0 sm:pr-2" />
                         <div className="text-gray-600 dark:text-gray-400">
-                          Next run {dayjs(nextRun).local().format(dateTimeFormat.format)}
-                          <br />({dayjs(nextRun).fromNow()})
+                          <Trans
+                            i18nKey="verification.config.cron.nextRun"
+                            values={{
+                              dateTime: dayjs(nextRun).local().format(dateTimeFormat.format),
+                              relativeTime: formatRelativeTime(nextRun),
+                            }}
+                            components={{ lineBreak: <br /> }}
+                          />
                         </div>
                       </div>
                     );
                   } catch {
                     return (
                       <div className="mb-1 flex w-full flex-col items-start text-red-500 sm:flex-row sm:items-center">
-                        <div className="mb-1 min-w-[180px] sm:mb-0" />
-                        <div className="text-red-500">Invalid cron expression</div>
+                        <div className="mb-1 min-w-[180px] sm:mb-0 sm:pr-2" />
+                        <div className="text-red-500">{t('verification.config.cron.invalid')}</div>
                       </div>
                     );
                   }
@@ -328,7 +353,9 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
             verificationInterval?.type !== IntervalType.HOURLY &&
             verificationInterval?.type !== IntervalType.CRON && (
               <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-                <div className="mb-1 min-w-[180px] sm:mb-0">Verification time of day</div>
+                <div className="mb-1 min-w-[180px] sm:mb-0 sm:pr-2">
+                  {t('verification.config.timeOfDay')}
+                </div>
                 <TimePicker
                   value={localTime}
                   format={timeFormat.format}
@@ -336,18 +363,20 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
                   allowClear={false}
                   size="small"
                   className="w-full max-w-[200px] grow"
-                  onChange={(t) => {
-                    if (!t) return;
-                    const patch: Partial<Interval> = { timeOfDay: t.utc().format('HH:mm') };
+                  onChange={(pickedTime) => {
+                    if (!pickedTime) return;
+                    const patch: Partial<Interval> = {
+                      timeOfDay: pickedTime.utc().format('HH:mm'),
+                    };
 
                     if (verificationInterval?.type === IntervalType.WEEKLY && displayedWeekday) {
-                      patch.weekday = getUtcWeekday(displayedWeekday, t);
+                      patch.weekday = getUtcWeekday(displayedWeekday, pickedTime);
                     }
                     if (
                       verificationInterval?.type === IntervalType.MONTHLY &&
                       displayedDayOfMonth
                     ) {
-                      patch.dayOfMonth = getUtcDayOfMonth(displayedDayOfMonth, t);
+                      patch.dayOfMonth = getUtcDayOfMonth(displayedDayOfMonth, pickedTime);
                     }
 
                     saveInterval(patch);
@@ -357,34 +386,19 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
             )}
 
           <div className="mt-5 mb-1 flex w-full flex-col items-start sm:flex-row sm:items-start">
-            <div className="mt-0 mb-1 min-w-[180px] sm:mt-1 sm:mb-0">Notifications</div>
+            <div className="mt-0 mb-1 min-w-[180px] sm:mt-1 sm:mb-0 sm:pr-2">
+              {t('verification.config.notifications')}
+            </div>
             <div className="flex flex-col space-y-2">
-              <Checkbox
-                checked={config.sendNotificationsOn.includes(
-                  VerificationNotificationType.VerificationSuccess,
-                )}
-                onChange={(e) =>
-                  toggleNotification(
-                    VerificationNotificationType.VerificationSuccess,
-                    e.target.checked,
-                  )
-                }
-              >
-                Verification success
-              </Checkbox>
-              <Checkbox
-                checked={config.sendNotificationsOn.includes(
-                  VerificationNotificationType.VerificationFailed,
-                )}
-                onChange={(e) =>
-                  toggleNotification(
-                    VerificationNotificationType.VerificationFailed,
-                    e.target.checked,
-                  )
-                }
-              >
-                Verification failed
-              </Checkbox>
+              {Object.values(VerificationNotificationType).map((notificationType) => (
+                <Checkbox
+                  key={notificationType}
+                  checked={config.sendNotificationsOn.includes(notificationType)}
+                  onChange={(e) => toggleNotification(notificationType, e.target.checked)}
+                >
+                  {t(VERIFICATION_NOTIFICATION_TYPE_LABEL_KEYS[notificationType])}
+                </Checkbox>
+              ))}
             </div>
           </div>
         </>
@@ -392,7 +406,7 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
 
       <div className="mt-6 flex justify-end space-x-2">
         <Button onClick={onClose} disabled={isSaving}>
-          Cancel
+          {t('common.actions.cancel')}
         </Button>
 
         <Button
@@ -401,7 +415,7 @@ export const EditBackupVerificationConfigComponent = ({ databaseId, onClose }: P
           loading={isSaving}
           disabled={!isUnsaved || !isAllFieldsFilled}
         >
-          Save
+          {t('common.actions.save')}
         </Button>
       </div>
     </div>

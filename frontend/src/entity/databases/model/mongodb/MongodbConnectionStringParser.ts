@@ -1,3 +1,5 @@
+import type { LocalizedText } from '../../../../shared/i18n';
+
 export type ParseResult = {
   host: string;
   port: number;
@@ -11,9 +13,12 @@ export type ParseResult = {
 };
 
 export type ParseError = {
-  error: string;
+  error: LocalizedText;
   format?: string;
 };
+
+// eslint-disable-next-line i18next/no-literal-string -- MongoDB's built-in authentication database
+const DEFAULT_AUTH_DATABASE = 'admin';
 
 export class MongodbConnectionStringParser {
   /**
@@ -29,7 +34,7 @@ export class MongodbConnectionStringParser {
     const trimmed = connectionString.trim();
 
     if (!trimmed) {
-      return { error: 'Connection string is empty' };
+      return { error: { key: 'databases.connectionString.errors.empty' } };
     }
 
     // Try key-value format (contains key=value pairs without ://)
@@ -43,7 +48,7 @@ export class MongodbConnectionStringParser {
     }
 
     return {
-      error: 'Unrecognized connection string format',
+      error: { key: 'databases.connectionString.errors.unrecognizedFormat' },
     };
   }
 
@@ -68,16 +73,16 @@ export class MongodbConnectionStringParser {
       const rawPassword = decodeURIComponent(url.password);
       const password = this.isPasswordPlaceholder(rawPassword) ? '' : rawPassword;
       const database = decodeURIComponent(url.pathname.slice(1));
-      const authDatabase = this.getAuthSource(url.search) || 'admin';
+      const authDatabase = this.getAuthSource(url.search) || DEFAULT_AUTH_DATABASE;
       const useTls = isSrv ? true : this.checkTlsMode(url.search);
       const isDirectConnection = this.checkDirectConnection(url.search);
 
       if (!host) {
-        return { error: 'Host is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.hostMissing' } };
       }
 
       if (!username) {
-        return { error: 'Username is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.usernameMissing' } };
       }
 
       return {
@@ -91,9 +96,9 @@ export class MongodbConnectionStringParser {
         isSrv,
         isDirectConnection,
       };
-    } catch (e) {
+    } catch {
       return {
-        error: `Failed to parse connection string: ${(e as Error).message}`,
+        error: { key: 'databases.connectionString.errors.parseFailed' },
         format: 'URI',
       };
     }
@@ -118,19 +123,19 @@ export class MongodbConnectionStringParser {
       const username = params['user'] || params['username'];
       const rawPassword = params['password'];
       const password = this.isPasswordPlaceholder(rawPassword) ? '' : rawPassword || '';
-      const authDatabase = params['authSource'] || params['authDatabase'] || 'admin';
+      const authDatabase = params['authSource'] || params['authDatabase'] || DEFAULT_AUTH_DATABASE;
       const tls = params['tls'] || params['ssl'];
 
       if (!host) {
         return {
-          error: 'Host is missing from connection string. Use host=hostname',
+          error: { key: 'databases.connectionString.errors.keyValue.hostMissing' },
           format: 'key-value',
         };
       }
 
       if (!username) {
         return {
-          error: 'Username is missing from connection string. Use user=username',
+          error: { key: 'databases.connectionString.errors.keyValue.usernameMissing' },
           format: 'key-value',
         };
       }
@@ -149,9 +154,9 @@ export class MongodbConnectionStringParser {
         isSrv: false,
         isDirectConnection,
       };
-    } catch (e) {
+    } catch {
       return {
-        error: `Failed to parse key-value connection string: ${(e as Error).message}`,
+        error: { key: 'databases.connectionString.errors.keyValue.parseFailed' },
         format: 'key-value',
       };
     }
@@ -197,6 +202,7 @@ export class MongodbConnectionStringParser {
     if (!tlsValue) return false;
 
     const lowercased = tlsValue.toLowerCase();
+    // eslint-disable-next-line i18next/no-literal-string -- connection string parameter values
     const enabledValues = ['true', 'yes', '1'];
     return enabledValues.includes(lowercased);
   }

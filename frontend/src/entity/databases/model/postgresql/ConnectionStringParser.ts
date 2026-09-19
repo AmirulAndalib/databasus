@@ -1,3 +1,4 @@
+import type { LocalizedText } from '../../../../shared/i18n';
 import { PostgresSslMode } from './PostgresSslMode';
 
 const IPV4_PATTERN = /^\d{1,3}(\.\d{1,3}){3}$/;
@@ -12,7 +13,7 @@ export type ParseResult = {
 };
 
 export type ParseError = {
-  error: string;
+  error: LocalizedText;
   format?: string;
 };
 
@@ -42,7 +43,7 @@ export class ConnectionStringParser {
     const trimmed = connectionString.trim();
 
     if (!trimmed) {
-      return { error: 'Connection string is empty' };
+      return { error: { key: 'databases.connectionString.errors.empty' } };
     }
 
     // Try JDBC format first (starts with jdbc:)
@@ -61,7 +62,7 @@ export class ConnectionStringParser {
     }
 
     return {
-      error: 'Unrecognized connection string format',
+      error: { key: 'databases.connectionString.errors.unrecognizedFormat' },
     };
   }
 
@@ -109,19 +110,19 @@ export class ConnectionStringParser {
 
       // Validate required fields
       if (!host) {
-        return { error: 'Host is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.hostMissing' } };
       }
 
       if (!username) {
-        return { error: 'Username is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.usernameMissing' } };
       }
 
       if (!password) {
-        return { error: 'Password is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.passwordMissing' } };
       }
 
       if (!database) {
-        return { error: 'Database name is missing from connection string' };
+        return { error: { key: 'databases.connectionString.errors.databaseMissing' } };
       }
 
       return {
@@ -132,9 +133,9 @@ export class ConnectionStringParser {
         database,
         sslMode,
       };
-    } catch (e) {
+    } catch {
       return {
-        error: `Failed to parse connection string: ${(e as Error).message}`,
+        error: { key: 'databases.connectionString.errors.parseFailed' },
         format: 'URI',
       };
     }
@@ -148,8 +149,10 @@ export class ConnectionStringParser {
 
       if (!match) {
         return {
-          error:
-            'Invalid JDBC connection string format. Expected: jdbc:postgresql://host:port/database?user=x&password=y',
+          error: {
+            key: 'databases.connectionString.errors.jdbc.invalidFormat',
+            params: { expectedFormat: 'jdbc:postgresql://host:port/database?user=x&password=y' },
+          },
           format: 'JDBC',
         };
       }
@@ -158,7 +161,7 @@ export class ConnectionStringParser {
 
       if (!queryString) {
         return {
-          error: 'JDBC connection string is missing query parameters (user and password)',
+          error: { key: 'databases.connectionString.errors.jdbc.queryParametersMissing' },
           format: 'JDBC',
         };
       }
@@ -170,14 +173,14 @@ export class ConnectionStringParser {
 
       if (!username) {
         return {
-          error: 'Username (user parameter) is missing from JDBC connection string',
+          error: { key: 'databases.connectionString.errors.jdbc.usernameMissing' },
           format: 'JDBC',
         };
       }
 
       if (!password) {
         return {
-          error: 'Password parameter is missing from JDBC connection string',
+          error: { key: 'databases.connectionString.errors.jdbc.passwordMissing' },
           format: 'JDBC',
         };
       }
@@ -190,9 +193,9 @@ export class ConnectionStringParser {
         database: decodeURIComponent(database),
         sslMode,
       };
-    } catch (e) {
+    } catch {
       return {
-        error: `Failed to parse JDBC connection string: ${(e as Error).message}`,
+        error: { key: 'databases.connectionString.errors.jdbc.parseFailed' },
         format: 'JDBC',
       };
     }
@@ -223,28 +226,28 @@ export class ConnectionStringParser {
 
       if (!host) {
         return {
-          error: 'Host is missing from connection string. Use host=hostname',
+          error: { key: 'databases.connectionString.errors.keyValue.hostMissing' },
           format: 'libpq',
         };
       }
 
       if (!username) {
         return {
-          error: 'Username is missing from connection string. Use user=username',
+          error: { key: 'databases.connectionString.errors.keyValue.usernameMissing' },
           format: 'libpq',
         };
       }
 
       if (!password) {
         return {
-          error: 'Password is missing from connection string. Use password=yourpassword',
+          error: { key: 'databases.connectionString.errors.keyValue.passwordMissing' },
           format: 'libpq',
         };
       }
 
       if (!database) {
         return {
-          error: 'Database name is missing from connection string. Use dbname=database',
+          error: { key: 'databases.connectionString.errors.libpq.databaseMissing' },
           format: 'libpq',
         };
       }
@@ -259,9 +262,9 @@ export class ConnectionStringParser {
         database,
         sslMode,
       };
-    } catch (e) {
+    } catch {
       return {
-        error: `Failed to parse libpq connection string: ${(e as Error).message}`,
+        error: { key: 'databases.connectionString.errors.libpq.parseFailed' },
         format: 'libpq',
       };
     }

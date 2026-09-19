@@ -22,3 +22,5 @@ export type { SendResetPasswordCodeRequest } from './model/SendResetPasswordCode
 export type { ResetPasswordRequest } from './model/ResetPasswordRequest';
 export { UserRole } from './model/UserRole';
 export { WorkspaceRole } from './model/WorkspaceRole';
+export { USER_ROLE_LABEL_KEYS } from './model/UserRoleLabelKeys';
+export { WORKSPACE_ROLE_LABEL_KEYS } from './model/WorkspaceRoleLabelKeys';

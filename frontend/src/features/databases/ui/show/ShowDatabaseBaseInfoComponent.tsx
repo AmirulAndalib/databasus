@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
+
 import {
+  DATABASE_TYPE_LABEL_KEYS,
   type Database,
   getDatabaseLogoFromType,
-  getDatabaseTypeLabel,
 } from '../../../../entity/databases';
 
 interface Props {
@@ -11,25 +13,23 @@ interface Props {
 }
 
 export const ShowDatabaseBaseInfoComponent = ({ database, isShowName, isShowType }: Props) => {
+  const { t } = useTranslation();
+
   return (
     <div>
       {isShowName && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Name</div>
+          <div className="min-w-[150px] pr-2">{t('common.fields.name')}</div>
           <div>{database.name || ''}</div>
         </div>
       )}
 
       {isShowType && (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Database type</div>
+          <div className="min-w-[150px] pr-2">{t('databases.fields.databaseType')}</div>
           <div className="flex items-center">
-            <span>{getDatabaseTypeLabel(database.type)}</span>
-            <img
-              src={getDatabaseLogoFromType(database.type)}
-              alt="databaseIcon"
-              className="ml-2 h-4 w-4"
-            />
+            <span>{t(DATABASE_TYPE_LABEL_KEYS[database.type])}</span>
+            <img src={getDatabaseLogoFromType(database.type)} alt="" className="ml-2 h-4 w-4" />
           </div>
         </div>
       )}

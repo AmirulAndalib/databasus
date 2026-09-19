@@ -1,0 +1,1723 @@
+import type { en } from './en';
+
+export const zh: typeof en = {
+  language: {
+    nativeName: '中文',
+  },
+  common: {
+    actions: {
+      add: '添加',
+      back: '返回',
+      cancel: '取消',
+      close: '关闭',
+      confirm: '确认',
+      continue: '继续',
+      copy: '复制',
+      create: '创建',
+      delete: '删除',
+      download: '下载',
+      edit: '编辑',
+      ok: '确定',
+      refresh: '刷新',
+      remove: '移除',
+      retry: '重试',
+      save: '保存',
+    },
+    answers: {
+      no: '否',
+      yes: '是',
+    },
+    fields: {
+      host: '主机',
+      name: '名称',
+      password: '密码',
+      port: '端口',
+      status: '状态',
+      type: '类型',
+      username: '用户名',
+    },
+    states: {
+      disabled: '已禁用',
+      enabled: '已启用',
+      loading: '加载中…',
+    },
+    messages: {
+      copiedToClipboard: '已复制到剪贴板',
+    },
+    // Joins translated words into one list (Chinese uses 、)
+    listSeparator: '、',
+    confirmation: {
+      title: '确认',
+    },
+  },
+  app: {
+    documentTitle: 'Databasus - 数据库备份（PostgreSQL、MySQL、MongoDB）',
+    languageControl: {
+      title: '语言：{{language}}',
+    },
+    theme: {
+      title: '主题：{{theme}}',
+      light: '浅色',
+      dark: '深色',
+      system: '跟随系统',
+    },
+    navigation: {
+      databases: '数据库',
+      storages: '存储',
+      notifiers: '通知渠道',
+      workspaceSettings: '设置',
+      profile: '个人资料',
+      databasusSettings: 'Databasus 设置',
+      users: '用户',
+      docs: '文档',
+      documentation: '文档',
+      community: '社区',
+      newVersionAvailable: '有新版本可用',
+    },
+    diskUsage: {
+      title: '磁盘用量',
+      hint: '在本地创建和恢复备份需要足够的磁盘空间。恢复时需要的可用空间与备份大小相同。',
+      compactSummary: '磁盘已用 {{used}} / {{total}} GB<lineBreak/>（{{percent}}%）',
+      summary: '已用 {{used}} / {{total}} GB（{{percent}}%）',
+    },
+    workspaceSelection: {
+      createShort: '创建',
+      create: '创建工作区',
+      selected: '当前工作区',
+      placeholder: '选择工作区',
+      search: '搜索工作区',
+      notFound: '未找到工作区',
+      createNew: '+ 新建工作区',
+    },
+    sponsorship: {
+      link: '赞助',
+      hint: 'Databasus 帮你保住了数据？欢迎支持 Databasus，让它继续免费、持续维护、保持独立。',
+    },
+    starButton: {
+      label: '在 GitHub 上加星标',
+      ariaLabel: '在 GitHub 上为 databasus/databasus 加星标',
+    },
+    clipboardPaste: {
+      title: '从剪贴板粘贴',
+      submit: '提交',
+      description: '无法自动读取剪贴板，请在下方粘贴内容。',
+      placeholder: '在此粘贴连接字符串',
+    },
+    auth: {
+      adminPasswordCheckFailed: '无法检查管理员密码状态：{{error}}',
+    },
+    oauthCallback: {
+      failedTitle: '认证失败',
+      codeNotFound: '未找到授权码',
+      stateMissing: '缺少 OAuth state 参数',
+      invalidProvider: '无效的 OAuth 提供方',
+      returnToSignIn: '返回登录',
+      completing: '正在完成认证…',
+    },
+    oauthStorage: {
+      configNotFound: '未找到 Google Drive 存储配置',
+      exchangeFailed: 'OAuth 授权码交换失败',
+      unsupportedType: '该存储类型不支持 OAuth',
+      invalidState: 'OAuth state 参数无效',
+      paramNotFound: '未找到 OAuth 参数。请确认重定向 URL 配置正确。',
+      addStorageTitle: '添加存储',
+      storageDescription: '存储是存放备份的位置（本地磁盘、S3 等）',
+    },
+  },
+  errors: {
+    unknown: '出了点问题，请重试。',
+    networkUnreachable: '无法连接 Databasus 服务器。请检查网络连接后重试。',
+    requestFailed: '服务器未能完成请求（HTTP {{status}}）。请稍后重试。',
+  },
+  status: {
+    logicalBackup: {
+      inProgress: '进行中',
+      completed: '成功',
+      failed: '失败',
+      deleted: '已删除',
+      canceled: '已取消',
+    },
+    physicalBackup: {
+      inProgress: '进行中',
+      completed: '成功',
+      error: '错误',
+      chainBroken: '备份链中断',
+      canceled: '已取消',
+    },
+    restoreVerification: {
+      verifiedSuccessful: '已验证',
+      verificationFailed: '验证失败',
+    },
+    restore: {
+      inProgress: '进行中',
+      completed: '成功',
+      failed: '失败',
+      canceled: '已取消',
+    },
+    verification: {
+      pending: '排队中',
+      running: '运行中',
+      completed: '成功',
+      failed: '失败',
+      canceled: '已取消',
+    },
+    health: {
+      available: '可用',
+      unavailable: '不可用',
+    },
+    agent: {
+      neverSeen: '从未连接',
+      online: '在线',
+      stale: '响应延迟',
+      offline: '离线',
+    },
+  },
+  intervals: {
+    types: {
+      hourly: '每小时',
+      daily: '每天',
+      weekly: '每周',
+      monthly: '每月',
+      cron: 'Cron',
+    },
+    weekdays: {
+      mon: '周一',
+      tue: '周二',
+      wed: '周三',
+      thu: '周四',
+      fri: '周五',
+      sat: '周六',
+      sun: '周日',
+    },
+    periods: {
+      day: '1 天',
+      week: '1 周',
+      month: '1 个月',
+      threeMonths: '3 个月',
+      sixMonths: '6 个月',
+      year: '1 年',
+      twoYears: '2 年',
+      threeYears: '3 年',
+      fourYears: '4 年',
+      fiveYears: '5 年',
+      forever: '永久',
+    },
+  },
+  auditLogs: {
+    title: '审计日志',
+    columns: {
+      user: '用户',
+      message: '事件',
+      workspace: '工作区',
+      created: '时间',
+    },
+    systemUser: '系统',
+    loadedOfTotal: '已加载：{{loaded}} / {{total}}',
+    empty: '没有审计日志。',
+    loadingMore: '正在加载更多日志…',
+    allLoaded: '已加载全部日志（共 {{count}} 条）',
+  },
+  settings: {
+    title: 'Databasus 设置',
+    externalRegistrations: {
+      title: '允许外部注册',
+      description: '开启后，新用户可以自行注册 Databasus 账号。关闭后，新用户只能通过邀请注册。',
+    },
+    memberInvitations: {
+      title: '允许成员邀请',
+      description: '开启后，现有成员可以邀请新用户加入 Databasus。关闭后，只有管理员能邀请用户。',
+    },
+    memberWorkspaceCreation: {
+      title: '允许成员创建工作区',
+      description:
+        '开启后，成员（非管理员用户）可以创建新的工作区。关闭后，只有管理员能创建工作区。',
+    },
+    saving: '正在保存…',
+    saveChanges: '保存更改',
+    reset: '重置',
+    updated: '设置已更新',
+    readMore: '关于这些设置的详细说明，请<docsLink>查看文档</docsLink>',
+    healthcheck: {
+      title: '可用性检查',
+      openInNewTab: '点击在新标签页中打开',
+      copied: '可用性检查地址已复制到剪贴板',
+      description: '通过这个地址监控 Databasus 系统是否可用',
+    },
+  },
+  databases: {
+    types: {
+      postgresql: 'PostgreSQL',
+      mysql: 'MySQL',
+      mariadb: 'MariaDB',
+      mongodb: 'MongoDB',
+    },
+    sslModes: {
+      disable: '禁用',
+      require: '必需',
+      verifyCa: '验证 CA',
+      verifyFull: '完全验证',
+    },
+    physicalBackupTypes: {
+      full: '仅全量备份',
+      fullIncremental: '全量 + 增量',
+      fullIncrementalWalStream: '全量 + 增量 + WAL 流式传输',
+    },
+    list: {
+      addDatabase: '添加数据库',
+      searchPlaceholder: '搜索数据库',
+      noSearchResults: '没有找到与“{{query}}”匹配的数据库',
+      description: '数据库就是我们要备份的对象',
+      backToList: '← 返回数据库列表',
+    },
+    card: {
+      storage: '存储：<storageName/>',
+      lastBackup: '上次备份：{{relativeTime}}',
+      hasBackupError: '备份出错',
+    },
+    tabs: {
+      config: '配置',
+      backups: '备份',
+      verifications: '恢复验证',
+    },
+    create: {
+      title: '添加要备份的数据库',
+      namePlaceholder: '我最爱的数据库',
+      creating: '正在创建数据库…',
+      complete: '完成',
+      backupType: {
+        title: '选择备份类型',
+        logical: {
+          title: '逻辑备份',
+          description: '推荐用于 50 GB 以下的数据库，配置更简单。',
+        },
+        physical: {
+          title: '物理备份',
+          description: '适用于 50 GB 以上的数据库。支持时间点恢复，RPO/RTO 更好，但需要额外配置。',
+        },
+      },
+    },
+    config: {
+      namePlaceholder: '输入名称',
+      removing: '正在删除数据库…',
+      lastBackupError: {
+        title: '上次备份出错',
+        errorLabel: '错误：',
+        clearHint: '清除此错误（任选其一）：',
+        clearByTestingConnection: '- 用下方按钮测试连接（即使你已经修改了设置）；',
+        clearByNextBackup: '- 等待下一次备份成功完成；',
+      },
+      sections: {
+        database: '数据库设置',
+        backupConfig: '备份配置',
+        healthcheck: '可用性检查设置',
+        restoreVerification: '恢复验证',
+        notifiers: '通知渠道设置',
+      },
+      copyConfirmation: '确定要复制这个数据库吗？系统会创建一个设置相同的新数据库。',
+      removeConfirmation: '确定要删除这个数据库吗？此操作无法撤销。',
+      copied: {
+        title: '数据库已复制',
+        description: '已创建“{{name}}”',
+      },
+      connectionTestSucceeded: {
+        title: '连接测试成功',
+        description: '数据库连接测试通过',
+      },
+    },
+    actions: {
+      testConnection: '测试连接',
+      replace: '替换',
+    },
+    fields: {
+      databaseType: '数据库类型',
+      version: '{{engine}} 版本',
+      databaseName: '数据库名',
+      sslMode: 'SSL 模式',
+      useHttps: '使用 HTTPS',
+      cpuCount: 'CPU 数量',
+      backupType: '备份类型',
+      clientCertificate: '客户端证书',
+      clientKey: '客户端私钥',
+      serverCaCertificate: '服务器 CA 证书',
+      includeSchemas: '包含的模式',
+      excludeTables: '排除的表',
+      skipUserMappings: '跳过用户映射',
+      excludeExtensions: '排除扩展',
+      restoreOwnership: '恢复所有者',
+      restorePrivileges: '恢复权限',
+      excludeEvents: '排除事件',
+      galeraReplication: 'Galera 复制',
+      useSrvConnection: '使用 SRV 连接',
+      directConnection: '直接连接',
+      authDatabase: '认证数据库',
+      excludeCollections: '排除的集合',
+    },
+    edit: {
+      parseFromClipboard: '从剪贴板解析',
+      clipboardEmpty: '剪贴板为空',
+      clipboardReadFailed: '无法读取剪贴板。请检查浏览器权限。',
+      connectionStringParsed: '已解析连接字符串',
+      connectionStringParsedWithoutPassword: '已解析连接字符串，请手动输入密码。',
+      connectionTestPassed: {
+        title: '连接测试通过',
+        description: '可以继续下一步',
+      },
+      ipWhitelistHint:
+        '如果数据库启用了 IP 白名单，请确保已将 Databasus 服务器的 IP 加入允许列表。',
+      localhostHint: '请<docsLink>阅读这篇文档</docsLink>，了解如何备份本地数据库',
+      advancedSettings: '高级设置',
+      placeholders: {
+        host: '输入 {{engine}} 主机',
+        port: '输入 {{engine}} 端口',
+        username: '输入 {{engine}} 用户名',
+        password: '输入 {{engine}} 密码',
+        databaseName: '输入 {{engine}} 数据库名',
+      },
+      cpuCountTooltip:
+        '备份和恢复时使用的 CPU 核心数。数值越大，速度可能越快，但占用的资源也越多。',
+      excludeTablesPlaceholder: '未排除任何表',
+      excludeTablesTooltip: '不纳入备份的表名。可以粘贴以逗号或换行分隔的列表。',
+      serverCaCertificateTooltip:
+        '可选。填写后，会用这个 CA 验证服务器证书（verify-ca / verify-full）。',
+      copyFailed: '复制失败',
+      postgresql: {
+        supabaseHint: '请<docsLink>阅读这篇文档</docsLink>，了解如何备份 Supabase 数据库',
+        includeSchemasPlaceholder: '所有模式（默认）',
+        excludeTablesTooltip:
+          "不纳入备份的表。格式为 'tablename' 或 'schema.tablename'，支持 glob 模式（例如 'logs_*'）。可以粘贴以逗号或换行分隔的列表。",
+        skipUserMappingsTooltip:
+          '恢复时跳过用户映射（CREATE USER MAPPING 语句）。如果备份所用的角色无法读取映射中的凭据，请开启此项：否则转储出的映射会丢失选项（OPTIONS），导致 oracle_fdw 等 FDW 恢复失败。',
+        excludeExtensionsTooltip:
+          '恢复时跳过扩展（CREATE EXTENSION 语句）。如果要恢复到由服务商管理扩展的托管 PostgreSQL 服务，请开启此项。',
+        restoreOwnershipTooltip:
+          '执行转储中的 ALTER OWNER 语句，让恢复出的对象保留原来的所有者。连接用户必须能分配这些角色，通常需要超级用户。',
+        restorePrivilegesTooltip:
+          '执行转储中的 GRANT 和 REVOKE 语句，让恢复出的对象保留原来的 ACL。连接用户必须能向相关角色授权，通常需要超级用户。',
+        backupTypeTooltips: {
+          full: '定期创建独立的全量备份，每个备份都自成一体。',
+          fullIncremental:
+            '全量备份加上增量备份。增量备份只保存自上一次备份以来的变化，体积更小，速度更快。',
+          fullIncrementalWalStream:
+            '在全量和增量备份之上增加持续的 WAL 流式传输。只有这个选项支持时间点恢复（PITR），但占用空间更多，恢复也更慢。',
+        },
+      },
+      mariadb: {
+        skipEvents: '跳过事件',
+        skipEventsTooltip:
+          '备份时跳过数据库事件。如果 MariaDB 服务器上禁用了事件调度器，请开启此项。',
+        skipGaleraDisable: '恢复时不禁用',
+        skipGaleraDisableTooltip:
+          '默认情况下，Databasus 在恢复时执行 SET SESSION wsrep_on=OFF，以避免 Galera writeset 大小错误。这需要 SUPER 权限。如果托管服务商不授予 SUPER 权限，请开启此项跳过这一步，但大型恢复可能会触及 Galera 的 writeset 限制。',
+      },
+      mongodb: {
+        srvTooltip: '连接 MongoDB Atlas 的 SRV 地址（mongodb+srv://）时开启。SRV 连接不需要端口。',
+        srvOverTunnelTooltip: '通过 SSH 隧道连接时不可用：SRV 会自行解析主机列表，绕过转发的端口。',
+        directConnectionTooltip:
+          '直接连接单个服务器，跳过副本集发现。适用于服务器位于负载均衡器、代理或隧道之后的情况。',
+        directConnectionOverTunnelTooltip:
+          '启用 SSH 隧道时强制开启：隧道只暴露一个地址，因此无法使用副本集发现。',
+        excludeCollectionsPlaceholder: '未排除任何集合',
+        excludeCollectionsTooltip: '不纳入备份的集合名。可以粘贴以逗号或换行分隔的列表。',
+      },
+    },
+    show: {
+      galeraDisableSkipped: '恢复时不禁用',
+    },
+    sshTunnel: {
+      authTypes: {
+        password: '密码',
+        privateKey: '私钥',
+      },
+      title: 'SSH 隧道',
+      tooltip:
+        '用于封闭网络中的数据库。Databasus 连接到下方的 SSH 主机，再由该主机通过上方填写的主机和端口访问数据库。',
+      host: 'SSH 主机',
+      hostTooltip:
+        '上方的数据库主机由 SSH 主机解析，而不是由 Databasus 解析。如果数据库就运行在 SSH 主机上，请填写 127.0.0.1。',
+      port: 'SSH 端口',
+      username: 'SSH 用户名',
+      usernamePlaceholder: '输入 SSH 用户名',
+      authType: 'SSH 认证方式',
+      credentials: 'SSH 凭据',
+      password: 'SSH 密码',
+      passwordPlaceholder: '输入 SSH 密码',
+      privateKey: 'SSH 私钥',
+      keyPassphrase: '密钥口令',
+      keyPassphrasePlaceholder: '仅用于加密的密钥',
+    },
+    notifiers: {
+      title: '通知渠道',
+      description: '通知渠道是接收通知的地方（邮件、Slack、Telegram 等）',
+      multipleHint: '可以选择多个通知渠道，通知会发送到所有选中的渠道。',
+      selectPlaceholder: '选择通知渠道',
+      createNew: '新建通知渠道',
+      addTitle: '添加通知渠道',
+      notifyTo: '通知发送到',
+      empty: '未配置通知渠道',
+    },
+    readOnlyUser: {
+      dialogTitle: '创建只读用户',
+      readOnly: {
+        checking: '正在检查只读用户…',
+        title: '为 Databasus 创建只读用户？',
+        description:
+          '只读用户是权限受限的 {{databaseType}} 用户，只能读取数据库中的数据，不能修改。备份推荐使用只读用户，因为：',
+        noWriteCredentials:
+          '<bold>使用只读用户，就完全不必保存带写权限的凭据</bold>。即使在被入侵的最坏情况下，也没有人能破坏你的数据。',
+        create: '是，创建只读用户',
+        skipTitle: '跳过创建只读用户？',
+        skipQuestion: '确定要跳过创建只读用户吗？',
+      },
+      replicationOnly: {
+        checking: '正在检查复制专用用户…',
+        title: '为 Databasus 创建复制专用用户？',
+        description:
+          '复制专用用户是权限受限的 {{databaseType}} 用户，只能读取数据库中的数据，不能修改。备份推荐使用复制专用用户，因为：',
+        noWriteCredentials:
+          '<bold>使用复制专用用户，就完全不必保存带写权限的凭据</bold>。即使在被入侵的最坏情况下，也没有人能破坏你的数据。',
+        create: '是，创建复制专用用户',
+        skipTitle: '跳过创建复制专用用户？',
+        skipQuestion: '确定要跳过创建复制专用用户吗？',
+      },
+      reasons: {
+        preventsModifications: '它能防止备份期间意外修改数据',
+        leastPrivilege: '它符合最小权限原则',
+        bestPractice: '这是安全方面的最佳实践',
+      },
+      securityNote:
+        'Databasus 采用企业级安全措施（<docsLink>详见这里</docsLink>），但不可能防范所有风险。',
+      noWritePrivileges: '当前用户<bold>没有写权限</bold>。',
+      noWriteRoles: '当前用户<bold>没有带写权限的角色</bold>。',
+      writePrivileges: '当前用户拥有以下写权限：',
+      writeRoles: '当前用户拥有以下带写权限的角色：',
+      expand: '（展开）',
+      collapse: '（收起）',
+      skip: '跳过',
+      skipRisk:
+        '不建议用拥有全部权限的用户做备份，这可能带来安全风险。Databasus 强烈建议你不要跳过这一步。',
+      skipAdvice:
+        '100% 的防护永远做不到。哪怕被完全入侵的风险只有 0.01%，也值得防范。所以更稳妥的做法是使用只读用户。',
+      acceptRisks: '是，我接受风险',
+      continueSecurely: '按安全方式继续',
+      forcedWalRotationUnavailable:
+        '源数据库不允许向新用户授予 pg_switch_wal() 的 EXECUTE 权限，而持续 WAL 流式传输需要它来让恢复点尽量接近当前时刻。使用这些凭据，全量和增量备份可以正常工作。',
+    },
+    transfer: {
+      title: '将数据库转移到其他工作区',
+      targetWorkspace: '目标工作区',
+      selectWorkspace: '选择工作区',
+      storage: {
+        title: '存储',
+        transferExisting: '连同现有存储一起转移',
+        selectFromTarget: '从目标工作区选择存储',
+        blocked: '使用此存储的数据库：{{count}}。其他数据库依赖该存储，因此无法转移。',
+        canTransfer: '存储可以转移',
+        selectPlaceholder: '选择存储',
+        createNew: '新建存储',
+        addTitle: '添加存储',
+        description: '存储是存放备份的位置（本地磁盘、S3、Google Drive 等）',
+      },
+      notifiers: {
+        title: '通知渠道（可选）',
+        transferWithDatabase: '随数据库一起转移通知渠道',
+        selectFromTarget: '从目标工作区选择通知渠道',
+        willTransfer: '将被转移：',
+        willNotTransfer: '不会被转移（其他数据库正在使用）：',
+        usedByDatabases: '{{name}}（使用它的数据库：{{count}}）',
+        noneTransferred: '不会转移任何通知渠道。转移完成后，可以从目标工作区选择通知渠道。',
+        selectPlaceholder: '选择通知渠道（可选）',
+      },
+      submit: '转移',
+      transferred: {
+        title: '数据库已转移',
+        description: '“{{name}}”已转移到新工作区',
+      },
+    },
+    connectionString: {
+      errors: {
+        empty: '连接字符串为空',
+        unrecognizedFormat: '无法识别连接字符串的格式',
+        hostMissing: '连接字符串中缺少主机',
+        usernameMissing: '连接字符串中缺少用户名',
+        passwordMissing: '连接字符串中缺少密码',
+        databaseMissing: '连接字符串中缺少数据库名',
+        parseFailed: '无法解析连接字符串',
+        jdbc: {
+          invalidFormat: 'JDBC 连接字符串格式无效。应为：{{expectedFormat}}',
+          queryParametersMissing: 'JDBC 连接字符串缺少查询参数（user 和 password）',
+          usernameMissing: 'JDBC 连接字符串中缺少用户名（user 参数）',
+          passwordMissing: 'JDBC 连接字符串中缺少 password 参数',
+          parseFailed: '无法解析 JDBC 连接字符串',
+        },
+        keyValue: {
+          hostMissing: '连接字符串中缺少主机。请使用 host=hostname',
+          usernameMissing: '连接字符串中缺少用户名。请使用 user=username',
+          passwordMissing: '连接字符串中缺少密码。请使用 password=yourpassword',
+          databaseMissing: '连接字符串中缺少数据库名。请使用 database=database',
+          parseFailed: '无法解析键值对格式的连接字符串',
+        },
+        libpq: {
+          databaseMissing: '连接字符串中缺少数据库名。请使用 dbname=database',
+          parseFailed: '无法解析 libpq 连接字符串',
+        },
+      },
+    },
+    physicalConnectionErrors: {
+      grantAsSuperuserNote: '用下面的命令授予该权限（以超级用户身份运行）。',
+      applyAndRestartNote: '应用下面的修改，然后重启 PostgreSQL。',
+      pgHbaNoEntry: {
+        title: '不允许从此主机进行复制',
+        summary:
+          'pg_hba.conf 中没有允许 Databasus 建立复制连接的条目。物理备份通过复制连接传输，需要一条“host replication”规则，普通的“host all”规则并不涵盖它。',
+        addLineNote:
+          '把下面这行加入 pg_hba.conf。第一个“all”匹配任意用户，第二个匹配任意主机。如需限制访问，可以把用户缩小到特定的复制角色，和/或把主机缩小到某个 CIDR 地址段。',
+        reloadNote: '更新 pg_hba.conf 后，<bold>重新加载 PG 配置</bold>。',
+        managedNote:
+          '在托管 PostgreSQL（RDS / Azure / GCP）上无法编辑 pg_hba.conf，请改为在服务商控制台中开启外部访问或复制访问。',
+      },
+      badCredentials: {
+        title: '用户名或密码错误',
+        summary: 'PostgreSQL 拒绝了这些凭据。请检查此数据库的用户名和密码。',
+      },
+      noReplicationPrivilege: {
+        title: '用户无法进行复制',
+        summary: '用户已连接，但缺少物理备份所需的 REPLICATION 权限。',
+        managedNote:
+          '在 AWS RDS 上执行 GRANT rds_replication TO {{username}}；在 Azure / GCP 上，请在服务商控制台中为该角色开启复制。',
+      },
+      noWalSwitchPrivilege: {
+        title: '用户无法强制切换 WAL 段',
+        summary:
+          '持续 WAL 流式传输只在源数据库关闭一个 WAL 段之后才上传它。因此对于很少写入的数据库，最新的 WAL 会一直留在源数据库上，直到 16 MB 的段写满。定时强制切换段，才能让两次备份之间的恢复点保持接近当前时刻，这需要 pg_switch_wal() 的 EXECUTE 权限。全量和增量备份不需要它：它们恢复到各自备份完成的时间点，不会重放归档的 WAL。',
+        switchBackupTypeNote:
+          '或者把备份类型切换为<bold>全量 + 增量</bold>，这种类型不会重放归档的 WAL。',
+        managedNote:
+          '在托管 PostgreSQL（RDS / Azure / GCP）上，该函数属于平台的超级用户，无法向客户角色授予它的 EXECUTE 权限，因此无法使用持续 WAL 流式传输，请改用全量 + 增量备份。',
+      },
+      walLevelInvalid: {
+        title: 'wal_level 设置过低',
+        summary: '物理备份要求 wal_level 为“replica”或“logical”，当前设置低于此要求。',
+        applyNote: '应用下面的修改，然后重启 PostgreSQL（wal_level 只有在重启后才会生效）。',
+        managedNote: '在托管 PostgreSQL 上，请在服务商的参数组中设置 wal_level。',
+      },
+      noWalSenders: {
+        title: '没有可用的 WAL 发送进程',
+        summary: 'max_wal_senders 为 0，因此 PostgreSQL 无法为备份传输 WAL。',
+        managedNote: '在托管 PostgreSQL 上，请在服务商的参数组中设置 max_wal_senders。',
+      },
+      noReplicationSlots: {
+        title: '没有可用的复制槽',
+        summary: 'max_replication_slots 为 0，因此 PostgreSQL 无法为备份分配复制槽。',
+        managedNote: '在托管 PostgreSQL 上，请在服务商的参数组中设置 max_replication_slots。',
+      },
+      walSummaryDisabled: {
+        title: 'summarize_wal 已关闭',
+        summary: '增量备份要求开启 summarize_wal，但这台服务器目前没有开启。',
+        applyNote: '应用下面的修改（无需重启）。',
+        thenNote: '然后',
+        managedNote: '在托管 PostgreSQL 上，请在服务商的参数组中设置 summarize_wal。',
+      },
+      customTablespaces: {
+        title: '不支持自定义表空间',
+        summary:
+          '该集群有 pg_default / pg_global 之外的表空间，物理备份无法传输它们。请删除自定义表空间，或把这个数据库改为逻辑备份。',
+      },
+      systemIdentifierMismatch: {
+        title: '这是另一个集群',
+        summary:
+          '此地址上集群的系统标识符（system identifier）与最初配置备份时的集群不同。请把 Databasus 指向原来的集群，或新建一个数据库条目。',
+      },
+      connectionFailed: {
+        title: '无法连接',
+        summary:
+          'Databasus 无法建立复制连接。请检查主机、端口、SSL 模式，并确认没有防火墙阻止连接。',
+      },
+    },
+  },
+  restores: {
+    list: {
+      empty: '还没有恢复记录',
+    },
+    targetDatabase: {
+      select: '选择要恢复到的数据库',
+      description:
+        '填写要把备份恢复到的数据库信息。<underline>恢复前需要先创建一个空数据库</underline>。恢复过程中，其中现有的数据都会被清除。',
+      notInUseHint:
+        '请确保该数据库当前没有被使用（你多半不会想把数据恢复到创建备份的同一个数据库）',
+      submit: '恢复到此数据库',
+    },
+    card: {
+      startedAt: '开始时间',
+      duration: '耗时',
+      errorDetailsTooltip: '点击查看错误详情',
+      cancelTooltip: '取消恢复',
+      expectedDurationHint: '恢复耗时通常是备份的 3 到 5 倍（取决于数据类型，有时更快，有时更慢）',
+      expectedDurationLimit: '因此预计最多需要 {{duration}}（通常会快得多）',
+    },
+    errorDetails: {
+      title: '恢复错误详情',
+      copied: '错误信息已复制到剪贴板',
+      excludeExtensionsTip:
+        '<bold>💡 提示：</bold>恢复到托管 PostgreSQL 服务（如 Yandex Cloud、AWS RDS 等）时通常会出现这个错误。请在恢复前到高级设置中开启<bold>“排除扩展”</bold>再试。',
+    },
+    cancelConfirmation: {
+      warning:
+        '<bold>⚠️ 警告：</bold>取消恢复很可能会让数据库处于损坏或不完整的状态。再次尝试恢复前，需要重新创建该数据库。',
+      question: '确定要取消吗？',
+      confirm: '是，取消恢复',
+    },
+  },
+  healthcheck: {
+    attempts: {
+      title: '可用性检查记录',
+      period: '时间段',
+      periods: {
+        today: '今天',
+        sevenDays: '7 天',
+        thirtyDays: '30 天',
+        allTime: '全部',
+      },
+      empty: '暂无数据',
+    },
+    config: {
+      enable: '启用可用性检查',
+      isEnabled: '是否启用可用性检查',
+      notifyWhenUnavailable: '不可用时通知',
+      checkIntervalMinutes: '检查间隔（分钟）',
+      attemptsBeforeDown: '判定不可用前的尝试次数',
+      storeAttemptsDays: '记录保留时长（天）',
+      tooltips: {
+        enable: '为此数据库启用或禁用可用性检查',
+        notifyWhenUnavailable: '数据库变为不可用时发送通知',
+        checkIntervalMinutes: '多久检查一次数据库的可用性（分钟）',
+        attemptsBeforeDown: '失败多少次后将数据库标记为不可用',
+        storeAttemptsDays: '可用性检查记录保留多少天',
+      },
+    },
+  },
+  workspaces: {
+    roles: {
+      owner: '所有者',
+      admin: '管理员',
+      member: '成员',
+      viewer: '查看者',
+    },
+    fields: {
+      name: '工作区名称',
+      namePlaceholder: '输入工作区名称',
+    },
+    create: {
+      title: '创建工作区',
+      submit: '创建工作区',
+      defaultName: '我的工作区',
+      description:
+        '工作区用来集中管理：<lineBreak/>- 你的数据库；<lineBreak/>- 存储（本地磁盘、S3、Google Drive 等）；<lineBreak/>- 通知渠道（邮件、Slack、Telegram 等）；<lineBreak/>- 访问控制（如果你有团队）。',
+      nameRequired: '请输入工作区名称',
+      created: '工作区已创建',
+      permissionDenied: {
+        title: '权限不足',
+        description: '你没有创建工作区的权限。请联系管理员为你创建工作区。',
+      },
+    },
+    settings: {
+      title: '工作区设置',
+      readOnly: '你没有修改这些设置的权限',
+      nameRequired: '工作区名称不能为空',
+      saving: '正在保存…',
+      saveChanges: '保存更改',
+      reset: '重置',
+      updated: '基本信息已更新',
+    },
+    delete: {
+      dangerZone: '危险区域',
+      title: '删除此工作区',
+      description: '工作区删除后无法撤销。与该工作区关联的所有数据和资源都将被永久删除。',
+      submit: '删除工作区',
+      deleting: '正在删除…',
+      notFound: '未找到工作区',
+      noPermission: '你没有删除此工作区的权限',
+      hasDatabases: '无法删除工作区，请先删除其中所有数据库。当前数据库数量：{{count}}。',
+      deleted: '工作区已删除',
+      confirmation: {
+        title: '删除工作区',
+        question: '确定要删除工作区 <workspaceName/> 吗？',
+        warning: '<bold>此操作无法撤销。</bold>所有数据和关联资源都将被永久删除。',
+        submit: '删除工作区',
+      },
+    },
+    members: {
+      title: '用户',
+      count: '成员：{{count}}',
+      empty: '没有成员',
+      emptyHint: '点击“添加成员”开始',
+      fields: {
+        member: '成员',
+        role: '角色',
+        joined: '加入时间',
+        actions: '操作',
+        email: '邮箱地址',
+        emailPlaceholder: '输入邮箱地址',
+      },
+      add: {
+        button: '添加成员',
+        title: '添加成员',
+        submit: '添加成员',
+        emailRequired: '请输入邮箱',
+        hint: '如果该用户已存在，会被直接添加；否则会向其发送邀请。',
+        added: '成员已添加',
+      },
+      invited: {
+        title: '已邀请用户',
+        sentTo: '邀请已发送至 {{email}}',
+        description:
+          '该用户还没有注册，但已受邀加入工作区。用这个邮箱注册后，将自动成为工作区成员。',
+      },
+      roleChanged: '成员角色已更新',
+      remove: {
+        tooltip: '移除成员',
+        title: '移除成员',
+        question: '确定要将“{{email}}”从此工作区移除吗？',
+        removed: '已移除成员“{{email}}”',
+      },
+    },
+    transferOwnership: {
+      button: '转让所有权',
+      title: '转让工作区所有权',
+      submit: '转让所有权',
+      warning:
+        '<bold>警告：</bold>此操作无法撤销。你将失去此工作区的所有权，新的所有者将获得完全控制权。',
+      noEligibleMembers:
+        '没有可以转让所有权的成员。工作区中至少还要有一位其他成员，才能转让所有权。',
+      newOwner: '选择新所有者',
+      newOwnerPlaceholder: '选择要转让所有权的成员',
+      newOwnerHint: '所选成员将成为工作区所有者',
+      memberRequired: '请选择要转让所有权的成员',
+      memberNotFound: '未找到所选成员',
+      transferred: '所有权已转让',
+    },
+    auditLogs: {
+      empty: '此工作区没有审计日志。',
+    },
+  },
+  users: {
+    roles: {
+      admin: '管理员',
+      member: '成员',
+    },
+    fields: {
+      name: '姓名',
+      email: '邮箱',
+      yourName: '你的姓名',
+      yourEmail: '你的邮箱',
+      confirmPassword: '确认密码',
+      newPassword: '新密码',
+    },
+    validation: {
+      nameRequired: '请输入姓名',
+      emailRequired: '请输入邮箱',
+      passwordTooShort: '密码长度至少为 {{minLength}} 个字符',
+      passwordsDoNotMatch: '两次输入的密码不一致',
+    },
+    oauth: {
+      divider: '或使用邮箱继续',
+      continueWithGithub: '使用 GitHub 继续',
+      continueWithGoogle: '使用 Google 继续',
+      invalidConfiguration: 'OAuth 配置无效',
+    },
+    signIn: {
+      title: '登录',
+      submit: '登录',
+      noAccount: '还没有账号？<signUpLink>注册</signUpLink>',
+      forgotPassword: '忘记密码？',
+    },
+    signUp: {
+      title: '注册',
+      namePlaceholder: '张三',
+      submit: '注册',
+      hasAccount: '已有账号？<signInLink>登录</signInLink>',
+    },
+    adminPassword: {
+      title: '注册管理员',
+      description: '之后你就可以用登录名“admin”和你设置的密码登录',
+      submit: '设置密码',
+    },
+    requestPasswordReset: {
+      title: '重置密码',
+      description: '输入你的邮箱地址，我们会给你发送重置码。',
+      submit: '发送重置码',
+      codeSent: '如果该邮箱已注册，重置码已发送',
+      rememberPassword: '想起密码了？<signInLink>登录</signInLink>',
+    },
+    resetPassword: {
+      title: '重置密码',
+      description: '输入邮件中的重置码和新密码。',
+      code: '重置码',
+      confirmPassword: '确认密码',
+      submit: '重置密码',
+      invalidCode: '重置码必须是 6 位数字',
+      succeeded: '密码已重置，正在跳转到登录页…',
+      noCode: '没有收到重置码？<requestCodeLink>重新获取</requestCodeLink>',
+      backToSignIn: '返回登录',
+    },
+    profile: {
+      title: '个人资料',
+      information: '个人信息',
+      userId: '用户 ID',
+      namePlaceholder: '输入你的姓名',
+      emailPlaceholder: '输入你的邮箱',
+      adminEmailReadOnly: '管理员邮箱不能修改',
+      role: '角色',
+      saveChanges: '保存更改',
+      noChanges: '没有需要保存的更改',
+      updated: '个人资料已更新',
+      logout: '退出登录',
+      changePassword: {
+        title: '修改密码',
+        newPasswordPlaceholder: '输入新密码',
+        confirmPassword: '确认新密码',
+        confirmPasswordPlaceholder: '再次输入新密码',
+        passwordsDoNotMatch: '两次输入的新密码不一致',
+        changing: '正在修改密码…',
+        submit: '修改密码',
+        signedInWithNewPassword: '已使用新密码登录',
+      },
+    },
+    list: {
+      title: 'Databasus 用户',
+      loadedOfTotal: '用户：{{loaded}} / {{total}}',
+      searchPlaceholder: '按邮箱或姓名搜索',
+      empty: '没有找到用户。',
+      allLoaded: '已加载全部用户（共 {{count}} 位）',
+      columns: {
+        user: '用户',
+        systemRole: '系统角色',
+        isActive: '激活状态',
+        created: '创建时间',
+      },
+      roleLabel: '角色：',
+      activeLabel: '激活：',
+      viewAuditLogs: '查看审计日志',
+      activated: '用户已激活',
+      deactivated: '用户已停用',
+      roleChanged: '用户角色已更改',
+    },
+    auditLogs: {
+      title: '用户审计日志',
+      empty: '该用户没有审计日志。',
+    },
+  },
+  verification: {
+    triggers: {
+      manual: '手动',
+      scheduled: '定时',
+    },
+    notificationTypes: {
+      verificationSuccess: '验证成功',
+      verificationFailed: '验证失败',
+    },
+    config: {
+      scheduledVerification: '定时验证',
+      scheduledVerificationTooltip:
+        '定期把最新的备份恢复到一次性 Postgres 容器中，验证它能否恢复。<docsLink>了解工作原理</docsLink>',
+      interval: '验证周期',
+      afterBackup: '备份后',
+      afterBackupHint:
+        '每次备份成功后自动运行。如果队列中还有待处理的验证，会将其取消，以免备份快于验证时队列无限增长。',
+      weekday: '每周验证日',
+      dayOfMonth: '每月验证日',
+      timeOfDay: '验证时间',
+      cron: {
+        expression: 'Cron 表达式（UTC）',
+        format: 'Cron 格式：分钟 小时 日 月 星期（UTC）',
+        examples: '示例：',
+        exampleEverySunday: '- {{expression}}：每周日 4:00（UTC）',
+        exampleEverySixHours: '- {{expression}}：每 6 小时一次',
+        nextRun: '下次运行：{{dateTime}}<lineBreak/>（{{relativeTime}}）',
+        invalid: '无效的 Cron 表达式',
+      },
+      notifications: '通知',
+      noNotifications: '无',
+    },
+    runs: {
+      title: '恢复验证',
+      description: '每一行是一次尝试：把此数据库的一个备份恢复到临时副本中',
+      noAgentsWarning:
+        '还没有注册验证代理。请在 Databasus 设置标签页的“验证代理”部分添加。<docsLink>了解更多</docsLink>',
+      empty: '还没有恢复验证记录',
+      allLoaded: '已加载全部恢复验证（共 {{total}} 次）',
+      attempt: '第 {{attempt}} 次尝试',
+      restoreDuration: '恢复耗时 {{duration}}',
+      durationTooltip: '代理报告的恢复与验证总时长。',
+      fields: {
+        createdAt: '创建时间',
+        trigger: '触发方式',
+        duration: '耗时',
+        actions: '操作',
+      },
+      actions: {
+        cancel: '取消验证',
+        viewDetails: '查看详情',
+      },
+      details: {
+        title: '恢复验证详情',
+        loadFailed: '无法加载恢复验证详情。',
+        cancellationReason: '取消原因',
+        failure: '失败原因',
+        sections: {
+          status: '状态',
+          timeline: '时间线',
+          results: '结果与诊断',
+        },
+        fields: {
+          attempt: '尝试次数',
+          startedAt: '开始时间',
+          finishedAt: '完成时间',
+          restoreDuration: '恢复耗时',
+          verifyDuration: '验证耗时',
+          restoredDbSize: '恢复后的数据库大小',
+          schemas: '模式',
+          tables: '表',
+          pgRestoreExitCode: 'pg_restore 退出码',
+        },
+        tableStats: {
+          title: '各表行数',
+          empty: '没有上报各表的统计数据。',
+          schema: '模式',
+          table: '表',
+          rows: '行数',
+        },
+      },
+    },
+    agents: {
+      title: '验证代理',
+      description: '验证代理负责运行恢复验证，确认备份可以恢复（<docsLink>了解更多</docsLink>）',
+      empty: '还没有注册代理。',
+      columns: {
+        capacity: '资源',
+        created: '创建时间',
+      },
+      capacity: {
+        cpu: '{{count}} 个 CPU',
+        ram: '{{count}} GB 内存',
+        disk: '{{count}} GB 磁盘',
+        jobs: '任务数：{{count}}',
+        notReported: '尚未上报',
+      },
+      actions: {
+        viewInstallCommands: '查看安装命令',
+        rotateToken: '轮换令牌',
+      },
+      deleteConfirmation: '确定要删除这个代理吗？',
+      deleted: '代理“{{name}}”已删除',
+      copyFailed: '复制失败',
+      agentId: '代理 ID：',
+      create: {
+        title: '创建验证代理',
+        tokenNotice: '下一个界面会显示生成的令牌，且只显示这一次。',
+        namePlaceholder: '代理名称',
+        nameRequired: '请输入名称',
+      },
+      rotate: {
+        title: '轮换令牌',
+        description:
+          '轮换 <agentName/> 的令牌会立即让现有令牌失效。仍在使用旧令牌的代理会在下一次心跳时被拒绝。',
+      },
+      token: {
+        title: '代理令牌',
+        tokenFor: '<agentName/> 的令牌：',
+        shownOnce: '令牌只显示一次。请妥善保存，之后无法再次查看。',
+        confirmSaved: '我已保存令牌',
+      },
+      install: {
+        title: '安装命令',
+        description:
+          '<agentName/> 的安装命令。请把 <tokenPlaceholder/> 替换为你创建该代理或上次轮换令牌时保存的令牌。',
+        architecture: '架构',
+        stepInstall: '第 1 步：安装',
+        stepLaunch: '第 2 步：启动',
+        capacityDefaults:
+          '下面的资源值只是初始默认值，请根据运行代理的机器调整 <code>--max-cpu</code>、<code>--max-ram-mb</code>、<code>--max-disk-gb</code> 和 <code>--max-concurrent-jobs</code>。',
+        afterInstallation: '安装之后',
+        runsInBackground: '执行 <code>start</code> 后，代理在后台运行',
+        checkStatus: '查看状态：<code>./verification-agent status</code>',
+        viewLogs: '查看日志：工作目录下的 <code>databasus-verification.log</code>',
+        stop: '停止代理：<code>./verification-agent stop</code>',
+      },
+    },
+  },
+  notifiers: {
+    types: {
+      email: '邮件',
+      telegram: 'Telegram',
+      webhook: 'Webhook',
+      slack: 'Slack',
+      discord: 'Discord',
+      teams: 'Teams',
+      mattermost: 'Mattermost',
+    },
+    notificationTypes: {
+      all: '全部',
+      backupSuccess: '备份成功',
+      backupFailed: '备份失败',
+      healthcheckSuccess: '可用性检查通过',
+      healthcheckFailed: '可用性检查失败',
+      verificationSuccess: '恢复验证成功',
+      verificationFailed: '恢复验证失败',
+    },
+    mattermostDeliveryModes: {
+      webhook: '传入 Webhook',
+      bot: '机器人账号',
+    },
+    list: {
+      addNotifier: '添加通知渠道',
+      searchPlaceholder: '搜索通知渠道',
+      noSearchResults: '没有找到与“{{query}}”匹配的通知渠道',
+      description: '通知渠道是接收通知的地方（邮件、Slack、Telegram 等）',
+      backToList: '← 返回通知渠道列表',
+    },
+    card: {
+      notifyTo: {
+        email: '通过邮件通知',
+        telegram: '通过 Telegram 通知',
+        webhook: '通过 Webhook 通知',
+        slack: '通过 Slack 通知',
+        discord: '通过 Discord 通知',
+        teams: '通过 Teams 通知',
+        mattermost: '通过 Mattermost 通知',
+      },
+      hasSendError: '发送出错',
+    },
+    create: {
+      title: '添加通知渠道',
+      namePlaceholder: '我的聊天',
+    },
+    config: {
+      namePlaceholder: '输入名称',
+      settingsTitle: '通知渠道设置',
+      sendError: {
+        title: '发送错误',
+        errorLabel: '错误：',
+        clearHint: '清除此错误（任选其一）：',
+        clearBySendingTest: '- 用下方按钮发送测试通知（即使你已经修改了设置）；',
+        clearByNextNotification: '- 等待下一条通知成功发送；',
+      },
+      removeConfirmation: '确定要删除这个通知渠道吗？此操作无法撤销。',
+      removeBlockedByDatabases: '有数据库正在使用这个通知渠道。请先在这些数据库中移除它。',
+    },
+    testNotification: {
+      send: '发送测试通知',
+      sent: {
+        title: '测试通知已发送',
+        description: '测试通知发送成功',
+      },
+    },
+    transfer: {
+      title: '将通知渠道转移到其他工作区',
+      blockedByDatabases: '有数据库正在使用这个通知渠道。请先转移或删除相关数据库。',
+      description: '选择要将此通知渠道转移到哪个工作区。',
+      targetWorkspace: '目标工作区',
+      selectWorkspace: '选择工作区',
+      submit: '转移',
+    },
+    fields: {
+      botToken: '机器人令牌',
+      targetChatId: '目标聊天 ID',
+      webhookUrl: 'Webhook URL',
+      channelId: '频道 ID',
+      skipTlsVerify: '跳过 TLS 验证',
+      skipTls: '跳过 TLS 验证',
+    },
+    email: {
+      targetEmail: '收件邮箱',
+      targetEmailTooltip: '接收通知的邮箱地址',
+      smtpHost: 'SMTP 主机',
+      smtpPort: 'SMTP 端口',
+      smtpUser: 'SMTP 用户',
+      smtpPassword: 'SMTP 密码',
+      smtpPasswordPlaceholder: '密码',
+      from: '发件人',
+      fromTooltip: '可选。用作发件人的邮箱地址。留空时使用 SMTP 用户，或根据主机自动生成',
+      fromAuto: '（自动）',
+      advancedSettings: '高级设置',
+      skipTlsTooltip:
+        '跳过 TLS 证书验证。如果 SMTP 服务器使用自签名证书，请开启此项。警告：这会降低安全性。',
+    },
+    telegram: {
+      botTokenHelpLink: '如何获取 Telegram 机器人 API 令牌？',
+      targetChatIdTooltip: '接收消息的聊天（可以是你的私聊，也可以是群组）',
+      chatIdHelp: {
+        toggle: '如何获取 Telegram 聊天 ID？',
+        privateChat:
+          '要获取你的聊天 ID，请在 Telegram 中给 <botLink>@getmyid_bot</botLink> 发消息。<underline>请确认你已经和该机器人开始聊天</underline>',
+        group:
+          '要获取群组的聊天 ID，请把你的机器人和 <botLink>@getmyid_bot</botLink> 一起加入群组，然后发送 /start（你会看到聊天 ID）',
+      },
+      useProxy: '使用代理',
+      useProxyTooltip: '通过代理发送 Telegram API 请求',
+      proxy: '代理',
+      proxyUrl: '代理 URL',
+      proxyUrlTooltip: '支持 http、https、socks5、socks5h。可以包含用户名和密码',
+      sendToGroupTopic: '发送到群组话题',
+      sendToGroupTopicTooltip: '开启后，消息会发送到群聊中的指定话题',
+      threadId: '话题 ID',
+      threadIdTooltip: '接收消息的话题 ID',
+      topicId: '话题 ID',
+      threadIdHelp: {
+        steps:
+          '要获取话题 ID，请在 Telegram 群组中进入该话题，点击顶部的话题名称，打开话题信息。复制话题链接，取 URL 中的最后一个数字。',
+        example:
+          '<bold>示例：</bold>如果话题链接是 <code>https://t.me/c/2831948048/3</code>，话题 ID 就是 <code>3</code>',
+        note: '<bold>注意：</bold>话题功能只能在群聊中使用，私聊中不可用。',
+      },
+    },
+    webhook: {
+      method: '请求方法',
+      sendOn: '发送时机',
+      sendOnPlaceholder: '选择通知类型',
+      customHeaders: '自定义请求头',
+      customHeadersTooltip:
+        '为 Webhook 请求添加自定义 HTTP 请求头（例如 Authorization、X-API-Key）',
+      savedHeadersHidden: '*出于安全考虑，已保存的请求头不予显示',
+      headers: '请求头',
+      headerNamePlaceholder: '请求头名称',
+      headerValuePlaceholder: '请求头值',
+      addHeader: '添加请求头',
+      hiddenHeaderValue: '（已隐藏）',
+      bodyTemplate: {
+        title: '请求体模板',
+        headingVariable: '<variable/>：通知标题',
+        messageVariable: '<variable/>：通知内容',
+        invalidJsonFormat: 'JSON 格式无效',
+        invalidJson: '无效的 JSON',
+      },
+      exampleRequest: {
+        title: '请求示例',
+        headers: '请求头：',
+      },
+    },
+    slack: {
+      howToConnect: '如何连接 Slack（如何获取机器人令牌和聊天 ID）？',
+      testFailedHint:
+        '请确认频道是公开的，或者机器人已被加入私有频道（通过 @invite）或群组。私信请使用 Slack 个人资料中的用户 ID。',
+    },
+    discord: {
+      channelWebhookUrl: '频道 Webhook URL',
+      howTo: {
+        title: '如何获取 Discord Webhook URL：',
+        createChannel: '1. 创建或选择一个 Discord 频道',
+        openChannelSettings: '2. 打开频道设置（齿轮图标）',
+        openIntegrations: '3. 进入集成设置',
+        createWebhook: '4. 新建一个 Webhook',
+        copyWebhookUrl: '5. 复制 Webhook URL',
+        privacyNote: '注意：如有需要，请把频道设为私密',
+      },
+    },
+    teams: {
+      howToConnect: '如何连接 Microsoft Teams？',
+      powerAutomateUrl: 'Power Automate URL',
+      powerAutomateUrlLabel: 'Power Automate URL：',
+      powerAutomateUrlTooltip:
+        '你的 Power Automate 流中的 HTTP 端点（When an HTTP request is received 触发器）',
+      showFullUrl: '显示',
+      hideFullUrl: '隐藏',
+    },
+    mattermost: {
+      howToConnect: '如何连接 Mattermost？',
+      connectVia: '连接方式',
+      incomingWebhookUrl: '传入 Webhook URL',
+      serverUrl: '服务器 URL',
+      channelIdTooltip:
+        '26 个字符的频道 ID，不是频道名称。打开频道，点击频道名称，然后选择 View Info。',
+      channel: '频道',
+      showOptionalSettings: '显示可选设置',
+      hideOptionalSettings: '隐藏可选设置',
+      channelOverride: '改用其他频道',
+      channelOverrideTooltip:
+        '发布到这个频道，而不是创建 Webhook 时指定的频道。如果 Webhook 已锁定到某个频道，Mattermost 会忽略此设置。',
+      postAsUsername: '发布者用户名',
+      postAsUsernameTooltip:
+        '需要在 Mattermost 系统控制台中开启 Enable integrations to override usernames，否则此设置会被忽略。',
+      postAsIconUrl: '发布者头像 URL',
+      postAsIconUrlTooltip:
+        '需要在 Mattermost 系统控制台中开启 Enable integrations to override profile picture icons，否则此设置会被忽略。',
+      skipTlsTooltip:
+        '跳过 TLS 证书验证。如果 Mattermost 服务器使用自签名证书，请开启此项。警告：这会降低安全性。',
+      webhookHowTo: {
+        title: '如何获取传入 Webhook URL：',
+        openIncomingWebhooks: '1. 主菜单 → Integrations → Incoming Webhooks',
+        addWebhook: '2. 点击 Add Incoming Webhook，选择频道',
+        copyUrl: '3. 复制生成的 URL',
+      },
+      botHowTo: {
+        title: '如何获取机器人令牌：',
+        addBotAccount: '1. Integrations → Bot Accounts → Add Bot Account',
+        copyToken: '2. 复制创建后显示的令牌（只显示一次）',
+        addBotToChannel: '3. 把机器人加入团队和频道',
+      },
+    },
+  },
+  backups: {
+    encryption: {
+      none: '无',
+      encrypted: '已启用',
+    },
+    encryptionOptions: {
+      none: '不加密',
+      encrypted: '加密备份文件',
+    },
+    list: {
+      title: '备份',
+      scheduledBackupsDisabled: '定时备份已禁用（可以在备份配置中重新启用）',
+      empty: '还没有备份',
+      allLoaded: '已加载全部备份（共 {{count}} 个）',
+      clickToSeeErrorDetails: '点击查看错误详情',
+      errorDetailsTitle: '备份错误详情',
+      restoreTitle: '从备份恢复',
+      columns: {
+        createdAt: '创建时间',
+        created: '创建时间',
+        size: '大小',
+        duration: '耗时',
+        actions: '操作',
+      },
+      actions: {
+        cancelBackup: '取消备份',
+        deleteBackup: '删除备份',
+      },
+    },
+    filters: {
+      allTypes: '全部类型',
+      allStatuses: '全部状态',
+      before: '早于',
+    },
+    config: {
+      backupsEnabled: '启用备份',
+      storage: '存储',
+      selectStorage: '选择存储',
+      createNewStorage: '新建存储',
+      addStorageTitle: '添加存储',
+      storageDescription: '存储是存放备份的位置（本地磁盘、S3、Google Drive 等）',
+      storageChangeWarning: '如果更换存储，该存储中的所有备份都会被删除。',
+      storageChangeAcknowledge: '我已了解',
+      encryption: '加密',
+      notifications: '通知',
+      noNotifications: '无',
+      schedule: {
+        weekday: '星期',
+        dayOfMonth: '每月日期',
+        cronExpression: 'Cron 表达式（UTC）',
+        timeOfDay: '时间',
+        nextRun: '下次运行：{{time}}',
+        invalidCron: '无效的 Cron 表达式',
+        cronHelp: {
+          format: 'Cron 格式：分钟 小时 日 月 星期（UTC）',
+          examples: '示例：',
+          dailyAt2am: '每天 2:00（UTC）',
+          every6Hours: '每 6 小时一次',
+          mondaysAt3am: '每周一 3:00（UTC）',
+          twiceAMonth: '每月 1 日和 15 日 4:30（UTC）',
+        },
+      },
+      gfs: {
+        hourly: '每小时：{{count}}',
+        daily: '每天：{{count}}',
+        weekly: '每周：{{count}}',
+        monthly: '每月：{{count}}',
+        yearly: '每年：{{count}}',
+        notConfigured: '未配置',
+      },
+    },
+    logical: {
+      retentionPolicyTypes: {
+        gfs: 'GFS（保留最近 N 个每小时、每天、每周、每月和每年的备份）',
+        timePeriod: '按时间段（最近 N 天）',
+        count: '按数量（最近 N 个备份）',
+      },
+      notificationTypes: {
+        backupSuccess: '备份成功',
+        backupFailed: '备份失败',
+      },
+      list: {
+        backupNow: '立即备份',
+        makeBackupNow: '立即创建备份',
+        encrypted: '已加密',
+        sizeTooltip:
+          '上方：实际存放在存储（本地、S3、Google Drive 等）中的压缩后备份文件大小。下方（灰色）：备份时数据库未压缩的原始大小。备份通常能压缩到原来的五分之一左右。',
+        databaseSize: '{{size}}（数据库大小）',
+        deleteConfirmation: '确定要删除这个备份吗？',
+        actions: {
+          restore: '从备份恢复',
+          verifyRestore: '验证恢复：安排代理把这个备份恢复到临时数据库，并报告行数',
+          download: {
+            postgresql: '下载备份文件。可以用 pg_restore 手动恢复（custom 格式）',
+            mysql: '下载备份文件。可以用 mysql 客户端手动恢复（SQL 转储）',
+            mariadb: '下载备份文件。可以用 mariadb 客户端手动恢复（SQL 转储）',
+            mongodb: '下载备份文件。可以用 mongorestore 手动恢复（归档格式）',
+            other: '下载备份文件',
+          },
+        },
+        verifyRestore: {
+          title: '验证恢复？',
+          description:
+            '代理会把这个备份恢复到临时数据库并报告行数。视备份大小，这可能需要一些时间。<docsLink>了解工作原理</docsLink>',
+          queue: '加入队列',
+          queued: '恢复验证已加入队列',
+        },
+      },
+      config: {
+        interval: '备份周期',
+        weekday: '每周备份日',
+        dayOfMonth: '每月备份日',
+        timeOfDay: '备份时间',
+        encryptionTooltip:
+          '备份加密后，存储（S3、本地等）中的备份文件无法直接使用。你可以通过 Databasus 恢复备份，或用“下载”按钮下载解密后的文件。',
+        retentionPolicy: '保留策略',
+        retention: {
+          timePeriodTooltip: '备份保留多长时间。超过这个期限的备份会被自动删除。',
+          count: '最近的备份',
+          countTooltip: '只保留指定数量的最近备份，更早的备份会被自动删除。',
+          countValue: '保留最近 {{count}} 个备份',
+          showGfsHint: '什么是 GFS（祖父-父-子）？',
+          hideGfsHint: '隐藏',
+          gfsHint:
+            'GFS（祖父-父-子）轮换：保留最近 N 个每小时、每天、每周、每月和每年的备份。这样可以在合理的存储空间内长期保留备份。',
+          gfsTooltip: 'GFS（祖父-父-子）轮换：保留最近 N 个每小时、每天、每周、每月和每年的备份。',
+          gfsFields: {
+            hourly: '每小时备份',
+            daily: '每天备份',
+            weekly: '每周备份',
+            monthly: '每月备份',
+            yearly: '每年备份',
+          },
+        },
+        advancedSettings: '高级设置',
+        retryIfFailed: '备份失败时重试',
+        retryIfFailedShort: '失败时重试',
+        retryIfFailedTooltip:
+          '自动重试失败的备份。网络故障、存储问题或数据库暂时不可用都可能导致备份失败。',
+        maxFailedTries: '最大重试次数',
+        maxFailedTriesTooltip: '失败备份的最大重试次数。所有重试都失败后，你会收到通知。',
+      },
+    },
+    physical: {
+      types: {
+        full: '全量',
+        incremental: '增量',
+        wal: 'WAL',
+      },
+      retentions: {
+        chains: '备份链',
+        fullBackups: '全量备份',
+        chainsAndFullBackups: '备份链和全量备份',
+      },
+      fullBackupsPolicies: {
+        lastN: '数量',
+        gfs: 'GFS',
+      },
+      notificationTypes: {
+        backupSuccess: '备份成功',
+        backupFailed: '备份失败',
+        chainBroken: '备份链中断',
+        walGap: 'WAL 缺口',
+      },
+      list: {
+        totalUsage: '总占用：{{size}}',
+        backUpNow: '立即备份',
+        fullBackup: '全量备份',
+        incrementalBackup: '增量备份',
+        restore: '恢复',
+        restoreFromThisBackup: '从此备份恢复',
+        pointInTimeRestoreTitle: '时间点恢复',
+        deleteFullConfirmation:
+          '删除这个全量备份会移除它的整条备份链（所有依赖它的增量备份）。此操作无法撤销。确定继续吗？',
+        deleteIncrementalConfirmation:
+          '删除这个增量备份会移除所有依赖它的后续增量备份。此操作无法撤销。确定继续吗？',
+      },
+      config: {
+        fullBackupCadence: '全量备份频率',
+        incrementalBackupCadence: '增量备份频率',
+        incrementalMoreFrequent: '增量备份的频率必须高于全量备份。',
+        encryptionTooltip:
+          '备份加密后，存储中的文件无法直接使用。你可以通过 Databasus 恢复，或下载解密后的文件。',
+        retention: '保留',
+        fullBackupsOnlyRetention: '这个数据库只做全量备份，因此保留规则作用于全量备份。',
+        retentionOptions: {
+          chains: '保留最近 N 条备份链',
+          chainsAndFullBackups: '保留最近 N 条备份链和全量备份',
+        },
+        retentionHelp: {
+          chain:
+            '一条备份链由一个全量备份和依赖它的增量备份（以及流式传输的 WAL）组成。恢复时需要全量备份和链中的每一个增量备份。',
+          chains:
+            '只保留最近 N 条备份链。一条链被淘汰时，它的全量备份和所有增量备份都会被删除，只能在保留下来的链范围内恢复。',
+          chainsAndFullBackups:
+            '保留最近 N 条备份链，用于恢复到近期的时间点。此外，还会按下面的策略（GFS 或最近 N 个）保留更早的独立全量备份：它们的增量备份删除后，这些全量备份仍可作为长期恢复点。',
+        },
+        chainsCount: '备份链数',
+        chainsCountTooltip: '要保留的最近备份链数量。一条链由一个全量备份及其增量备份组成。',
+        fullBackups: '全量备份',
+        fullBackupsCount: '最近的全量备份',
+        gfsFields: {
+          hourly: '每小时',
+          daily: '每天',
+          weekly: '每周',
+          monthly: '每月',
+          yearly: '每年',
+        },
+        chainsKept: '保留的备份链',
+        fullBackupsKept: '保留的全量备份',
+        fullBackupsCountValue: '最近 {{count}} 个',
+        gfsTooltip:
+          'GFS（祖父-父-子）轮换：保留最近 N 个每小时、每天、每周、每月和每年的全量备份。',
+      },
+      restore: {
+        errorHints: {
+          downloadInProgress: '这个数据库已有一个恢复下载正在进行。请等待它完成后重试。',
+          targetTimeUnreachable:
+            '无法恢复到所选的目标时间：WAL 存在缺口，或者时间超出了可用范围。请选择其他时间，或恢复到最新的可用时间点。',
+        },
+        backupIntro:
+          '这个备份的恢复命令。全量备份只需要它自己的文件；增量备份还需要它的全量备份和之前的所有增量备份。',
+        pointInTimeIntro: '时间点恢复。选择目标时间，或留空以恢复到最新的可用时间点。',
+        targetTime: '目标时间',
+        latestAvailable: '最新可用时间点',
+        preparing: '正在准备恢复命令…',
+        linkExpiry:
+          '下载链接只能使用一次，15 分钟后失效。如果命令因 401 失败，重新打开此对话框即可生成新链接。',
+        copied: '已复制',
+        methods: {
+          script: '使用脚本',
+          manual: '手动',
+        },
+        environments: {
+          host: '主机上的 PostgreSQL',
+        },
+        fields: {
+          restoreDirectory: '恢复目录',
+          pgBinPath: 'PostgreSQL bin 路径',
+          pgBinPathPlaceholder: '{{path}}（可选）',
+          pgImage: 'PostgreSQL 镜像',
+        },
+        scriptTitles: {
+          host: '在恢复目标主机上运行',
+          docker: '在可以使用 Docker 的机器上运行',
+        },
+        manualSteps: {
+          download: '下载备份包',
+          extract: '解压',
+          verify: '校验传输完整性',
+          reconstruct: '重建数据目录',
+          checkConfig: '检查集群的配置文件',
+          wireUpRecovery: '解压 WAL 并配置恢复',
+          recoveryParameters: '如果恢复因参数设置而停止',
+        },
+        beforeYouRun: {
+          title: '运行前',
+          host: {
+            clientTools:
+              '安装 PostgreSQL {{version}} 客户端工具。如果它们不在 PATH 中，请在上方设置 bin 路径。',
+            zstd: '解压备份需要 zstd。',
+            zstdWithWal: '解压备份及其 WAL 需要 zstd。',
+            emptyDirectory: '恢复目录必须为空，且不能是正在使用的集群目录。',
+          },
+          docker: {
+            image: '使用 postgres:{{version}} 镜像，主版本必须与源数据库一致。',
+            hostTools:
+              '主机上需要 zstd、tar 和 curl：下载和所有解压（基础备份）都在主机上进行，容器中只运行 pg_combinebackup，因此 postgres 镜像不需要额外工具。',
+            hostToolsWithWal:
+              '主机上需要 zstd、tar 和 curl：下载和所有解压（基础备份和 WAL）都在主机上进行，容器中只运行 pg_combinebackup，因此 postgres 镜像不需要额外工具。',
+          },
+        },
+        afterItFinishes: {
+          title: '完成之后',
+          host: {
+            clusterLocation: '集群位于 <dataDir/>。',
+            changeOwner: '以 root 身份更改所有者：<command/>。',
+            start: '以 postgres 身份启动：<command/>，或者把 data_directory 指向它。',
+            walReplay: 'PostgreSQL 会重放 WAL 并提升为主库，请在日志中查看恢复是否完成。',
+          },
+          docker: {
+            clusterLocation: '主机上的 <dataDir/> 就是恢复出的集群。',
+            volumeMount:
+              'PostgreSQL {{version}} 把数据目录放在卷 <volumeDir/> 下的 <dataDir/>。请把输出目录挂载为该卷的根目录，这正是 docker-compose 中 <code>./pgdata:/var/lib/postgresql</code> 所期望的：',
+            dataDirectoryMount: '把集群绑定挂载到镜像的数据目录 <dataDir/>：',
+            ownership: '所有者必须与镜像内 postgres 用户的 uid 一致（官方镜像中为 999）。',
+          },
+          missingConfigFiles:
+            '基础备份只复制数据目录。如果源 PostgreSQL 把配置放在数据目录之外（Debian/Ubuntu 的布局，<configDir/>），那么 <code>postgresql.conf</code>、<code>pg_hba.conf</code> 和 <code>pg_ident.conf</code> 不在备份中，服务器将无法启动。在源服务器上用 <code>psql -Atc "SHOW config_file"</code> 查出它们的实际路径，把三个文件都复制过来，然后注释掉 <code>data_directory</code>、<code>hba_file</code>、<code>ident_file</code>、<code>external_pid_file</code> 以及 <code>ssl</code> / <code>ssl_*</code> 这些行，创建 <code>conf.d</code>；如果在容器中运行，还要设置 <code>listen_addresses = \'*\'</code>。如果这些文件都在，却仍然出现同样的错误，那么出错的是挂载的目录，而不是配置。',
+        },
+      },
+    },
+  },
+  storages: {
+    types: {
+      local: '本地存储',
+      s3: 'S3',
+      googleDrive: 'Google Drive',
+      nas: 'NAS',
+      azureBlob: 'Azure Blob Storage',
+      ftp: 'FTP',
+      sftp: 'SFTP',
+      rclone: 'Rclone',
+    },
+    s3StorageClasses: {
+      default: '默认（Standard）',
+      standard: 'Standard',
+      standardIa: 'Standard - Infrequent Access',
+      onezoneIa: 'One Zone - Infrequent Access',
+      intelligentTiering: 'Intelligent Tiering',
+      reducedRedundancy: 'Reduced Redundancy',
+      glacierIr: 'Glacier Instant Retrieval',
+    },
+    azureBlobAuthMethods: {
+      accountKey: '账户密钥',
+      connectionString: '连接字符串',
+    },
+    sftpAuthMethods: {
+      password: '密码',
+      privateKey: '私钥',
+    },
+    list: {
+      addStorage: '添加存储',
+      description: '存储是存放备份的位置（本地磁盘、S3 等）',
+      backToList: '← 返回存储列表',
+    },
+    card: {
+      type: {
+        local: '类型：本地存储',
+        s3: '类型：S3',
+        googleDrive: '类型：Google Drive',
+        nas: '类型：NAS',
+        azureBlob: '类型：Azure Blob Storage',
+        ftp: '类型：FTP',
+        sftp: '类型：SFTP',
+        rclone: '类型：Rclone',
+      },
+      hasSaveError: '保存出错',
+    },
+    config: {
+      namePlaceholder: '输入名称',
+      settingsTitle: '存储设置',
+      lastSaveError: {
+        title: '保存错误',
+        errorLabel: '错误：',
+        clearHint: '清除此错误（任选其一）：',
+        clearByTestingConnection: '- 用下方按钮测试连接（即使你已经修改了设置）；',
+        clearByNextSave: '- 等待下一次保存成功完成；',
+      },
+      removeConfirmation: '确定要删除这个存储吗？此操作无法撤销。使用该存储的备份也会一并删除。',
+      removeBlockedByDatabases: '有数据库正在使用这个存储。请先在这些数据库中移除它。',
+    },
+    actions: {
+      testConnection: '测试连接',
+    },
+    connectionTestSucceeded: {
+      title: '连接测试成功',
+      description: '存储连接测试通过',
+    },
+    transfer: {
+      title: '将存储转移到其他工作区',
+      blockedByDatabases: '有数据库正在使用这个存储。请先转移或删除相关数据库。',
+      description: '选择要将此存储转移到哪个工作区。',
+      targetWorkspace: '目标工作区',
+      selectWorkspace: '选择工作区',
+      submit: '转移',
+    },
+    fields: {
+      path: '路径',
+      remotePath: '远程路径',
+      share: '共享名',
+      domain: '域',
+      useSsl: '使用 SSL',
+      useSslTls: '使用 SSL/TLS',
+      skipTls: '跳过 TLS 验证',
+      skipTlsVerify: '跳过 TLS 验证',
+      skipHostKey: '跳过主机密钥验证',
+      authMethod: '认证方式',
+      privateKey: '私钥',
+      credentials: '凭据',
+      s3Bucket: 'S3 存储桶',
+      region: '区域',
+      accessKey: '访问密钥',
+      secretKey: '秘密访问密钥',
+      endpoint: '端点',
+      folderPrefix: '文件夹前缀',
+      prefix: '前缀',
+      blobPrefix: 'Blob 前缀',
+      virtualHost: '虚拟主机',
+      storageClass: '存储类别',
+      connection: '连接字符串',
+      connectionString: '连接字符串',
+      accountName: '账户名',
+      accountKey: '账户密钥',
+      containerName: '容器名称',
+      clientId: '客户端 ID',
+      clientSecret: '客户端密钥',
+      userToken: '用户令牌',
+      config: '配置',
+    },
+    edit: {
+      namePlaceholder: '我的存储',
+      advancedSettings: '高级设置',
+      optionalPlaceholder: '{{example}}（可选）',
+      usernamePlaceholder: '用户名',
+      passwordPlaceholder: '密码',
+      remotePathTooltip: '存放备份的远程目录路径（可选）',
+      local: {
+        diskSpaceWarning: '注意：使用本地存储可能会耗尽磁盘空间。建议使用 S3 或不限容量的存储',
+      },
+      s3: {
+        cloudflareR2Guide: '如何配合 Cloudflare R2 使用？',
+        endpointTooltip: '自定义 S3 兼容端点的 URL（可选，使用 AWS S3 时留空）',
+        prefixTooltip:
+          "所有对象键的可选前缀（例如 'backups/' 或 'my_team/'）。部分 S3 兼容存储可能不支持。创建后无法修改（否则会丢失备份）。",
+        useVirtualHostedStyle: '使用虚拟主机式域名',
+        virtualHostTooltip:
+          '使用虚拟主机式 URL（bucket.s3.region.amazonaws.com），而不是路径式 URL（s3.region.amazonaws.com/bucket）。如果遇到 COS 错误，可能需要开启此项。',
+        skipTls: '跳过 TLS 验证',
+        skipTlsVerifyTooltip:
+          '跳过 TLS 证书验证。如果 S3 兼容存储使用自签名证书，请开启此项。警告：这会降低安全性。',
+        storageClassTooltip:
+          '上传对象使用的 S3 存储类别。保持默认即为 Standard。部分服务商提供更便宜的类别，例如 One Zone IA。不要使用 Glacier/Deep Archive：恢复时文件必须能立即访问。',
+      },
+      googleDrive: {
+        guideLink: '如何连接 Google Drive？',
+        authorize: '授权',
+      },
+      nas: {
+        shareWithSlashWarning:
+          '共享名只能填写单个共享的名称。子目录请填在“路径”字段中（例如共享名：Databasus，路径：DB1）',
+        useSslTooltip: '启用 SSL/TLS 加密，确保连接安全',
+        domainTooltip: 'Windows 域名（可选，不使用域认证时留空）',
+        pathPlaceholder: '{{example}}（可选，开头不加斜杠）',
+        pathTooltip: '共享内的子目录路径（可选）',
+      },
+      azureBlob: {
+        connectionStringTooltip: '从 Azure Portal 获取的 Azure Storage 连接字符串',
+        endpointTooltip: '自定义端点 URL（可选，使用标准 Azure 时留空）',
+        prefixTooltip: "所有 Blob 名称的可选前缀（例如 'backups/' 或 'my_team/'）",
+      },
+      ftp: {
+        enableFtps: '启用 FTPS',
+        useSslTooltip: '使用显式 TLS 加密（FTPS）安全传输文件',
+        skipCertificateVerification: '跳过证书验证',
+        skipTlsVerifyTooltip:
+          '跳过 TLS 证书验证。如果 FTP 服务器使用自签名证书，请开启此项。警告：这会降低安全性。',
+      },
+      sftp: {
+        privateKeyTooltip: '粘贴你的 SSH 私钥（PEM 格式）。支持 RSA、DSA、ECDSA 和 Ed25519 密钥。',
+        skipHostKeyVerification: '跳过主机密钥验证',
+        skipHostKeyTooltip:
+          '跳过 SSH 主机密钥验证。如果你信任该服务器，可以开启此项。警告：这会降低安全性。',
+      },
+      rclone: {
+        configTooltip:
+          "在此粘贴 rclone.conf 的内容。运行 'rclone config file' 可以找到该文件，然后复制其中的内容。这份配置支持 70 多家云存储服务商。",
+        configHiddenNote: '*内容已隐藏，以免泄露敏感数据。如需更新现有配置，请在此填入新的配置',
+        docsLink: 'Rclone 文档',
+        remotePathTooltip:
+          "远程存储上存放备份的可选路径前缀（例如 '/backups' 或 'my-folder/backups'）",
+      },
+    },
+  },
+};

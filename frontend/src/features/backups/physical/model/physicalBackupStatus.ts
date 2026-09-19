@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string -- Tailwind class names */
 import { PhysicalBackupStatus } from '../../../../entity/backups/physical';
 
 interface PhysicalBackupStatusBadgeStyle {
@@ -34,12 +35,4 @@ export const PHYSICAL_BACKUP_STATUS_BADGE_STYLES: Record<
       'bg-gray-500/10 text-gray-700 ring-gray-500/30 dark:bg-gray-500/15 dark:text-gray-300 dark:ring-gray-400/30',
     dotClasses: 'bg-gray-500 dark:bg-gray-400',
   },
-};
-
-export const PHYSICAL_BACKUP_STATUS_LABELS: Record<PhysicalBackupStatus, string> = {
-  [PhysicalBackupStatus.COMPLETED]: 'Successful',
-  [PhysicalBackupStatus.IN_PROGRESS]: 'In progress',
-  [PhysicalBackupStatus.ERROR]: 'Error',
-  [PhysicalBackupStatus.CHAIN_BROKEN]: 'Chain broken',
-  [PhysicalBackupStatus.CANCELED]: 'Canceled',
 };

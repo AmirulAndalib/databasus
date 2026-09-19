@@ -1,7 +1,9 @@
 import { App, Modal } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type Database, DatabaseType, databaseApi } from '../../../../entity/databases';
+import { translateApiError } from '../../../../shared/i18n';
 import { CreateReadOnlyComponent } from './CreateReadOnlyComponent';
 import { EditMariaDbSpecificDataComponent } from './EditMariaDbSpecificDataComponent';
 import { EditMongoDbSpecificDataComponent } from './EditMongoDbSpecificDataComponent';
@@ -44,6 +46,7 @@ export const EditDatabaseSpecificDataComponent = ({
   isRestoreMode = false,
   onConnectionErrorChange,
 }: Props) => {
+  const { t } = useTranslation();
   const { message } = App.useApp();
 
   const [isShowReadOnlyDialog, setIsShowReadOnlyDialog] = useState(false);
@@ -66,7 +69,7 @@ export const EditDatabaseSpecificDataComponent = ({
         onSaved(databaseToSave);
       }
     } catch (e) {
-      message.error((e as Error).message);
+      message.error(translateApiError(e, t));
     }
   };
 
@@ -83,12 +86,12 @@ export const EditDatabaseSpecificDataComponent = ({
   if (isShowReadOnlyDialog) {
     return (
       <Modal
-        title="Create read-only user"
+        title={t('databases.readOnlyUser.dialogTitle')}
         footer={<div />}
         open={isShowReadOnlyDialog}
         onCancel={() => setIsShowReadOnlyDialog(false)}
         maskClosable={false}
-        width={450}
+        width={640}
       >
         <CreateReadOnlyComponent
           database={editingDatabase}

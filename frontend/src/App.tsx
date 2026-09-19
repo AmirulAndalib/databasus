@@ -9,12 +9,14 @@ import { userApi } from './entity/users';
 import { AuthPageComponent } from './pages/AuthPageComponent';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 import { OauthStorageComponent } from './pages/OauthStorageComponent';
+import { LocaleProvider, useLocale } from './shared/i18n';
 import { ThemeProvider, useTheme } from './shared/theme';
 import { MainScreenComponent } from './widgets/main/MainScreenComponent';
 
 function AppContent() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const { resolvedTheme } = useTheme();
+  const { antdLocale } = useLocale();
 
   useVersionCheck();
 
@@ -29,6 +31,7 @@ function AppContent() {
 
   return (
     <ConfigProvider
+      locale={antdLocale}
       theme={{
         algorithm: resolvedTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
@@ -55,7 +58,9 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <LocaleProvider>
+        <AppContent />
+      </LocaleProvider>
     </ThemeProvider>
   );
 }

@@ -67,12 +67,14 @@ Reread the diff with fresh eyes and **list** (don't silently apply) refactor sug
 
 ### Mandatory compliance review
 
-Every non-trivial change is audited twice by the [`reviewer`](.claude/agents/reviewer.md) subagent — against this document **and** the module doc for each area it touches (`backend/AGENTS.md`, `agent/verification/AGENTS.md`, `frontend/AGENTS.md`, `website/AGENTS.md`, `assets/readme/AGENTS.md`). The module docs add stack-specific rules on top of this one; they never replace it, so a change under `backend/` answers to both.
+Every non-trivial change is audited twice against this document **and** the module doc for each area it touches (`backend/AGENTS.md`, `agent/verification/AGENTS.md`, `frontend/AGENTS.md`, `website/AGENTS.md`, `assets/readme/AGENTS.md`). The module docs add stack-specific rules on top of this one; they never replace it, so a change under `backend/` answers to both. The rules the audit applies live in [`.claude/agents/reviewer.md`](.claude/agents/reviewer.md).
 
-1. **After planning, before writing code** — it checks the proposed names, file placement, and any planned backward-compat shims while they're still cheap to change.
-2. **After implementing, before finishing the turn** — it checks the working-tree diff and runs the linter for each directory the diff touches.
+1. **After planning, before the user sees the plan** — it checks the approach, the proposed names, file placement, and any planned backward-compat shims while they're still cheap to change.
+2. **After implementing, before finishing the turn** — it checks the working-tree diff, the OpenSpec artifacts, and the final response.
 
-The reviewer is read-only: it reports findings, you apply the fixes. Resolve every `CHANGES REQUIRED` finding before moving on. Hooks in [`.claude/settings.json`](.claude/settings.json) prompt for both checkpoints, but the obligation is this rule, not the hook — honour it if hooks are disabled.
+Hooks in [`.claude/settings.json`](.claude/settings.json) and [`.codex/hooks.json`](.codex/hooks.json) run both checkpoints through [`.agent-hooks/review_gate.py`](.agent-hooks/review_gate.py). It starts a separate read-only Claude Opus 5 process at low effort. That process reviews a plan before `ExitPlanMode` shows it to the user, and reviews the finished turn before the agent stops. A rejection comes back as feedback that starts with `AUTOMATIC REVIEW:`. Fix what it names. After three rejected revisions, or when the reviewer cannot run, the hook stops the agent and does not accept the result. Do not also invoke the `reviewer` subagent yourself while the hooks are active. The gate does not run linters, so run the linter for each directory the diff touches before finishing.
+
+If hooks are disabled, invoke the `reviewer` subagent yourself at both checkpoints. It is read-only: it reports findings, you apply the fixes. Resolve every `CHANGES REQUIRED` finding before moving on.
 
 > At both checkpoints, the reviewer also applies [the how-to-communicate skill](.agents/skills/humanizer/SKILL.md) to every agent-authored response, plan, document, OpenSpec artifact, review finding, commit or pull request text, and code comment available in scope. Before editing a code comment, it first checks whether clearer naming or a smaller function can remove the comment. It flags removable comments instead of rewriting them. Editing must preserve facts, behavior, scope and technical meaning.
 

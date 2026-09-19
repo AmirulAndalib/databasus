@@ -32,7 +32,7 @@ Each `content/<locale>.tsx` exports **both** `metadata` (fully translated, `cano
 2. Internal links carry the `/{lang}/` prefix — except links to untranslated pages (`/sponsorship`, `/privacy`, `/terms-of-use`, `/contribute/*`), which stay unprefixed.
 3. Heading `id` anchors are identical to English in every locale (cross-links like `/faq#oss-programs` depend on them).
 4. Technical strings (install commands, configs, file names, code blocks) are byte-identical to English.
-5. Adding a page to the translated core or adding a locale starts in `app/i18n.ts` (`TRANSLATED_PATHS` / `LOCALES`); sitemap and hreflang follow from it automatically.
+5. Adding a page to the translated core or adding a locale starts in `app/i18n.ts` (`TRANSLATED_PATHS` / `LOCALES`); sitemap and hreflang follow from it automatically. The application's links to website pages depend on it too: `frontend/src/shared/i18n/websitePages.ts` marks which linked pages are translated, and a frontend test (`websitePages.test.ts`) reads `TRANSLATED_PATHS` and fails when the two disagree. Adding or removing a translated path that the application links to means updating that table in the same change.
 
 ## Translation rules
 
@@ -44,6 +44,8 @@ Each `content/<locale>.tsx` exports **both** `metadata` (fully translated, `cano
 
 ## Translation quality
 
+These rules also govern the application's interface dictionaries (`frontend/src/shared/i18n/locales/<locale>.ts`). There the English plain-hyphen rule from `frontend/AGENTS.md` does not apply to the other languages; each follows its own typography below.
+
 Translations are edited copy in the target language, not word-for-word renderings. The Russian pages were proofread by the owner — treat their current text as the tone reference before writing or editing any locale.
 
 - **No calques.** If a sentence keeps English word order or literally renders an English construction, rewrite it («Результат отправляется обратно — включая X» → «Результат приходит вам: X»; "user experience with X" → just describe working with X). Read the sentence aloud in the target language; if it sounds translated, it is.
@@ -51,7 +53,8 @@ Translations are edited copy in the target language, not word-for-word rendering
 - **No repeats.** Don't restate a list or repeat the same verb in adjacent sentences ("supports X, Y, Z… X, Y, Z are also supported").
 - **Everyday tech anglicisms are fine in body text** when they are what practitioners actually say (ru: бекап, дамп, стриминг, продакшен, комплаенс, «из коробки», «соло-разработчик») — don't swap them for stiff formal equivalents. The formal canonical query form still owns `title`/`h1`/`h2` (see above). Exception by owner's choice: «рабочие пространства», not «воркспейсы».
 - **Follow locale conventions.** Russian: «е», never «ё»; numerals like «2-х минут», «3-х попыток», «17-й версии»; «—» stays where Russian grammar wants it. Spanish: usted; canonical «copia de seguridad» in headings, «respaldo» as a body synonym; no bare English «backup» in prose. French: vous; a space before % («99 %»); a plain ASCII space (not `&nbsp;`) before `: ; ! ?`. Chinese: 你, never 您 (titles included); full-width punctuation in prose（，。：）; a space at every CJK↔Latin boundary. Number formatting per locale: en `1,800,000`, fr `1 800 000`, es/pt `1.800.000`, zh `180 万` (万-format for millions in prose).
-- **Product stats stay in sync.** Docker pulls, GitHub stars and similar figures must match across all 6 languages *and* every duplicated block on a page (visible FAQ + its JSON-LD copy). Changing a number means changing it everywhere; competitors' figures are separate and only change when their reality does.
+- **Interface terms.** The application's dictionaries use one word per concept, so the interface stays consistent and the docs can quote it. Russian: backup «бекап», storage «хранилище», notifier «канал уведомлений», workspace «рабочее пространство», restore «восстановление», health check «проверка доступности», restore verification «проверка восстановления», verification agent «агент проверки». Spanish: «copia de seguridad», «almacenamiento», «canal de notificación», «espacio de trabajo», «restauración», «comprobación de disponibilidad», «verificación de restauración», «agente de verificación». Portuguese: «backup», «armazenamento», «canal de notificação», «espaço de trabalho», «restauração», «verificação de disponibilidade», «verificação de restauração», «agente de verificação». French: «sauvegarde», «stockage», «canal de notification», «espace de travail», «restauration», «vérification de disponibilité», «vérification de restauration», «agent de vérification». Chinese: 备份, 存储, 通知渠道, 工作区, 恢复, 可用性检查, 恢复验证, 验证代理. The interface shows counts and sizes as full numerals in every language (zh `1,800,000`); the 万 form is for prose only.
+- **Product stats stay in sync.** Docker pulls, GitHub stars and similar figures must match across all 6 languages _and_ every duplicated block on a page (visible FAQ + its JSON-LD copy). Changing a number means changing it everywhere; competitors' figures are separate and only change when their reality does.
 - **Some labels stay English everywhere** by design: the hero badges ("GitHub stars" / "Docker pulls"), brand-name nav items (Slack, Google Drive, "Databasus vs X"), and product UI option names quoted in docs ("After backup", "Scheduled verification", "Hourly") — the interface is English, so the docs quote it verbatim.
 
 ## Language exception

@@ -305,7 +305,7 @@ describe('MongodbConnectionStringParser', () => {
         MongodbConnectionStringParser.parse('port=27017 database=mydb user=admin password=secret'),
       );
 
-      expect(result.error).toContain('Host');
+      expect(result.error.key).toBe('databases.connectionString.errors.keyValue.hostMissing');
       expect(result.format).toBe('key-value');
     });
 
@@ -314,7 +314,7 @@ describe('MongodbConnectionStringParser', () => {
         MongodbConnectionStringParser.parse('host=localhost database=mydb password=secret'),
       );
 
-      expect(result.error).toContain('Username');
+      expect(result.error.key).toBe('databases.connectionString.errors.keyValue.usernameMissing');
       expect(result.format).toBe('key-value');
     });
 
@@ -334,19 +334,19 @@ describe('MongodbConnectionStringParser', () => {
     it('should return error for empty string', () => {
       const result = expectError(MongodbConnectionStringParser.parse(''));
 
-      expect(result.error).toContain('empty');
+      expect(result.error.key).toBe('databases.connectionString.errors.empty');
     });
 
     it('should return error for whitespace-only string', () => {
       const result = expectError(MongodbConnectionStringParser.parse('   '));
 
-      expect(result.error).toContain('empty');
+      expect(result.error.key).toBe('databases.connectionString.errors.empty');
     });
 
     it('should return error for unrecognized format', () => {
       const result = expectError(MongodbConnectionStringParser.parse('some random text'));
 
-      expect(result.error).toContain('Unrecognized');
+      expect(result.error.key).toBe('databases.connectionString.errors.unrecognizedFormat');
     });
 
     it('should return error for missing username in URI', () => {
@@ -354,7 +354,7 @@ describe('MongodbConnectionStringParser', () => {
         MongodbConnectionStringParser.parse('mongodb://:password@host:27017/db'),
       );
 
-      expect(result.error).toContain('Username');
+      expect(result.error.key).toBe('databases.connectionString.errors.usernameMissing');
     });
 
     it('should allow missing password in URI (returns empty password)', () => {
@@ -373,7 +373,7 @@ describe('MongodbConnectionStringParser', () => {
         MongodbConnectionStringParser.parse('mysql://user:pass@host:3306/db'),
       );
 
-      expect(result.error).toContain('Unrecognized');
+      expect(result.error.key).toBe('databases.connectionString.errors.unrecognizedFormat');
     });
 
     it('should return error for postgresql:// format (wrong database type)', () => {
@@ -381,7 +381,7 @@ describe('MongodbConnectionStringParser', () => {
         MongodbConnectionStringParser.parse('postgresql://user:pass@host:5432/db'),
       );
 
-      expect(result.error).toContain('Unrecognized');
+      expect(result.error.key).toBe('databases.connectionString.errors.unrecognizedFormat');
     });
   });
 

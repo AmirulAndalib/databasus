@@ -1,10 +1,11 @@
 import { Button, Input } from 'antd';
 import { type JSX, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { useCloudflareTurnstile } from '../../../shared/hooks/useCloudflareTurnstile';
 
 import { userApi } from '../../../entity/users';
-import { StringUtils } from '../../../shared/lib';
+import { translateApiError } from '../../../shared/i18n';
 import { FormValidator } from '../../../shared/lib/FormValidator';
 import { CloudflareTurnstileWidget } from '../../../shared/ui/CloudflareTurnstileWidget';
 
@@ -17,11 +18,12 @@ export function RequestResetPasswordComponent({
   onSwitchToSignIn,
   onSwitchToResetPassword,
 }: RequestResetPasswordComponentProps): JSX.Element {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isLoading, setLoading] = useState(false);
   const [isEmailError, setEmailError] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [sendCodeError, setSendCodeError] = useState<unknown>();
+  const [isCodeSent, setIsCodeSent] = useState(false);
 
   const { token, containerRef, resetCloudflareTurnstile } = useCloudflareTurnstile();
 
@@ -40,18 +42,18 @@ export function RequestResetPasswordComponent({
   };
 
   const onSendCode = async () => {
-    setError('');
-    setSuccessMessage('');
+    setSendCodeError(undefined);
+    setIsCodeSent(false);
 
     if (validateEmail()) {
       setLoading(true);
 
       try {
-        const response = await userApi.sendResetPasswordCode({
+        await userApi.sendResetPasswordCode({
           email,
           cloudflareTurnstileToken: token,
         });
-        setSuccessMessage(response.message);
+        setIsCodeSent(true);
 
         // After successful code send, switch to reset password form
         setTimeout(() => {
@@ -60,7 +62,7 @@ export function RequestResetPasswordComponent({
           }
         }, 2000);
       } catch (e) {
-        setError(StringUtils.capitalizeFirstLetter((e as Error).message));
+        setSendCodeError(e);
         resetCloudflareTurnstile();
       }
 
@@ -70,13 +72,15 @@ export function RequestResetPasswordComponent({
 
   return (
     <div className="w-full max-w-[300px]">
-      <div className="mb-5 text-center text-2xl font-bold">Reset password</div>
-
-      <div className="mb-4 text-center text-sm text-gray-600 dark:text-gray-400">
-        Enter your email address and we&apos;ll send you a reset code.
+      <div className="mb-5 text-center text-2xl font-bold">
+        {t('users.requestPasswordReset.title')}
       </div>
 
-      <div className="my-1 text-xs font-semibold">Your email</div>
+      <div className="mb-4 text-center text-sm text-gray-600 dark:text-gray-400">
+        {t('users.requestPasswordReset.description')}
+      </div>
+
+      <div className="my-1 text-xs font-semibold">{t('users.fields.yourEmail')}</div>
       <Input
         placeholder="your@email.com"
         value={email}
@@ -104,29 +108,35 @@ export function RequestResetPasswordComponent({
         }}
         type="primary"
       >
-        Send reset code
+        {t('users.requestPasswordReset.submit')}
       </Button>
 
-      {error && (
-        <div className="mt-3 flex justify-center text-center text-sm text-red-600">{error}</div>
+      {sendCodeError !== undefined && (
+        <div className="mt-3 flex justify-center text-center text-sm text-red-600">
+          {translateApiError(sendCodeError, t)}
+        </div>
       )}
 
-      {successMessage && (
+      {isCodeSent && (
         <div className="mt-3 flex justify-center text-center text-sm text-green-600">
-          {successMessage}
+          {t('users.requestPasswordReset.codeSent')}
         </div>
       )}
 
       {onSwitchToSignIn && (
         <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          Remember your password?{' '}
-          <button
-            type="button"
-            onClick={onSwitchToSignIn}
-            className="cursor-pointer font-medium text-blue-600 hover:text-blue-700 dark:!text-blue-500"
-          >
-            Sign in
-          </button>
+          <Trans
+            i18nKey="users.requestPasswordReset.rememberPassword"
+            components={{
+              signInLink: (
+                <button
+                  type="button"
+                  onClick={onSwitchToSignIn}
+                  className="cursor-pointer font-medium text-blue-600 hover:text-blue-700 dark:!text-blue-500"
+                />
+              ),
+            }}
+          />
         </div>
       )}
     </div>

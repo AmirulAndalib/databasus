@@ -17,7 +17,6 @@ node_modules/
 .vscode/settings.json
 .claude/*
 !.claude/agents/
-!.claude/hooks/
 !.claude/settings.json
 backend/cleanup_test_db.exe
 plans/

@@ -1,19 +1,26 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Checkbox, InputNumber, Modal, Select, Spin, Switch, Tooltip } from 'antd';
 import { type JSX, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   type FullBackupsRetention,
+  PHYSICAL_BACKUP_NOTIFICATION_TYPE_LABEL_KEYS,
+  PHYSICAL_FULL_BACKUPS_POLICY_LABEL_KEYS,
   type PhysicalBackupConfig,
   PhysicalBackupNotificationType,
   PhysicalFullBackupsPolicy,
   PhysicalRetention,
   physicalBackupConfigApi,
 } from '../../../../entity/backups/physical';
-import { BackupEncryption } from '../../../../entity/backups/shared';
+import {
+  BACKUP_ENCRYPTION_OPTION_LABEL_KEYS,
+  BackupEncryption,
+} from '../../../../entity/backups/shared';
 import { type Database, PhysicalDatabaseBackupType } from '../../../../entity/databases';
 import { type Interval, IntervalType } from '../../../../entity/intervals';
 import { type Storage, getStorageLogoFromType, storageApi } from '../../../../entity/storages';
+import { translateApiError } from '../../../../shared/i18n';
 import { ConfirmationComponent } from '../../../../shared/ui';
 import { EditStorageComponent } from '../../../storages/ui/edit/EditStorageComponent';
 import { PhysicalIntervalEditor } from './PhysicalIntervalEditor';
@@ -100,6 +107,7 @@ export const EditPhysicalBackupConfigComponent = ({
   isSaveToApi,
   onSaved,
 }: Props): JSX.Element => {
+  const { t } = useTranslation();
   const [backupConfig, setBackupConfig] = useState<PhysicalBackupConfig>();
   const [isUnsaved, setIsUnsaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -168,7 +176,7 @@ export const EditPhysicalBackupConfigComponent = ({
         await physicalBackupConfigApi.savePhysicalBackupConfig(configToSave);
         setIsUnsaved(false);
       } catch (e) {
-        alert((e as Error).message);
+        alert(translateApiError(e, t));
       }
       setIsSaving(false);
     }
@@ -181,7 +189,7 @@ export const EditPhysicalBackupConfigComponent = ({
       const loadedStorages = await storageApi.getStorages(database.workspaceId);
       setStorages(loadedStorages);
     } catch (e) {
-      alert((e as Error).message);
+      alert(translateApiError(e, t));
     }
   };
 
@@ -230,7 +238,7 @@ export const EditPhysicalBackupConfigComponent = ({
 
         await loadStorages();
       } catch (e) {
-        alert((e as Error).message);
+        alert(translateApiError(e, t));
       } finally {
         setIsLoading(false);
       }
@@ -267,6 +275,16 @@ export const EditPhysicalBackupConfigComponent = ({
   const isFullRetentionValid =
     !isShowFullBackupsEditor || isFullBackupsRetentionValid(fullBackupsRetention);
 
+  const encryptionOptions = Object.values(BackupEncryption).map((encryption) => ({
+    value: encryption,
+    label: t(BACKUP_ENCRYPTION_OPTION_LABEL_KEYS[encryption]),
+  }));
+
+  const fullBackupsPolicyOptions = Object.values(PhysicalFullBackupsPolicy).map((policy) => ({
+    value: policy,
+    label: t(PHYSICAL_FULL_BACKUPS_POLICY_LABEL_KEYS[policy]),
+  }));
+
   const isAllFieldsFilled =
     !backupConfig.isBackupsEnabled ||
     (Boolean(backupConfig.storage?.id) &&
@@ -280,7 +298,9 @@ export const EditPhysicalBackupConfigComponent = ({
     <div>
       {database.id && (
         <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-          <div className="mb-1 min-w-[150px] sm:mb-0">Backups enabled</div>
+          <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+            {t('backups.config.backupsEnabled')}
+          </div>
           <Switch
             checked={backupConfig.isBackupsEnabled}
             onChange={(checked) => updateBackupConfig({ isBackupsEnabled: checked })}
@@ -292,7 +312,7 @@ export const EditPhysicalBackupConfigComponent = ({
       {backupConfig.isBackupsEnabled && (
         <>
           <PhysicalIntervalEditor
-            label="Full backup cadence"
+            label={t('backups.physical.config.fullBackupCadence')}
             interval={backupConfig.fullBackupInterval}
             onChange={updateFullInterval}
           />
@@ -300,14 +320,14 @@ export const EditPhysicalBackupConfigComponent = ({
           {isIncrementalAllowed && (
             <>
               <PhysicalIntervalEditor
-                label="Incremental backup cadence"
+                label={t('backups.physical.config.incrementalBackupCadence')}
                 interval={backupConfig.incrementalBackupInterval}
                 onChange={updateIncrementalInterval}
               />
               <div className="mt-1 mb-3 flex w-full flex-col items-start sm:flex-row sm:items-center">
-                <div className="min-w-[150px]" />
+                <div className="min-w-[150px] pr-2" />
                 <div className="max-w-[320px] text-xs text-gray-500 dark:text-gray-400">
-                  Incremental backups must run more frequently than full backups.
+                  {t('backups.physical.config.incrementalMoreFrequent')}
                 </div>
               </div>
             </>
@@ -318,7 +338,7 @@ export const EditPhysicalBackupConfigComponent = ({
       )}
 
       <div className="mt-5 mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Storage</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">{t('backups.config.storage')}</div>
         <div className="flex w-full items-center">
           <Select
             key={storageSelectKey}
@@ -340,15 +360,15 @@ export const EditPhysicalBackupConfigComponent = ({
             className="mr-2 max-w-[200px] grow"
             options={[
               ...storages.map((s) => ({ label: s.name, value: s.id })),
-              { label: 'Create new storage', value: 'create-new-storage' },
+              { label: t('backups.config.createNewStorage'), value: 'create-new-storage' },
             ]}
-            placeholder="Select storage"
+            placeholder={t('backups.config.selectStorage')}
           />
 
           {backupConfig.storage?.type && (
             <img
               src={getStorageLogoFromType(backupConfig.storage.type)}
-              alt="storageIcon"
+              alt=""
               className="ml-1 h-4 w-4"
             />
           )}
@@ -356,22 +376,19 @@ export const EditPhysicalBackupConfigComponent = ({
       </div>
 
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Encryption</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">{t('backups.config.encryption')}</div>
         <div className="flex w-full items-center">
           <Select
             value={backupConfig.encryption}
             onChange={(v) => updateBackupConfig({ encryption: v })}
             size="small"
             className="min-w-0 grow"
-            options={[
-              { label: 'None', value: BackupEncryption.NONE },
-              { label: 'Encrypt backup files', value: BackupEncryption.ENCRYPTED },
-            ]}
+            options={encryptionOptions}
           />
 
           <Tooltip
             className="cursor-pointer"
-            title="If backups are encrypted, the files in your storage cannot be used directly. You can restore them through Databasus or download them unencrypted."
+            title={t('backups.physical.config.encryptionTooltip')}
           >
             <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
           </Tooltip>
@@ -379,11 +396,13 @@ export const EditPhysicalBackupConfigComponent = ({
       </div>
 
       <div className="mt-5 mb-1 flex w-full flex-col items-start sm:flex-row sm:items-start">
-        <div className="mt-1 mb-1 min-w-[150px] sm:mb-0">Retention</div>
+        <div className="mt-1 mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+          {t('backups.physical.config.retention')}
+        </div>
         <div className="flex min-w-0 grow flex-col gap-2">
           {backupType === PhysicalDatabaseBackupType.FULL ? (
             <div className="max-w-[320px] text-xs text-gray-500 dark:text-gray-400">
-              This database keeps full backups only, so retention applies to full backups.
+              {t('backups.physical.config.fullBackupsOnlyRetention')}
             </div>
           ) : (
             <div className="flex w-full items-center">
@@ -394,9 +413,12 @@ export const EditPhysicalBackupConfigComponent = ({
                 className="min-w-0 grow"
                 popupMatchSelectWidth={false}
                 options={[
-                  { label: 'Keep last N chains', value: PhysicalRetention.CHAINS },
                   {
-                    label: 'Keep last N chains and full backups',
+                    label: t('backups.physical.config.retentionOptions.chains'),
+                    value: PhysicalRetention.CHAINS,
+                  },
+                  {
+                    label: t('backups.physical.config.retentionOptions.chainsAndFullBackups'),
                     value: PhysicalRetention.CHAINS_AND_FULL_BACKUPS,
                   },
                 ]}
@@ -406,22 +428,15 @@ export const EditPhysicalBackupConfigComponent = ({
                 className="cursor-pointer"
                 title={
                   <div>
-                    <div>
-                      A chain is one full backup plus the incrementals (and streamed WAL) that
-                      depend on it. Restoring needs the full backup and every incremental in its
-                      chain.
+                    <div>{t('backups.physical.config.retentionHelp.chain')}</div>
+                    <div className="mt-2 font-bold">
+                      {t('backups.physical.config.retentionOptions.chains')}
                     </div>
-                    <div className="mt-2 font-bold">Keep last N chains</div>
-                    <div>
-                      Keeps only the last N chains. When a chain rolls off, its full backup and all
-                      its incrementals are deleted - you can restore only within the kept chains.
+                    <div>{t('backups.physical.config.retentionHelp.chains')}</div>
+                    <div className="mt-2 font-bold">
+                      {t('backups.physical.config.retentionOptions.chainsAndFullBackups')}
                     </div>
-                    <div className="mt-2 font-bold">Keep last N chains and full backups</div>
-                    <div>
-                      Keeps the last N chains for recent point-in-time recovery, and additionally
-                      retains older standalone full backups by the policy below (GFS or last N) for
-                      long-term restore points after their incrementals are gone.
-                    </div>
+                    <div>{t('backups.physical.config.retentionHelp.chainsAndFullBackups')}</div>
                   </div>
                 }
               >
@@ -433,10 +448,10 @@ export const EditPhysicalBackupConfigComponent = ({
           {isShowChainsCount && (
             <div className="flex items-center gap-2">
               <div className="flex w-[110px] items-center text-sm text-gray-600 dark:text-gray-400">
-                <span>Chains</span>
+                <span>{t('backups.physical.config.chainsCount')}</span>
                 <Tooltip
                   className="cursor-pointer"
-                  title="Number of most recent backup chains to keep. A chain is a full backup plus its incrementals."
+                  title={t('backups.physical.config.chainsCountTooltip')}
                 >
                   <InfoCircleOutlined className="ml-1" style={{ color: 'gray' }} />
                 </Tooltip>
@@ -455,7 +470,7 @@ export const EditPhysicalBackupConfigComponent = ({
             <div className="mt-1 flex flex-col gap-2">
               <div className="flex w-full max-w-[200px] items-center gap-2">
                 <span className="w-[110px] text-sm text-gray-600 dark:text-gray-400">
-                  Full backups
+                  {t('backups.physical.config.fullBackups')}
                 </span>
                 <Select
                   value={fullBackupsRetention.policy}
@@ -463,23 +478,14 @@ export const EditPhysicalBackupConfigComponent = ({
                   size="small"
                   className="mr-5 max-w-[80px] min-w-0 grow"
                   popupMatchSelectWidth={false}
-                  options={[
-                    {
-                      label: 'Count',
-                      value: PhysicalFullBackupsPolicy.LAST_N,
-                    },
-                    {
-                      label: 'GFS',
-                      value: PhysicalFullBackupsPolicy.GFS,
-                    },
-                  ]}
+                  options={fullBackupsPolicyOptions}
                 />
               </div>
 
               {fullBackupsRetention.policy === PhysicalFullBackupsPolicy.LAST_N && (
                 <div className="flex items-center gap-2">
                   <span className="max-w-[110px] shrink-0 text-sm leading-4 text-gray-600 dark:text-gray-400">
-                    Most recent full backups
+                    {t('backups.physical.config.fullBackupsCount')}
                   </span>
                   <InputNumber
                     min={1}
@@ -495,7 +501,7 @@ export const EditPhysicalBackupConfigComponent = ({
                 <div className="flex max-w-[200px] flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="w-[110px] text-sm text-gray-600 dark:text-gray-400">
-                      Hourly
+                      {t('backups.physical.config.gfsFields.hourly')}
                     </span>
                     <InputNumber
                       min={0}
@@ -507,7 +513,7 @@ export const EditPhysicalBackupConfigComponent = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-[110px] text-sm text-gray-600 dark:text-gray-400">
-                      Daily
+                      {t('backups.physical.config.gfsFields.daily')}
                     </span>
                     <InputNumber
                       min={0}
@@ -519,7 +525,7 @@ export const EditPhysicalBackupConfigComponent = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-[110px] text-sm text-gray-600 dark:text-gray-400">
-                      Weekly
+                      {t('backups.physical.config.gfsFields.weekly')}
                     </span>
                     <InputNumber
                       min={0}
@@ -531,7 +537,7 @@ export const EditPhysicalBackupConfigComponent = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-[110px] text-sm text-gray-600 dark:text-gray-400">
-                      Monthly
+                      {t('backups.physical.config.gfsFields.monthly')}
                     </span>
                     <InputNumber
                       min={0}
@@ -543,7 +549,7 @@ export const EditPhysicalBackupConfigComponent = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-[110px] text-sm text-gray-600 dark:text-gray-400">
-                      Yearly
+                      {t('backups.physical.config.gfsFields.yearly')}
                     </span>
                     <InputNumber
                       min={0}
@@ -562,7 +568,9 @@ export const EditPhysicalBackupConfigComponent = ({
 
       {backupConfig.isBackupsEnabled && (
         <div className="mt-4 mb-1 flex w-full flex-col items-start sm:flex-row sm:items-start">
-          <div className="mt-0 mb-1 min-w-[150px] sm:mt-1 sm:mb-0">Notifications</div>
+          <div className="mt-0 mb-1 min-w-[150px] sm:mt-1 sm:mb-0 sm:pr-2">
+            {t('backups.config.notifications')}
+          </div>
           <div className="flex flex-col space-y-2">
             <Checkbox
               checked={backupConfig.sendNotificationsOn.includes(
@@ -572,7 +580,11 @@ export const EditPhysicalBackupConfigComponent = ({
                 toggleNotification(PhysicalBackupNotificationType.BACKUP_SUCCESS, e.target.checked)
               }
             >
-              Backup success
+              {t(
+                PHYSICAL_BACKUP_NOTIFICATION_TYPE_LABEL_KEYS[
+                  PhysicalBackupNotificationType.BACKUP_SUCCESS
+                ],
+              )}
             </Checkbox>
 
             <Checkbox
@@ -583,7 +595,11 @@ export const EditPhysicalBackupConfigComponent = ({
                 toggleNotification(PhysicalBackupNotificationType.BACKUP_FAILED, e.target.checked)
               }
             >
-              Backup failed
+              {t(
+                PHYSICAL_BACKUP_NOTIFICATION_TYPE_LABEL_KEYS[
+                  PhysicalBackupNotificationType.BACKUP_FAILED
+                ],
+              )}
             </Checkbox>
 
             {isIncrementalAllowed && (
@@ -595,7 +611,11 @@ export const EditPhysicalBackupConfigComponent = ({
                   toggleNotification(PhysicalBackupNotificationType.CHAIN_BROKEN, e.target.checked)
                 }
               >
-                Chain broken
+                {t(
+                  PHYSICAL_BACKUP_NOTIFICATION_TYPE_LABEL_KEYS[
+                    PhysicalBackupNotificationType.CHAIN_BROKEN
+                  ],
+                )}
               </Checkbox>
             )}
 
@@ -608,7 +628,11 @@ export const EditPhysicalBackupConfigComponent = ({
                   toggleNotification(PhysicalBackupNotificationType.WAL_GAP, e.target.checked)
                 }
               >
-                WAL gap
+                {t(
+                  PHYSICAL_BACKUP_NOTIFICATION_TYPE_LABEL_KEYS[
+                    PhysicalBackupNotificationType.WAL_GAP
+                  ],
+                )}
               </Checkbox>
             )}
           </div>
@@ -618,13 +642,13 @@ export const EditPhysicalBackupConfigComponent = ({
       <div className="mt-5 flex">
         {isShowBackButton && (
           <Button className="mr-1" type="primary" ghost onClick={onBack}>
-            Back
+            {t('common.actions.back')}
           </Button>
         )}
 
         {isShowCancelButton && (
           <Button danger ghost className="mr-1" onClick={onCancel}>
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
         )}
 
@@ -635,13 +659,13 @@ export const EditPhysicalBackupConfigComponent = ({
           loading={isSaving}
           disabled={!isAllFieldsFilled || (isSaveToApi && !isUnsaved)}
         >
-          {saveButtonText || 'Save'}
+          {saveButtonText || t('common.actions.save')}
         </Button>
       </div>
 
       {isShowCreateStorage && (
         <Modal
-          title="Add storage"
+          title={t('backups.config.addStorageTitle')}
           footer={<div />}
           open={isShowCreateStorage}
           onCancel={() => {
@@ -651,7 +675,7 @@ export const EditPhysicalBackupConfigComponent = ({
           maskClosable={false}
         >
           <div className="my-3 max-w-[275px] text-gray-500 dark:text-gray-400">
-            Storage - is a place where backups will be stored (local disk, S3, Google Drive, etc.)
+            {t('backups.config.storageDescription')}
           </div>
 
           <EditStorageComponent
@@ -676,10 +700,10 @@ export const EditPhysicalBackupConfigComponent = ({
         <ConfirmationComponent
           onConfirm={() => setIsShowWarn(false)}
           onDecline={() => setIsShowWarn(false)}
-          description="If you change the storage, all backups in this storage will be deleted."
+          description={t('backups.config.storageChangeWarning')}
           actionButtonColor="red"
-          actionText="I understand"
-          cancelText="Cancel"
+          actionText={t('backups.config.storageChangeAcknowledge')}
+          cancelText={t('common.actions.cancel')}
           hideCancelButton
         />
       )}

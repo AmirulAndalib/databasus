@@ -25,4 +25,7 @@ export { validateTeamsNotifier } from './models/teams/validateTeamsNotifier';
 
 export type { MattermostNotifier } from './models/mattermost/MattermostNotifier';
 export { MattermostDeliveryMode } from './models/mattermost/MattermostDeliveryMode';
+export { MATTERMOST_DELIVERY_MODE_LABEL_KEYS } from './models/mattermost/MattermostDeliveryModeLabelKeys';
 export { validateMattermostNotifier } from './models/mattermost/validateMattermostNotifier';
+export { NOTIFIER_TYPE_LABEL_KEYS } from './models/NotifierTypeLabelKeys';
+export { NOTIFICATION_TYPE_LABEL_KEYS } from './models/NotificationTypeLabelKeys';

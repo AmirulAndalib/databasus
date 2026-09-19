@@ -1,9 +1,12 @@
 import { CopyOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { App, Button, Checkbox, Input, InputNumber, Select, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import {
   type Database,
+  POSTGRESQL_SHORT_NAME,
+  POSTGRES_SSL_MODE_LABEL_KEYS,
   PostgresSslMode,
   type PostgresqlLogicalDatabase,
   databaseApi,
@@ -11,6 +14,12 @@ import {
   isSshTunnelReadyToTest,
 } from '../../../../entity/databases';
 import { ConnectionStringParser } from '../../../../entity/databases/model/postgresql/ConnectionStringParser';
+import {
+  getWebsitePageUrl,
+  translateApiError,
+  translateLocalizedText,
+  useLocale,
+} from '../../../../shared/i18n';
 import { NAME_LIST_TOKEN_SEPARATORS, normalizeNameList } from '../../../../shared/lib';
 import { ClipboardHelper } from '../../../../shared/lib/ClipboardHelper';
 import { ToastHelper } from '../../../../shared/toast';
@@ -77,6 +86,8 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
   isShowDbName = true,
   isRestoreMode = false,
 }: Props) => {
+  const { t } = useTranslation();
+  const { locale } = useLocale();
   const { message } = App.useApp();
 
   const [editingDatabase, setEditingDatabase] = useState<Database>();
@@ -109,14 +120,14 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
     const trimmedText = text.trim();
 
     if (!trimmedText) {
-      message.error('Clipboard is empty');
+      message.error(t('databases.edit.clipboardEmpty'));
       return;
     }
 
     const result = ConnectionStringParser.parse(trimmedText);
 
     if ('error' in result) {
-      message.error(result.error);
+      message.error(translateLocalizedText(result.error, t));
       return;
     }
 
@@ -139,7 +150,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
     setHasUserChosenSslMode(true);
     setEditingDatabase(autoAddPublicSchemaForSupabase(updatedDatabase));
     setIsConnectionTested(false);
-    message.success('Connection string parsed successfully');
+    message.success(t('databases.edit.connectionStringParsed'));
   };
 
   const parseFromClipboard = async () => {
@@ -152,7 +163,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
       const text = await ClipboardHelper.readFromClipboard();
       applyConnectionString(text);
     } catch {
-      message.error('Failed to read clipboard. Please check browser permissions.');
+      message.error(t('databases.edit.clipboardReadFailed'));
     }
   };
 
@@ -172,6 +183,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
           ...updatedDatabase,
           postgresqlLogical: {
             ...updatedDatabase.postgresqlLogical,
+            // eslint-disable-next-line i18next/no-literal-string -- PostgreSQL schema name
             includeSchemas: ['public', ...currentSchemas],
           },
         };
@@ -198,12 +210,12 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
       await databaseApi.testDatabaseConnectionDirect(trimmedDatabase);
       setIsConnectionTested(true);
       ToastHelper.showToast({
-        title: 'Connection test passed',
-        description: 'You can continue with the next step',
+        title: t('databases.edit.connectionTestPassed.title'),
+        description: t('databases.edit.connectionTestPassed.description'),
       });
     } catch (e) {
       setIsConnectionFailed(true);
-      alert((e as Error).message);
+      alert(translateApiError(e, t));
     }
 
     setIsTestingConnection(false);
@@ -226,7 +238,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
       try {
         await databaseApi.updateDatabase(trimmedDatabase);
       } catch (e) {
-        alert((e as Error).message);
+        alert(translateApiError(e, t));
       }
 
       setIsSaving(false);
@@ -281,13 +293,13 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
     <div className="mt-5 flex">
       {isShowCancelButton && (
         <Button className="mr-1" danger ghost onClick={() => onCancel()}>
-          Cancel
+          {t('common.actions.cancel')}
         </Button>
       )}
 
       {isShowBackButton && (
         <Button className="mr-auto" type="primary" ghost onClick={() => onBack()}>
-          Back
+          {t('common.actions.back')}
         </Button>
       )}
 
@@ -303,11 +315,11 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
     if (hadSslCert && !isReplacingCerts) {
       return (
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Client certificate</div>
+          <div className="min-w-[150px] pr-2">{t('databases.fields.clientCertificate')}</div>
           <div className="flex items-center">
             <span className="mr-3">*************</span>
             <Button size="small" onClick={startReplacingCerts}>
-              Replace
+              {t('databases.actions.replace')}
             </Button>
           </div>
         </div>
@@ -317,35 +329,37 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
     return (
       <>
         <div className="mb-1 flex w-full items-start">
-          <div className="min-w-[150px]">Client certificate</div>
+          <div className="min-w-[150px] pr-2">{t('databases.fields.clientCertificate')}</div>
           <Input.TextArea
             value={editingDatabase.postgresqlLogical?.sslClientCert || ''}
             onChange={(e) => updatePostgresqlCert('sslClientCert', e.target.value)}
             size="small"
             className="max-w-[300px] grow"
+            // eslint-disable-next-line i18next/no-literal-string -- PEM format example, not copy
             placeholder="-----BEGIN CERTIFICATE-----"
             autoSize={{ minRows: 2, maxRows: 5 }}
           />
         </div>
 
         <div className="mb-1 flex w-full items-start">
-          <div className="min-w-[150px]">Client key</div>
+          <div className="min-w-[150px] pr-2">{t('databases.fields.clientKey')}</div>
           <Input.TextArea
             value={editingDatabase.postgresqlLogical?.sslClientKey || ''}
             onChange={(e) => updatePostgresqlCert('sslClientKey', e.target.value)}
             size="small"
             className="max-w-[300px] grow"
+            // eslint-disable-next-line i18next/no-literal-string -- PEM format example, not copy
             placeholder="-----BEGIN PRIVATE KEY-----"
             autoSize={{ minRows: 2, maxRows: 5 }}
           />
         </div>
 
         <div className="mb-1 flex w-full items-start">
-          <div className="flex min-w-[150px] items-center">
-            <span>Server CA certificate</span>
+          <div className="flex min-w-[150px] items-center pr-2">
+            <span>{t('databases.fields.serverCaCertificate')}</span>
             <Tooltip
               className="cursor-pointer"
-              title="Optional. When provided, the server certificate is verified against this CA (verify-ca / verify-full)."
+              title={t('databases.edit.serverCaCertificateTooltip')}
             >
               <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
             </Tooltip>
@@ -355,6 +369,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
             onChange={(e) => updatePostgresqlCert('sslRootCert', e.target.value)}
             size="small"
             className="max-w-[300px] grow"
+            // eslint-disable-next-line i18next/no-literal-string -- PEM format example, not copy
             placeholder="-----BEGIN CERTIFICATE-----"
             autoSize={{ minRows: 2, maxRows: 5 }}
           />
@@ -390,18 +405,18 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
     return (
       <>
         <div className="mb-3 flex">
-          <div className="min-w-[150px]" />
+          <div className="min-w-[150px] pr-2" />
           <div
             className="cursor-pointer text-sm text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
             onClick={parseFromClipboard}
           >
             <CopyOutlined className="mr-1" />
-            Parse from clipboard
+            {t('databases.edit.parseFromClipboard')}
           </div>
         </div>
 
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Host</div>
+          <div className="min-w-[150px] pr-2">{t('common.fields.host')}</div>
           <Input
             value={editingDatabase.postgresqlLogical?.host}
             onChange={(e) => {
@@ -436,48 +451,54 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
             }}
             size="small"
             className="max-w-[200px] grow"
-            placeholder="Enter PG host"
+            placeholder={t('databases.edit.placeholders.host', { engine: POSTGRESQL_SHORT_NAME })}
           />
         </div>
 
         {isLocalhostDb && (
           <div className="mb-1 flex">
-            <div className="min-w-[150px]" />
+            <div className="min-w-[150px] pr-2" />
             <div className="max-w-[200px] text-xs text-gray-500 dark:text-gray-400">
-              Please{' '}
-              <a
-                href="https://databasus.com/faq/localhost"
-                target="_blank"
-                rel="noreferrer"
-                className="!text-blue-600 dark:!text-blue-400"
-              >
-                read this document
-              </a>{' '}
-              to study how to backup local database
+              <Trans
+                i18nKey="databases.edit.localhostHint"
+                components={{
+                  docsLink: (
+                    <a
+                      href={getWebsitePageUrl('faqLocalhost', locale)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="!text-blue-600 dark:!text-blue-400"
+                    />
+                  ),
+                }}
+              />
             </div>
           </div>
         )}
 
         {isSupabaseDb && (
           <div className="mb-1 flex">
-            <div className="min-w-[150px]" />
+            <div className="min-w-[150px] pr-2" />
             <div className="max-w-[200px] text-xs text-gray-500 dark:text-gray-400">
-              Please{' '}
-              <a
-                href="https://databasus.com/faq/supabase"
-                target="_blank"
-                rel="noreferrer"
-                className="!text-blue-600 dark:!text-blue-400"
-              >
-                read this document
-              </a>{' '}
-              to study how to backup Supabase database
+              <Trans
+                i18nKey="databases.edit.postgresql.supabaseHint"
+                components={{
+                  docsLink: (
+                    <a
+                      href={getWebsitePageUrl('faqSupabase', locale)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="!text-blue-600 dark:!text-blue-400"
+                    />
+                  ),
+                }}
+              />
             </div>
           </div>
         )}
 
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Port</div>
+          <div className="min-w-[150px] pr-2">{t('common.fields.port')}</div>
           <InputNumber
             type="number"
             value={editingDatabase.postgresqlLogical?.port}
@@ -492,12 +513,12 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
             }}
             size="small"
             className="max-w-[200px] grow"
-            placeholder="Enter PG port"
+            placeholder={t('databases.edit.placeholders.port', { engine: POSTGRESQL_SHORT_NAME })}
           />
         </div>
 
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Username</div>
+          <div className="min-w-[150px] pr-2">{t('common.fields.username')}</div>
           <Input
             value={editingDatabase.postgresqlLogical?.username}
             onChange={(e) => {
@@ -515,12 +536,14 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
             }}
             size="small"
             className="max-w-[200px] grow"
-            placeholder="Enter PG username"
+            placeholder={t('databases.edit.placeholders.username', {
+              engine: POSTGRESQL_SHORT_NAME,
+            })}
           />
         </div>
 
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">Password</div>
+          <div className="min-w-[150px] pr-2">{t('common.fields.password')}</div>
           <Input.Password
             value={editingDatabase.postgresqlLogical?.password}
             onChange={(e) => {
@@ -537,7 +560,9 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
             }}
             size="small"
             className="max-w-[200px] grow"
-            placeholder="Enter PG password"
+            placeholder={t('databases.edit.placeholders.password', {
+              engine: POSTGRESQL_SHORT_NAME,
+            })}
             autoComplete="off"
             data-1p-ignore
             data-lpignore="true"
@@ -547,7 +572,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
 
         {isShowDbName && (
           <div className="mb-1 flex w-full items-center">
-            <div className="min-w-[150px]">DB name</div>
+            <div className="min-w-[150px] pr-2">{t('databases.fields.databaseName')}</div>
             <Input
               value={editingDatabase.postgresqlLogical?.database}
               onChange={(e) => {
@@ -564,13 +589,15 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
               }}
               size="small"
               className="max-w-[200px] grow"
-              placeholder="Enter PG database name"
+              placeholder={t('databases.edit.placeholders.databaseName', {
+                engine: POSTGRESQL_SHORT_NAME,
+              })}
             />
           </div>
         )}
 
         <div className="mb-1 flex w-full items-center">
-          <div className="min-w-[150px]">SSL mode</div>
+          <div className="min-w-[150px] pr-2">{t('databases.fields.sslMode')}</div>
           <Select
             value={editingDatabase.postgresqlLogical?.sslMode ?? PostgresSslMode.Disable}
             onChange={(value: PostgresSslMode) => {
@@ -583,12 +610,10 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
               });
               setIsConnectionTested(false);
             }}
-            options={[
-              { label: 'Disable', value: PostgresSslMode.Disable },
-              { label: 'Require', value: PostgresSslMode.Require },
-              { label: 'Verify CA', value: PostgresSslMode.VerifyCa },
-              { label: 'Verify full', value: PostgresSslMode.VerifyFull },
-            ]}
+            options={Object.values(PostgresSslMode).map((sslMode) => ({
+              label: t(POSTGRES_SSL_MODE_LABEL_KEYS[sslMode]),
+              value: sslMode,
+            }))}
             size="small"
             className="max-w-[200px] grow"
           />
@@ -596,7 +621,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
 
         {isRestoreMode && (
           <div className="mb-5 flex w-full items-center">
-            <div className="min-w-[150px]">CPU count</div>
+            <div className="min-w-[150px] pr-2">{t('databases.fields.cpuCount')}</div>
             <div className="flex items-center">
               <InputNumber
                 min={1}
@@ -618,10 +643,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
                 className="max-w-[75px] grow"
               />
 
-              <Tooltip
-                className="cursor-pointer"
-                title="Number of CPU cores to use for backup and restore operations. Higher values may speed up operations but use more resources."
-              >
+              <Tooltip className="cursor-pointer" title={t('databases.edit.cpuCountTooltip')}>
                 <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
               </Tooltip>
             </div>
@@ -651,7 +673,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
 
             {!isRestoreMode && (
               <div className="mb-1 flex w-full items-center">
-                <div className="min-w-[150px]">Include schemas</div>
+                <div className="min-w-[150px] pr-2">{t('databases.fields.includeSchemas')}</div>
                 <Select
                   mode="tags"
                   value={editingDatabase.postgresqlLogical?.includeSchemas || []}
@@ -668,7 +690,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
                   }}
                   size="small"
                   className="max-w-[200px] grow"
-                  placeholder="All schemas (default)"
+                  placeholder={t('databases.edit.postgresql.includeSchemasPlaceholder')}
                   tokenSeparators={NAME_LIST_TOKEN_SEPARATORS}
                 />
               </div>
@@ -676,7 +698,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
 
             {!isRestoreMode && (
               <div className="mb-1 flex w-full items-center">
-                <div className="min-w-[150px]">Exclude tables</div>
+                <div className="min-w-[150px] pr-2">{t('databases.fields.excludeTables')}</div>
                 <Select
                   mode="tags"
                   value={editingDatabase.postgresqlLogical?.excludeTables || []}
@@ -693,13 +715,13 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
                   }}
                   size="small"
                   className="max-w-[200px] grow"
-                  placeholder="No tables excluded"
+                  placeholder={t('databases.edit.excludeTablesPlaceholder')}
                   tokenSeparators={NAME_LIST_TOKEN_SEPARATORS}
                 />
 
                 <Tooltip
                   className="cursor-pointer"
-                  title="Tables to exclude from the backup. Use 'tablename' or 'schema.tablename'. Glob patterns are supported (e.g. 'logs_*'). You can paste a list separated by commas or new lines."
+                  title={t('databases.edit.postgresql.excludeTablesTooltip')}
                 >
                   <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
                 </Tooltip>
@@ -708,11 +730,11 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
 
             {!isRestoreMode && (
               <div className="mb-1 flex w-full items-center">
-                <div className="flex min-w-[150px] items-center">
-                  <span>Skip user mappings</span>
+                <div className="flex min-w-[150px] items-center pr-2">
+                  <span>{t('databases.fields.skipUserMappings')}</span>
                   <Tooltip
                     className="cursor-pointer"
-                    title="Skip restoring user mappings (CREATE USER MAPPING statements). Enable this when the backup role cannot read the mapping credentials - otherwise they are dumped without options and break restore for FDWs like oracle_fdw."
+                    title={t('databases.edit.postgresql.skipUserMappingsTooltip')}
                   >
                     <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
                   </Tooltip>
@@ -736,11 +758,11 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
 
             {isRestoreMode && (
               <div className="mb-1 flex w-full items-center">
-                <div className="flex min-w-[150px] items-center">
-                  <span>Exclude extensions</span>
+                <div className="flex min-w-[150px] items-center pr-2">
+                  <span>{t('databases.fields.excludeExtensions')}</span>
                   <Tooltip
                     className="cursor-pointer"
-                    title="Skip restoring extension definitions (CREATE EXTENSION statements). Enable this if you're restoring to a managed PostgreSQL service where extensions are managed by the provider."
+                    title={t('databases.edit.postgresql.excludeExtensionsTooltip')}
                   >
                     <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
                   </Tooltip>
@@ -764,11 +786,11 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
 
             {isRestoreMode && (
               <div className="mb-1 flex w-full items-center">
-                <div className="flex min-w-[150px] items-center">
-                  <span>Restore ownership</span>
+                <div className="flex min-w-[150px] items-center pr-2">
+                  <span>{t('databases.fields.restoreOwnership')}</span>
                   <Tooltip
                     className="cursor-pointer"
-                    title="Apply ALTER OWNER statements from the dump so restored objects keep their original owner. The connection user must be able to assign these roles - typically a superuser."
+                    title={t('databases.edit.postgresql.restoreOwnershipTooltip')}
                   >
                     <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
                   </Tooltip>
@@ -792,11 +814,11 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
 
             {isRestoreMode && (
               <div className="mb-1 flex w-full items-center">
-                <div className="flex min-w-[150px] items-center">
-                  <span>Restore privileges</span>
+                <div className="flex min-w-[150px] items-center pr-2">
+                  <span>{t('databases.fields.restorePrivileges')}</span>
                   <Tooltip
                     className="cursor-pointer"
-                    title="Apply GRANT and REVOKE statements from the dump so restored objects keep their original ACLs. The connection user must be able to grant to the referenced roles - typically a superuser."
+                    title={t('databases.edit.postgresql.restorePrivilegesTooltip')}
                   >
                     <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
                   </Tooltip>
@@ -832,7 +854,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
                 disabled={!isAllFieldsFilled}
                 className="mr-5"
               >
-                Test connection
+                {t('databases.actions.testConnection')}
               </Button>
             )}
 
@@ -844,7 +866,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
                 disabled={!isAllFieldsFilled}
                 className="mr-5"
               >
-                {saveButtonText || 'Save'}
+                {saveButtonText || t('common.actions.save')}
               </Button>
             )}
           </>,
@@ -852,8 +874,7 @@ export const EditPostgreSqlLogicalSpecificDataComponent = ({
 
         {isConnectionFailed && (
           <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            If your database uses IP whitelist, make sure Databasus server IP is added to the
-            allowed list.
+            {t('databases.edit.ipWhitelistHint')}
           </div>
         )}
       </>

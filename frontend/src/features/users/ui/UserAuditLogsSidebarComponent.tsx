@@ -3,11 +3,13 @@ import { App, Spin, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { auditLogApi } from '../../../entity/audit-logs/api/auditLogApi';
 import type { AuditLog } from '../../../entity/audit-logs/model/AuditLog';
 import type { GetAuditLogsRequest } from '../../../entity/audit-logs/model/GetAuditLogsRequest';
 import type { UserProfile } from '../../../entity/users/model/UserProfile';
+import { translateApiError, useLocale } from '../../../shared/i18n';
 import { getUserTimeFormat } from '../../../shared/time';
 
 interface Props {
@@ -15,6 +17,8 @@ interface Props {
 }
 
 export function UserAuditLogsSidebarComponent({ user }: Props) {
+  const { t } = useTranslation();
+  const { formatRelativeTime } = useLocale();
   const { message } = App.useApp();
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,8 +90,7 @@ export function UserAuditLogsSidebarComponent({ user }: Props) {
       setTotal(response.total);
       setHasMore(response.auditLogs.length === pageSize);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load audit logs';
-      message.error(errorMessage);
+      message.error(translateApiError(error, t));
     } finally {
       loadingRef.current = false;
       setIsLoading(false);
@@ -97,7 +100,7 @@ export function UserAuditLogsSidebarComponent({ user }: Props) {
 
   const columns: ColumnsType<AuditLog> = [
     {
-      title: 'Message',
+      title: t('auditLogs.columns.message'),
       dataIndex: 'message',
       key: 'message',
       width: 350,
@@ -106,7 +109,7 @@ export function UserAuditLogsSidebarComponent({ user }: Props) {
       ),
     },
     {
-      title: 'Workspace',
+      title: t('auditLogs.columns.workspace'),
       dataIndex: 'workspaceName',
       key: 'workspaceName',
       width: 200,
@@ -123,7 +126,7 @@ export function UserAuditLogsSidebarComponent({ user }: Props) {
       ),
     },
     {
-      title: 'Created',
+      title: t('auditLogs.columns.created'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 200,
@@ -132,7 +135,7 @@ export function UserAuditLogsSidebarComponent({ user }: Props) {
         const timeFormat = getUserTimeFormat();
         return (
           <span className="text-xs text-gray-700 dark:text-white">
-            {`${date.format(timeFormat.format)} (${date.fromNow()})`}
+            {`${date.format(timeFormat.format)} (${formatRelativeTime(date)})`}
           </span>
         );
       },
@@ -147,7 +150,7 @@ export function UserAuditLogsSidebarComponent({ user }: Props) {
             {isLoading ? (
               <Spin indicator={<LoadingOutlined spin />} />
             ) : (
-              `${auditLogs.length} of ${total} logs`
+              t('auditLogs.loadedOfTotal', { loaded: auditLogs.length, total })
             )}
           </div>
         </div>
@@ -171,20 +174,20 @@ export function UserAuditLogsSidebarComponent({ user }: Props) {
               <div className="flex justify-center py-4">
                 <Spin indicator={<LoadingOutlined spin />} />
                 <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                  Loading more logs...
+                  {t('auditLogs.loadingMore')}
                 </span>
               </div>
             )}
 
             {!hasMore && auditLogs.length > 0 && (
               <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                All logs loaded ({total} total)
+                {t('auditLogs.allLoaded', { count: total })}
               </div>
             )}
 
             {!isLoading && auditLogs.length === 0 && (
               <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                No audit logs found for this user.
+                {t('users.auditLogs.empty')}
               </div>
             )}
           </>

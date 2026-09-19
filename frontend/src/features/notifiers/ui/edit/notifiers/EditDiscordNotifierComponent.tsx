@@ -1,4 +1,5 @@
 import { Input } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 import type { Notifier } from '../../../../../entity/notifiers';
 
@@ -9,10 +10,14 @@ interface Props {
 }
 
 export function EditDiscordNotifierComponent({ notifier, setNotifier, setUnsaved }: Props) {
+  const { t } = useTranslation();
+
   return (
     <>
       <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-        <div className="mb-1 min-w-[150px] sm:mb-0">Channel webhook URL</div>
+        <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
+          {t('notifiers.discord.channelWebhookUrl')}
+        </div>
         <Input
           value={notifier?.discordNotifier?.channelWebhookUrl || ''}
           onChange={(e) => {
@@ -28,27 +33,28 @@ export function EditDiscordNotifierComponent({ notifier, setNotifier, setUnsaved
           }}
           size="small"
           className="w-full max-w-[250px]"
+          // eslint-disable-next-line i18next/no-literal-string -- example token, not copy
           placeholder="1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         />
       </div>
 
       <div className="max-w-[250px] sm:ml-[150px]">
         <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          <strong>How to get Discord webhook URL:</strong>
+          <strong>{t('notifiers.discord.howTo.title')}</strong>
           <br />
           <br />
-          1. Create or select a Discord channel
+          {t('notifiers.discord.howTo.createChannel')}
           <br />
-          2. Go to channel settings (gear icon)
+          {t('notifiers.discord.howTo.openChannelSettings')}
           <br />
-          3. Navigate to Integrations
+          {t('notifiers.discord.howTo.openIntegrations')}
           <br />
-          4. Create a new webhook
+          {t('notifiers.discord.howTo.createWebhook')}
           <br />
-          5. Copy the webhook URL
+          {t('notifiers.discord.howTo.copyWebhookUrl')}
           <br />
           <br />
-          <em>Note: make sure make channel private if needed</em>
+          <em>{t('notifiers.discord.howTo.privacyNote')}</em>
         </div>
       </div>
     </>

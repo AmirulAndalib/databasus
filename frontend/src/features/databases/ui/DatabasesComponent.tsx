@@ -1,10 +1,12 @@
 import { Button, Modal, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { databaseApi } from '../../../entity/databases';
 import type { Database } from '../../../entity/databases';
 import type { WorkspaceResponse } from '../../../entity/workspaces';
 import { useIsMobile } from '../../../shared/hooks';
+import { translateApiError } from '../../../shared/i18n';
 import { CreateDatabaseComponent } from './CreateDatabaseComponent';
 import { DatabaseCardComponent } from './DatabaseCardComponent';
 import { DatabaseComponent } from './DatabaseComponent';
@@ -15,9 +17,11 @@ interface Props {
   isCanManageDBs: boolean;
 }
 
+// eslint-disable-next-line i18next/no-literal-string -- localStorage key
 const SELECTED_DATABASE_STORAGE_KEY = 'selectedDatabaseId';
 
 export const DatabasesComponent = ({ contentHeight, workspace, isCanManageDBs }: Props) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(true);
   const [databases, setDatabases] = useState<Database[]>([]);
@@ -25,6 +29,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, isCanManageDBs }:
 
   const [isShowAddDatabase, setIsShowAddDatabase] = useState(false);
   const [hasConnectionError, setHasConnectionError] = useState(false);
+  const [isWideStep, setIsWideStep] = useState(false);
   const [selectedDatabaseId, setSelectedDatabaseId] = useState<string | undefined>(undefined);
 
   const updateSelectedDatabaseId = (databaseId: string | undefined) => {
@@ -59,7 +64,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, isCanManageDBs }:
           updateSelectedDatabaseId(databaseToSelect);
         }
       })
-      .catch((e) => alert(e.message))
+      .catch((e) => alert(translateApiError(e, t)))
       .finally(() => setIsLoading(false));
   };
 
@@ -90,7 +95,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, isCanManageDBs }:
         setIsShowAddDatabase(true);
       }}
     >
-      Add database
+      {t('databases.list.addDatabase')}
     </Button>
   );
 
@@ -116,7 +121,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, isCanManageDBs }:
 
                 <div className="mb-2">
                   <input
-                    placeholder="Search database"
+                    placeholder={t('databases.list.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full border-b border-gray-300 p-1 text-gray-500 outline-none dark:text-gray-400"
@@ -136,14 +141,14 @@ export const DatabasesComponent = ({ contentHeight, workspace, isCanManageDBs }:
                 ))
               : searchQuery && (
                   <div className="mb-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No databases found matching &quot;{searchQuery}&quot;
+                    {t('databases.list.noSearchResults', { query: searchQuery })}
                   </div>
                 )}
 
             {databases.length < 5 && isCanManageDBs && addDatabaseButton}
 
             <div className="mx-3 text-center text-xs text-gray-500 dark:text-gray-400">
-              Database - is a thing we are backing up
+              {t('databases.list.description')}
             </div>
           </div>
         )}
@@ -157,7 +162,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, isCanManageDBs }:
                   onClick={() => updateSelectedDatabaseId(undefined)}
                   className="w-full"
                 >
-                  ← Back to databases
+                  {t('databases.list.backToList')}
                 </Button>
               </div>
             )}
@@ -183,13 +188,13 @@ export const DatabasesComponent = ({ contentHeight, workspace, isCanManageDBs }:
 
       {isShowAddDatabase && (
         <Modal
-          title="Add database for backup"
+          title={t('databases.create.title')}
           footer={<div />}
           open={isShowAddDatabase}
           onCancel={() => setIsShowAddDatabase(false)}
           maskClosable={false}
           closable={!hasConnectionError}
-          width={hasConnectionError ? 640 : 420}
+          width={hasConnectionError || isWideStep ? 640 : 420}
         >
           <div className="mt-5" />
 
@@ -201,6 +206,7 @@ export const DatabasesComponent = ({ contentHeight, workspace, isCanManageDBs }:
             }}
             onClose={() => setIsShowAddDatabase(false)}
             onConnectionErrorChange={setHasConnectionError}
+            onWideStepChange={setIsWideStep}
           />
         </Modal>
       )}

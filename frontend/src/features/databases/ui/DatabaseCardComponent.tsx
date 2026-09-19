@@ -1,13 +1,14 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { logicalBackupConfigApi } from '../../../entity/backups/logical';
 import { physicalBackupConfigApi } from '../../../entity/backups/physical';
-import { type Database, DatabaseType } from '../../../entity/databases';
+import { type Database, DatabaseType, HEALTH_STATUS_LABEL_KEYS } from '../../../entity/databases';
 import { HealthStatus } from '../../../entity/databases/model/HealthStatus';
 import type { Storage } from '../../../entity/storages';
 import { getStorageLogoFromType } from '../../../entity/storages/models/getStorageLogoFromType';
+import { useLocale } from '../../../shared/i18n';
 
 interface Props {
   database: Database;
@@ -20,6 +21,8 @@ export const DatabaseCardComponent = ({
   selectedDatabaseId,
   setSelectedDatabaseId,
 }: Props) => {
+  const { t } = useTranslation();
+  const { formatRelativeTime } = useLocale();
   const [storage, setStorage] = useState<Storage | undefined>();
 
   useEffect(() => {
@@ -48,7 +51,7 @@ export const DatabaseCardComponent = ({
                 database.healthStatus === HealthStatus.AVAILABLE ? 'bg-green-500' : 'bg-red-500'
               }`}
             >
-              {database.healthStatus === HealthStatus.AVAILABLE ? 'Available' : 'Unavailable'}
+              {t(HEALTH_STATUS_LABEL_KEYS[database.healthStatus])}
             </div>
           </div>
         )}
@@ -56,30 +59,38 @@ export const DatabaseCardComponent = ({
 
       {storage && (
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          <span>Storage: </span>
-          <span className="inline-flex items-center">
-            {storage.name}{' '}
-            {storage.type && (
-              <img
-                src={getStorageLogoFromType(storage.type)}
-                alt="storageIcon"
-                className="ml-1 h-4 w-4"
-              />
-            )}
-          </span>
+          <Trans
+            i18nKey="databases.card.storage"
+            components={{
+              storageName: (
+                <span className="inline-flex items-center">
+                  {storage.name}{' '}
+                  {storage.type && (
+                    <img
+                      src={getStorageLogoFromType(storage.type)}
+                      alt=""
+                      className="ml-1 h-4 w-4"
+                    />
+                  )}
+                </span>
+              ),
+            }}
+          />
         </div>
       )}
 
       {database.lastBackupTime && (
         <div className="text-gray-500 dark:text-gray-400">
-          Last backup {dayjs(database.lastBackupTime).fromNow()}
+          {t('databases.card.lastBackup', {
+            relativeTime: formatRelativeTime(database.lastBackupTime),
+          })}
         </div>
       )}
 
       {database.lastBackupErrorMessage && (
         <div className="mt-1 flex items-center text-sm text-red-600 underline dark:text-red-400">
           <InfoCircleOutlined className="mr-1" style={{ color: 'red' }} />
-          Has backup error
+          {t('databases.card.hasBackupError')}
         </div>
       )}
     </div>

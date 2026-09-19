@@ -1,10 +1,12 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { App, Button, Spin, Switch } from 'antd';
 import { useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { getApplicationServer } from '../../../constants';
 import { settingsApi } from '../../../entity/users/api/settingsApi';
 import type { UsersSettings } from '../../../entity/users/model/UsersSettings';
+import { getWebsitePageUrl, translateApiError, useLocale } from '../../../shared/i18n';
 import { ClipboardHelper } from '../../../shared/lib/ClipboardHelper';
 import { VerificationAgentsComponent } from '../../verification/agents';
 import { AuditLogsComponent } from './AuditLogsComponent';
@@ -14,6 +16,8 @@ interface Props {
 }
 
 export function SettingsComponent({ contentHeight }: Props) {
+  const { t } = useTranslation();
+  const { locale } = useLocale();
   const { message } = App.useApp();
   const [settings, setSettings] = useState<UsersSettings | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,8 +47,7 @@ export function SettingsComponent({ contentHeight }: Props) {
       setFormSettings(currentSettings);
       setHasChanges(false);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load settings';
-      message.error(errorMessage);
+      message.error(translateApiError(error, t));
     } finally {
       setIsLoading(false);
     }
@@ -74,10 +77,9 @@ export function SettingsComponent({ contentHeight }: Props) {
       setSettings(updatedSettings);
       setFormSettings(updatedSettings);
       setHasChanges(false);
-      message.success('Settings updated successfully');
+      message.success(t('settings.updated'));
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update settings';
-      message.error(errorMessage);
+      message.error(translateApiError(error, t));
     } finally {
       setIsSaving(false);
     }
@@ -98,7 +100,7 @@ export function SettingsComponent({ contentHeight }: Props) {
           className="grow overflow-y-auto rounded bg-white p-5 shadow dark:bg-gray-800"
           style={{ height: contentHeight }}
         >
-          <h1 className="text-2xl font-bold dark:text-white">Databasus settings</h1>
+          <h1 className="text-2xl font-bold dark:text-white">{t('settings.title')}</h1>
 
           <div className="mt-6">
             {isLoading ? (
@@ -112,11 +114,10 @@ export function SettingsComponent({ contentHeight }: Props) {
                   <div className="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700">
                     <div className="flex-1 pr-20">
                       <div className="font-medium text-gray-900 dark:text-white">
-                        Allow external registrations
+                        {t('settings.externalRegistrations.title')}
                       </div>
                       <div className="mt-1 text-gray-500 dark:text-gray-400">
-                        When enabled, new users can register accounts in Databasus. If disabled, new
-                        users can only register via invitation
+                        {t('settings.externalRegistrations.description')}
                       </div>
                     </div>
 
@@ -140,12 +141,11 @@ export function SettingsComponent({ contentHeight }: Props) {
                     <div className="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700">
                       <div className="flex-1 pr-20">
                         <div className="font-medium text-gray-900 dark:text-white">
-                          Allow member invitations
+                          {t('settings.memberInvitations.title')}
                         </div>
 
                         <div className="mt-1 text-gray-500 dark:text-gray-400">
-                          When enabled, existing members can invite new users to join Databasus. If
-                          not - only admins can invite users.
+                          {t('settings.memberInvitations.description')}
                         </div>
                       </div>
 
@@ -169,12 +169,11 @@ export function SettingsComponent({ contentHeight }: Props) {
                   <div className="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700">
                     <div className="flex-1 pr-20">
                       <div className="font-medium text-gray-900 dark:text-white">
-                        Members can create workspaces
+                        {t('settings.memberWorkspaceCreation.title')}
                       </div>
 
                       <div className="mt-1 text-gray-500 dark:text-gray-400">
-                        When enabled, members (non-admin users) can create new workspaces. If not -
-                        only admins can create workspaces.
+                        {t('settings.memberWorkspaceCreation.description')}
                       </div>
                     </div>
                     <div className="ml-4">
@@ -203,11 +202,11 @@ export function SettingsComponent({ contentHeight }: Props) {
                       disabled={isSaving}
                       className="border-blue-600 bg-blue-600 hover:border-blue-700 hover:bg-blue-700"
                     >
-                      {isSaving ? 'Saving...' : 'Save Changes'}
+                      {isSaving ? t('settings.saving') : t('settings.saveChanges')}
                     </Button>
 
                     <Button type="default" onClick={handleReset} disabled={isSaving}>
-                      Reset
+                      {t('settings.reset')}
                     </Button>
                   </div>
                 )}
@@ -216,20 +215,26 @@ export function SettingsComponent({ contentHeight }: Props) {
           </div>
 
           <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            Read more about settings you can{' '}
-            <a
-              href="https://databasus.com/access-management#global-settings"
-              target="_blank"
-              rel="noreferrer"
-              className="!text-blue-600"
-            >
-              here
-            </a>
+            <Trans
+              i18nKey="settings.readMore"
+              components={{
+                docsLink: (
+                  <a
+                    href={getWebsitePageUrl('accessManagementGlobalSettings', locale)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="!text-blue-600"
+                  />
+                ),
+              }}
+            />
           </div>
 
           {/* Health-check Information */}
           <div className="my-8 max-w-2xl">
-            <h2 className="mb-3 text-xl font-bold dark:text-white">Health-check</h2>
+            <h2 className="mb-3 text-xl font-bold dark:text-white">
+              {t('settings.healthcheck.title')}
+            </h2>
 
             <div className="group relative">
               <div className="flex items-center rounded-md border border-gray-300 bg-gray-50 px-3 py-2 !font-mono text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
@@ -238,7 +243,7 @@ export function SettingsComponent({ contentHeight }: Props) {
                   onClick={() => {
                     window.open(`${getApplicationServer()}/api/v1/system/health`, '_blank');
                   }}
-                  title="Click to open in new tab"
+                  title={t('settings.healthcheck.openInNewTab')}
                 >
                   {getApplicationServer()}/api/v1/system/health
                 </code>
@@ -250,14 +255,14 @@ export function SettingsComponent({ contentHeight }: Props) {
                     ClipboardHelper.copyToClipboard(
                       `${getApplicationServer()}/api/v1/system/health`,
                     );
-                    message.success('Health-check endpoint copied to clipboard');
+                    message.success(t('settings.healthcheck.copied'));
                   }}
                 >
                   📋
                 </Button>
               </div>
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Use this endpoint to monitor your Databasus system&apos;s availability
+                {t('settings.healthcheck.description')}
               </div>
             </div>
           </div>
