@@ -48,7 +48,10 @@ func checkMongodb() []ToolCheckResult {
 		Db:      "mongodb",
 		Version: "tools",
 		BinDir:  binDir,
-		Errors:  checkBinDir(binDir, mongodbRequired),
+		// The MongoDB tools bundle is not named after a release line — one
+		// client serves every supported server — so there is no version to
+		// hold it to, only the requirement that it starts.
+		Errors:  runBinDirChecks(binDir, mongodbRequired, "", nil),
 		IsFatal: false,
 	}}
 }

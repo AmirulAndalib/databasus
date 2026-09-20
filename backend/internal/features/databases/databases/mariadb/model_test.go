@@ -21,14 +21,20 @@ type mariadbModelVersion struct {
 	version              tools.MariadbVersion
 	image                string
 	runsRoutineGrantTest bool // only 11.4/11.8/12.0 expose SHOW CREATE ROUTINE
+	runsRoleTests        bool // MariaDB grew roles in 10.0.5, so 5.5 has none
 }
 
+// 5.5 and 10.1 are here because they are the only servers the legacy client
+// tier serves: without them nothing exercises that tier.
 var mariadbModelVersions = []mariadbModelVersion{
-	{"MariaDB 10.6", tools.MariadbVersion106, "mariadb:10.6", false},
-	{"MariaDB 10.11", tools.MariadbVersion1011, "mariadb:10.11", false},
-	{"MariaDB 11.4", tools.MariadbVersion114, "mariadb:11.4", true},
-	{"MariaDB 11.8", tools.MariadbVersion118, "mariadb:11.8", true},
-	{"MariaDB 12.0", tools.MariadbVersion120, "mariadb:12.0", true},
+	{"MariaDB 5.5", tools.MariadbVersion55, "mariadb:5.5", false, false},
+	{"MariaDB 10.1", tools.MariadbVersion101, "mariadb:10.1", false, true},
+	{"MariaDB 10.6", tools.MariadbVersion106, "mariadb:10.6", false, true},
+	{"MariaDB 10.11", tools.MariadbVersion1011, "mariadb:10.11", false, true},
+	{"MariaDB 11.4", tools.MariadbVersion114, "mariadb:11.4", true, true},
+	{"MariaDB 11.8", tools.MariadbVersion118, "mariadb:11.8", true, true},
+	{"MariaDB 12.0", tools.MariadbVersion120, "mariadb:12.0", true, true},
+	{"MariaDB 13.0", tools.MariadbVersion130, "mariadb:13.0", true, true},
 }
 
 // Test_MariadbModel_AcrossSupportedVersions boots each MariaDB version once and runs every matrix
@@ -62,17 +68,19 @@ func Test_MariadbModel_AcrossSupportedVersions(t *testing.T) {
 				testTestConnectionDatabaseWithUnderscoresAndAllPrivileges(t, endpoint, dbVersion.version)
 			})
 
-			t.Run("Test_TestConnection_WhenBackupPrivilegesComeFromActiveRole_Success", func(t *testing.T) {
-				testTestConnectionBackupPrivilegesFromActiveRole(t, endpoint, dbVersion.version)
-			})
+			if dbVersion.runsRoleTests {
+				t.Run("Test_TestConnection_WhenBackupPrivilegesComeFromActiveRole_Success", func(t *testing.T) {
+					testTestConnectionBackupPrivilegesFromActiveRole(t, endpoint, dbVersion.version)
+				})
 
-			t.Run("Test_TestConnection_WhenBackupPrivilegesComeFromNestedRole_Success", func(t *testing.T) {
-				testTestConnectionBackupPrivilegesFromNestedRole(t, endpoint, dbVersion.version)
-			})
+				t.Run("Test_TestConnection_WhenBackupPrivilegesComeFromNestedRole_Success", func(t *testing.T) {
+					testTestConnectionBackupPrivilegesFromNestedRole(t, endpoint, dbVersion.version)
+				})
 
-			t.Run("Test_TestConnection_WhenRoleIsGrantedButNotActivated_ReturnsError", func(t *testing.T) {
-				testTestConnectionRoleGrantedButNotActivated(t, endpoint, dbVersion.version)
-			})
+				t.Run("Test_TestConnection_WhenRoleIsGrantedButNotActivated_ReturnsError", func(t *testing.T) {
+					testTestConnectionRoleGrantedButNotActivated(t, endpoint, dbVersion.version)
+				})
+			}
 
 			t.Run("Test_TestConnection_WhenTableGrantsCoverEveryVisibleTable_Success", func(t *testing.T) {
 				testTestConnectionTableGrantsCoverEveryVisibleTable(t, endpoint, dbVersion.version)

@@ -541,8 +541,10 @@ func (m *MysqlDatabase) buildDSN(password, database string) string {
 	)
 }
 
-// detectMysqlVersion parses VERSION() output to detect MySQL version
-// Minor versions are mapped to the closest supported version (e.g., 8.1 → 8.0, 8.4+ → 8.4)
+// detectMysqlVersion parses VERSION() output to detect MySQL version.
+// A version identity names a release line, so minors collapse onto it
+// (8.1 → 8.0, 8.4+ → 8.4, every 26.x → 26). A line no shipped client serves
+// is refused here rather than at backup time.
 func detectMysqlVersion(ctx context.Context, db *sql.DB) (tools.MysqlVersion, error) {
 	var versionStr string
 	err := db.QueryRowContext(ctx, "SELECT VERSION()").Scan(&versionStr)
@@ -550,17 +552,32 @@ func detectMysqlVersion(ctx context.Context, db *sql.DB) (tools.MysqlVersion, er
 		return "", fmt.Errorf("failed to query MySQL version: %w", err)
 	}
 
-	re := regexp.MustCompile(`^(\d+)\.(\d+)`)
-	matches := re.FindStringSubmatch(versionStr)
+	return parseMysqlVersionString(versionStr)
+}
+
+// parseMysqlVersionString turns what a server answers VERSION() with into the
+// version identity that names its release line. Managed providers append a
+// suffix — "26.7.0-cloud" — so only the leading numbers are read.
+func parseMysqlVersionString(versionStr string) (tools.MysqlVersion, error) {
+	matches := mysqlVersionPattern.FindStringSubmatch(versionStr)
 	if len(matches) < 3 {
 		return "", fmt.Errorf("could not parse MySQL version: %s", versionStr)
 	}
 
-	major := matches[1]
-	minor := matches[2]
+	version, err := mapMysqlVersion(matches[1], matches[2])
+	if err != nil {
+		return "", err
+	}
 
-	return mapMysqlVersion(major, minor)
+	// A line we map is still unsupported where its client was never built.
+	if err := tools.RequireMysqlBundle(version); err != nil {
+		return "", err
+	}
+
+	return version, nil
 }
+
+var mysqlVersionPattern = regexp.MustCompile(`^(\d+)\.(\d+)`)
 
 func mapMysqlVersion(major, minor string) (tools.MysqlVersion, error) {
 	switch major {
@@ -570,9 +587,12 @@ func mapMysqlVersion(major, minor string) (tools.MysqlVersion, error) {
 		return mapMysql8xVersion(minor), nil
 	case "9":
 		return tools.MysqlVersion9, nil
+	// Every 26.x release belongs to one line, whatever its minor.
+	case "26":
+		return tools.MysqlVersion26, nil
 	default:
 		return "", fmt.Errorf(
-			"unsupported MySQL major version: %s (supported: 5.x, 8.x, 9.x)",
+			"unsupported MySQL major version: %s (supported: 5.x, 8.x, 9.x, 26.x)",
 			major,
 		)
 	}

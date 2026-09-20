@@ -84,8 +84,8 @@ export default function MysqlBackupPage() {
               "Monitorización del estado de la base de datos MySQL",
               "Autoalojado mediante Docker",
               "De código abierto y gratuito",
-              "Soporte para MySQL 5.7, 8.0, 8.4, 9",
-              "Soporte para MariaDB 10, 11, 12",
+              "Soporte para MySQL 5.7, 8.0, 8.4, 9, 26",
+              "Soporte para MariaDB 5.5, 10, 11, 12, 13",
               "Compresión de copias de seguridad y cifrado AES-256-GCM",
               "Alternativa a mysqldump con interfaz web",
             ],
@@ -122,7 +122,7 @@ export default function MysqlBackupPage() {
                 name: "¿Qué versiones de MySQL soporta Databasus?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Databasus soporta MySQL 5.7, 8.0, 8.4 y 9. Para MySQL 8.0 y versiones posteriores, Databasus usa compresión de red zstd para transferencias más rápidas. Para MySQL 5.7 se usa automáticamente la compresión heredada.",
+                  text: "Databasus soporta MySQL 5.7, 8.0, 8.4, 9 y 26. Para MySQL 8.0 y versiones posteriores, Databasus usa compresión de red zstd para transferencias más rápidas. Para MySQL 5.7 se usa automáticamente la compresión heredada. MySQL 5.7 solo se soporta en x86-64.",
                 },
               },
               {
@@ -130,7 +130,7 @@ export default function MysqlBackupPage() {
                 name: "¿Qué versiones de MariaDB soporta Databasus?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Databasus soporta MariaDB 10, 11 y 12. Para los respaldos de MariaDB, Databasus usa la herramienta nativa mariadb-dump en lugar de mysqldump, lo que garantiza compatibilidad total con las funciones y optimizaciones específicas de MariaDB.",
+                  text: "Databasus soporta MariaDB 5.5, 10, 11, 12 y 13. Para los respaldos de MariaDB, Databasus usa la herramienta nativa mariadb-dump en lugar de mysqldump, lo que garantiza compatibilidad total con las funciones y optimizaciones específicas de MariaDB.",
                 },
               },
               {
@@ -564,8 +564,8 @@ export default function MysqlBackupPage() {
                 </h3>
 
                 <p className="text-gray-400 text-sm md:text-base mb-4">
-                  Se soportan MySQL 5.7, 8.0, 8.4 y 9. MariaDB 10, 11 y 12 se
-                  soportan con la herramienta nativa mariadb-dump para una
+                  Se soportan MySQL 5.7, 8.0, 8.4, 9 y 26. MariaDB 5.5, 10, 11, 12 y 13
+                  se soportan con la herramienta nativa mariadb-dump para una
                   compatibilidad total
                 </p>
 
@@ -830,6 +830,9 @@ export default function MysqlBackupPage() {
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
                       MySQL 9
                     </span>
+                    <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
+                      MySQL 26
+                    </span>
                   </div>
                 </div>
               </div>
@@ -904,6 +907,9 @@ export default function MysqlBackupPage() {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
+                      MariaDB 5.5
+                    </span>
+                    <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
                       MariaDB 10
                     </span>
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
@@ -911,6 +917,9 @@ export default function MysqlBackupPage() {
                     </span>
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
                       MariaDB 12
+                    </span>
+                    <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
+                      MariaDB 13
                     </span>
                   </div>
                 </div>
@@ -997,12 +1006,12 @@ export default function MysqlBackupPage() {
             <FaqItem
               number="3"
               question="¿Qué versiones de MySQL soporta Databasus?"
-              answer="Databasus soporta MySQL 5.7, 8.0, 8.4 y 9. Para MySQL 8.0 y versiones posteriores, Databasus usa compresión de red zstd para transferencias más rápidas en conexiones lentas. Para MySQL 5.7 se usa automáticamente la compresión heredada. Todas las versiones cuentan con las mismas funciones: programación, cifrado, almacenamiento en la nube y notificaciones."
+              answer="Databasus soporta MySQL 5.7, 8.0, 8.4, 9 y 26. Para MySQL 8.0 y versiones posteriores, Databasus usa compresión de red zstd para transferencias más rápidas en conexiones lentas. Para MySQL 5.7 se usa automáticamente la compresión heredada. MySQL 5.7 solo se soporta en x86-64. Todas las versiones cuentan con las mismas funciones: programación, cifrado, almacenamiento en la nube y notificaciones."
             />
             <FaqItem
               number="4"
               question="¿Qué versiones de MariaDB soporta Databasus?"
-              answer="Databasus soporta MariaDB 10, 11 y 12. Para los respaldos de MariaDB, Databasus usa la herramienta nativa mariadb-dump en lugar de mysqldump, lo que garantiza compatibilidad total con las funciones y optimizaciones específicas de MariaDB. La misma interfaz web y las mismas funciones de programación, almacenamiento y notificaciones sirven tanto para MySQL como para MariaDB."
+              answer="Databasus soporta MariaDB 5.5, 10, 11, 12 y 13. Para los respaldos de MariaDB, Databasus usa la herramienta nativa mariadb-dump en lugar de mysqldump, lo que garantiza compatibilidad total con las funciones y optimizaciones específicas de MariaDB. La misma interfaz web y las mismas funciones de programación, almacenamiento y notificaciones sirven tanto para MySQL como para MariaDB."
             />
             <FaqItem
               number="5"

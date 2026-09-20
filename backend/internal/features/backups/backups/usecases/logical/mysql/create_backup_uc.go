@@ -110,11 +110,16 @@ func (uc *CreateMysqlBackupUsecase) Execute(
 
 	args := uc.buildMysqldumpArgs(mysqlDatabase)
 
+	mysqldumpBin, err := tools.GetMysqlExecutable(mysqlDatabase.Version, tools.MysqlExecutableMysqldump)
+	if err != nil {
+		return nil, err
+	}
+
 	return uc.streamToStorage(
 		ctx,
 		backup,
 		backupConfig,
-		tools.GetMysqlExecutable(mysqlDatabase.Version, tools.MysqlExecutableMysqldump),
+		mysqldumpBin,
 		args,
 		decryptedPassword,
 		fileStore,

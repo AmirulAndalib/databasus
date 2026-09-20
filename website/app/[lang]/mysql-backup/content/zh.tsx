@@ -84,8 +84,8 @@ export default function MysqlBackupPage() {
               "MySQL 数据库健康监控",
               "通过 Docker 自托管",
               "开源且免费",
-              "支持 MySQL 5.7、8.0、8.4、9",
-              "支持 MariaDB 10、11、12",
+              "支持 MySQL 5.7、8.0、8.4、9、26",
+              "支持 MariaDB 5.5、10、11、12、13",
               "备份压缩和 AES-256-GCM 加密",
               "带 Web 界面的 mysqldump 替代方案",
             ],
@@ -122,7 +122,7 @@ export default function MysqlBackupPage() {
                 name: "Databasus 支持哪些 MySQL 版本？",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Databasus 支持 MySQL 5.7、8.0、8.4 和 9。对于 MySQL 8.0 及更新版本，Databasus 使用 zstd 网络压缩加快传输速度。对于 MySQL 5.7，会自动使用传统压缩方式。",
+                  text: "Databasus 支持 MySQL 5.7、8.0、8.4、9 和 26。对于 MySQL 8.0 及更新版本，Databasus 使用 zstd 网络压缩加快传输速度。对于 MySQL 5.7，会自动使用传统压缩方式。MySQL 5.7 仅支持 x86-64。",
                 },
               },
               {
@@ -130,7 +130,7 @@ export default function MysqlBackupPage() {
                 name: "Databasus 支持哪些 MariaDB 版本？",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Databasus 支持 MariaDB 10、11 和 12。对于 MariaDB 备份，Databasus 使用原生的 mariadb-dump 工具而非 mysqldump，确保与 MariaDB 特有功能和优化完全兼容。",
+                  text: "Databasus 支持 MariaDB 5.5、10、11、12 和 13。对于 MariaDB 备份，Databasus 使用原生的 mariadb-dump 工具而非 mysqldump，确保与 MariaDB 特有功能和优化完全兼容。",
                 },
               },
               {
@@ -554,8 +554,8 @@ export default function MysqlBackupPage() {
                 </h3>
 
                 <p className="text-gray-400 text-sm md:text-base mb-4">
-                  支持 MySQL 5.7、8.0、8.4 和 9。支持 MariaDB 10、11 和
-                  12，并使用原生 mariadb-dump 工具确保完全兼容
+                  支持 MySQL 5.7、8.0、8.4、9 和 26。支持 MariaDB 5.5、10、11、12
+                  和 13，并使用原生 mariadb-dump 工具确保完全兼容
                 </p>
 
                 <div>
@@ -806,6 +806,9 @@ export default function MysqlBackupPage() {
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
                       MySQL 9
                     </span>
+                    <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
+                      MySQL 26
+                    </span>
                   </div>
                 </div>
               </div>
@@ -876,6 +879,9 @@ export default function MysqlBackupPage() {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
+                      MariaDB 5.5
+                    </span>
+                    <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
                       MariaDB 10
                     </span>
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
@@ -883,6 +889,9 @@ export default function MysqlBackupPage() {
                     </span>
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
                       MariaDB 12
+                    </span>
+                    <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
+                      MariaDB 13
                     </span>
                   </div>
                 </div>
@@ -966,12 +975,12 @@ export default function MysqlBackupPage() {
             <FaqItem
               number="3"
               question="Databasus 支持哪些 MySQL 版本？"
-              answer="Databasus 支持 MySQL 5.7、8.0、8.4 和 9。对于 MySQL 8.0 及更新版本，Databasus 使用 zstd 网络压缩，在低速连接下加快传输。对于 MySQL 5.7，会自动使用传统压缩方式。所有版本享有相同的功能：定时调度、加密、云存储和通知。"
+              answer="Databasus 支持 MySQL 5.7、8.0、8.4、9 和 26。对于 MySQL 8.0 及更新版本，Databasus 使用 zstd 网络压缩，在低速连接下加快传输。对于 MySQL 5.7，会自动使用传统压缩方式。MySQL 5.7 仅支持 x86-64。所有版本享有相同的功能：定时调度、加密、云存储和通知。"
             />
             <FaqItem
               number="4"
               question="Databasus 支持哪些 MariaDB 版本？"
-              answer="Databasus 支持 MariaDB 10、11 和 12。对于 MariaDB 备份，Databasus 使用原生的 mariadb-dump 工具而非 mysqldump，确保与 MariaDB 特有功能和优化完全兼容。MySQL 和 MariaDB 共用同一套 Web 界面、定时调度、存储和通知功能。"
+              answer="Databasus 支持 MariaDB 5.5、10、11、12 和 13。对于 MariaDB 备份，Databasus 使用原生的 mariadb-dump 工具而非 mysqldump，确保与 MariaDB 特有功能和优化完全兼容。MySQL 和 MariaDB 共用同一套 Web 界面、定时调度、存储和通知功能。"
             />
             <FaqItem
               number="5"

@@ -4,20 +4,12 @@ import {
   DATABASE_TYPE_LABEL_KEYS,
   type Database,
   DatabaseType,
-  MysqlVersion,
 } from '../../../../entity/databases';
 import { ShowSshTunnelComponent } from './ShowSshTunnelComponent';
 
 interface Props {
   database: Database;
 }
-
-const mysqlVersionLabels = {
-  [MysqlVersion.MysqlVersion57]: '5.7',
-  [MysqlVersion.MysqlVersion80]: '8.0',
-  [MysqlVersion.MysqlVersion84]: '8.4',
-  [MysqlVersion.MysqlVersion9]: '9',
-};
 
 export const ShowMySqlSpecificDataComponent = ({ database }: Props) => {
   const { t } = useTranslation();
@@ -30,7 +22,7 @@ export const ShowMySqlSpecificDataComponent = ({ database }: Props) => {
             engine: t(DATABASE_TYPE_LABEL_KEYS[DatabaseType.MYSQL]),
           })}
         </div>
-        <div>{database.mysql?.version ? mysqlVersionLabels[database.mysql.version] : ''}</div>
+        <div>{database.mysql?.version || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">

@@ -10,4 +10,5 @@ export enum MariadbVersion {
   MariadbVersion114 = '11.4',
   MariadbVersion118 = '11.8',
   MariadbVersion120 = '12.0',
+  MariadbVersion130 = '13.0',
 }

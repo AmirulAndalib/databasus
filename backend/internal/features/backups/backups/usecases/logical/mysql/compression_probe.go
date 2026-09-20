@@ -33,22 +33,24 @@ type CompressionProbeSpec struct {
 // fallback. Managed providers that front MySQL with a proxy (e.g. Aliyun RDS) advertise algorithms
 // the proxy cannot actually negotiate, so the choice has to come from a handshake rather than from
 // the protocol_compression_algorithms server variable.
+// The deprecated --compress flag belongs to 5.7 alone. Every later line is
+// named explicitly rather than reached by falling through, so a line added
+// later does not quietly inherit the legacy flag.
 func getNetworkCompressionCandidates(version tools.MysqlVersion) [][]string {
-	switch version {
-	case tools.MysqlVersion80, tools.MysqlVersion84, tools.MysqlVersion9:
-		return [][]string{
-			{
-				"--compression-algorithms=zstd",
-				fmt.Sprintf("--zstd-compression-level=%d", networkZstdCompressionLevel),
-			},
-			{"--compression-algorithms=zlib"},
-			{},
-		}
-	default:
+	if version == tools.MysqlVersion57 {
 		return [][]string{
 			{"--compress"},
 			{},
 		}
+	}
+
+	return [][]string{
+		{
+			"--compression-algorithms=zstd",
+			fmt.Sprintf("--zstd-compression-level=%d", networkZstdCompressionLevel),
+		},
+		{"--compression-algorithms=zlib"},
+		{},
 	}
 }
 

@@ -136,10 +136,13 @@ func probeCompressionAgainstMysql(t *testing.T, endpoint containers.Endpoint) []
 
 	t.Cleanup(func() { _ = os.RemoveAll(filepath.Dir(myCnfFile)) })
 
+	mysqldumpBin, err := tools.GetMysqlExecutable(tools.MysqlVersion80, tools.MysqlExecutableMysqldump)
+	if err != nil {
+		t.Fatalf("failed to resolve mysqldump: %v", err)
+	}
+
 	return uc.probeNetworkCompressionArgs(t.Context(), CompressionProbeSpec{
-		MysqldumpBin: tools.GetMysqlExecutable(
-			tools.MysqlVersion80, tools.MysqlExecutableMysqldump,
-		),
+		MysqldumpBin: mysqldumpBin,
 		MyCnfFile:    myCnfFile,
 		DatabaseName: databaseName,
 		DatabaseID:   uuid.New(),

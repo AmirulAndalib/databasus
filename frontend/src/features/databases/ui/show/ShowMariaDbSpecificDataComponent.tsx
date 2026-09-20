@@ -4,27 +4,12 @@ import {
   DATABASE_TYPE_LABEL_KEYS,
   type Database,
   DatabaseType,
-  MariadbVersion,
 } from '../../../../entity/databases';
 import { ShowSshTunnelComponent } from './ShowSshTunnelComponent';
 
 interface Props {
   database: Database;
 }
-
-const mariadbVersionLabels: Record<MariadbVersion, string> = {
-  [MariadbVersion.MariadbVersion55]: '5.5',
-  [MariadbVersion.MariadbVersion101]: '10.1',
-  [MariadbVersion.MariadbVersion102]: '10.2',
-  [MariadbVersion.MariadbVersion103]: '10.3',
-  [MariadbVersion.MariadbVersion104]: '10.4',
-  [MariadbVersion.MariadbVersion105]: '10.5',
-  [MariadbVersion.MariadbVersion106]: '10.6',
-  [MariadbVersion.MariadbVersion1011]: '10.11',
-  [MariadbVersion.MariadbVersion114]: '11.4',
-  [MariadbVersion.MariadbVersion118]: '11.8',
-  [MariadbVersion.MariadbVersion120]: '12.0',
-};
 
 export const ShowMariaDbSpecificDataComponent = ({ database }: Props) => {
   const { t } = useTranslation();
@@ -37,7 +22,7 @@ export const ShowMariaDbSpecificDataComponent = ({ database }: Props) => {
             engine: t(DATABASE_TYPE_LABEL_KEYS[DatabaseType.MARIADB]),
           })}
         </div>
-        <div>{database.mariadb?.version ? mariadbVersionLabels[database.mariadb.version] : ''}</div>
+        <div>{database.mariadb?.version || ''}</div>
       </div>
 
       <div className="mb-1 flex w-full items-center">

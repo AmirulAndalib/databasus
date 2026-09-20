@@ -88,13 +88,18 @@ func Test_ProbeNetworkCompressionArgs_AgainstStockMariadb_SelectsCompress(t *tes
 
 	t.Cleanup(func() { _ = os.RemoveAll(filepath.Dir(myCnfFile)) })
 
+	mariadbDumpBin, err := tools.GetMariadbExecutable(
+		tools.MariadbVersion1011, tools.MariadbExecutableMariadbDump,
+	)
+	if err != nil {
+		t.Fatalf("failed to resolve mariadb-dump: %v", err)
+	}
+
 	compressionArgs := uc.probeNetworkCompressionArgs(t.Context(), CompressionProbeSpec{
-		MariadbDumpBin: tools.GetMariadbExecutable(
-			tools.MariadbVersion1011, tools.MariadbExecutableMariadbDump,
-		),
-		MyCnfFile:    myCnfFile,
-		DatabaseName: databaseName,
-		DatabaseID:   uuid.New(),
+		MariadbDumpBin: mariadbDumpBin,
+		MyCnfFile:      myCnfFile,
+		DatabaseName:   databaseName,
+		DatabaseID:     uuid.New(),
 	})
 
 	if !slices.Contains(compressionArgs, "--compress") {

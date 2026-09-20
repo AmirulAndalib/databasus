@@ -84,8 +84,8 @@ export default function MysqlBackupPage() {
               "Monitoramento de saúde da base de dados MySQL",
               "Auto-hospedado via Docker",
               "Open source e gratuito",
-              "Suporte a MySQL 5.7, 8.0, 8.4, 9",
-              "Suporte a MariaDB 10, 11, 12",
+              "Suporte a MySQL 5.7, 8.0, 8.4, 9, 26",
+              "Suporte a MariaDB 5.5, 10, 11, 12, 13",
               "Compressão de backups e criptografia AES-256-GCM",
               "Alternativa ao mysqldump com interface web",
             ],
@@ -122,7 +122,7 @@ export default function MysqlBackupPage() {
                 name: "Quais versões de MySQL o Databasus suporta?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "O Databasus suporta MySQL 5.7, 8.0, 8.4 e 9. Para MySQL 8.0 e mais recentes, o Databasus usa compressão de rede zstd para transferências mais rápidas. Para MySQL 5.7, a compressão legada é usada automaticamente.",
+                  text: "O Databasus suporta MySQL 5.7, 8.0, 8.4, 9 e 26. Para MySQL 8.0 e mais recentes, o Databasus usa compressão de rede zstd para transferências mais rápidas. Para MySQL 5.7, a compressão legada é usada automaticamente. MySQL 5.7 é suportado apenas em x86-64.",
                 },
               },
               {
@@ -130,7 +130,7 @@ export default function MysqlBackupPage() {
                 name: "Quais versões de MariaDB o Databasus suporta?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "O Databasus suporta MariaDB 10, 11 e 12. Para backups de MariaDB, o Databasus usa a ferramenta nativa mariadb-dump em vez do mysqldump, garantindo compatibilidade total com recursos e otimizações específicos do MariaDB.",
+                  text: "O Databasus suporta MariaDB 5.5, 10, 11, 12 e 13. Para backups de MariaDB, o Databasus usa a ferramenta nativa mariadb-dump em vez do mysqldump, garantindo compatibilidade total com recursos e otimizações específicos do MariaDB.",
                 },
               },
               {
@@ -563,8 +563,8 @@ export default function MysqlBackupPage() {
                 </h3>
 
                 <p className="text-gray-400 text-sm md:text-base mb-4">
-                  MySQL 5.7, 8.0, 8.4 e 9 são suportados. MariaDB 10, 11 e 12
-                  são suportados com a ferramenta nativa mariadb-dump para
+                  MySQL 5.7, 8.0, 8.4, 9 e 26 são suportados. MariaDB 5.5, 10, 11, 12 e
+                  13 são suportados com a ferramenta nativa mariadb-dump para
                   compatibilidade total
                 </p>
 
@@ -826,6 +826,9 @@ export default function MysqlBackupPage() {
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
                       MySQL 9
                     </span>
+                    <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
+                      MySQL 26
+                    </span>
                   </div>
                 </div>
               </div>
@@ -900,6 +903,9 @@ export default function MysqlBackupPage() {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
+                      MariaDB 5.5
+                    </span>
+                    <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
                       MariaDB 10
                     </span>
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
@@ -907,6 +913,9 @@ export default function MysqlBackupPage() {
                     </span>
                     <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
                       MariaDB 12
+                    </span>
+                    <span className="px-3 py-1 rounded border border-[#ffffff20] text-sm">
+                      MariaDB 13
                     </span>
                   </div>
                 </div>
@@ -993,12 +1002,12 @@ export default function MysqlBackupPage() {
             <FaqItem
               number="3"
               question="Quais versões de MySQL o Databasus suporta?"
-              answer="O Databasus suporta MySQL 5.7, 8.0, 8.4 e 9. Para MySQL 8.0 e mais recentes, o Databasus usa compressão de rede zstd para transferências mais rápidas em conexões lentas. Para MySQL 5.7, a compressão legada é usada automaticamente. Todas as versões têm os mesmos recursos: agendamento, criptografia, armazenamento em nuvem e notificações."
+              answer="O Databasus suporta MySQL 5.7, 8.0, 8.4, 9 e 26. Para MySQL 8.0 e mais recentes, o Databasus usa compressão de rede zstd para transferências mais rápidas em conexões lentas. Para MySQL 5.7, a compressão legada é usada automaticamente. MySQL 5.7 é suportado apenas em x86-64. Todas as versões têm os mesmos recursos: agendamento, criptografia, armazenamento em nuvem e notificações."
             />
             <FaqItem
               number="4"
               question="Quais versões de MariaDB o Databasus suporta?"
-              answer="O Databasus suporta MariaDB 10, 11 e 12. Para backups de MariaDB, o Databasus usa a ferramenta nativa mariadb-dump em vez do mysqldump, garantindo compatibilidade total com recursos e otimizações específicos do MariaDB. A mesma interface web e os mesmos recursos de agendamento, armazenamento e notificações funcionam tanto para MySQL como para MariaDB."
+              answer="O Databasus suporta MariaDB 5.5, 10, 11, 12 e 13. Para backups de MariaDB, o Databasus usa a ferramenta nativa mariadb-dump em vez do mysqldump, garantindo compatibilidade total com recursos e otimizações específicos do MariaDB. A mesma interface web e os mesmos recursos de agendamento, armazenamento e notificações funcionam tanto para MySQL como para MariaDB."
             />
             <FaqItem
               number="5"

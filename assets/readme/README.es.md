@@ -112,8 +112,8 @@ Databasus ejecuta una restauración real para confirmar que las copias sirven, e
 ### 💾 **Bases de datos compatibles**
 
 - **PostgreSQL**: 14, 15, 16, 17 y 18 (física y lógica)
-- **MySQL**: 5.7, 8.0, 8.4 y 9 (solo lógica)
-- **MariaDB**: 10, 11 y 12 (solo lógica)
+- **MySQL**: 5.7 (solo x86-64), 8.0, 8.4, 9 y 26 (solo lógica)
+- **MariaDB**: 5.5, 10, 11, 12 y 13 (solo lógica)
 - **MongoDB**: 4.2+, 5, 6, 7 y 8 (solo lógica)
 
 ### 🐳 **Autoalojado y seguro**

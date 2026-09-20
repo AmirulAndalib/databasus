@@ -3,15 +3,18 @@ CI, and the Docker image all read from one place. The Go backend
 resolves them at runtime via `runtime.GOOS`+`runtime.GOARCH` →
 `assets/tools/<arch-key>/<db>/<db>-<v>/bin/<command>`.
 
+`AGENTS.md` in this directory carries the checklist for adding a version and
+for refreshing a patch level. Read it before changing anything here.
+
 Layout (one subtree per arch, identical shape):
 
 ```
 assets/tools/<arch>/
   postgresql/postgresql-{12,13,14,15,16,17,18}/bin/
     pg_dump, pg_restore, psql
-  mysql/mysql-{5.7,8.0,8.4,9}/bin/
+  mysql/mysql-{5.7,8.0,8.4,9,26}/bin/
     mysql, mysqldump
-  mariadb/mariadb-{10.6,12.1}/bin/
+  mariadb/mariadb-{10.6,12.3,13.0}/bin/
     mariadb, mariadb-dump
   mongodb/bin/
     mongodump, mongorestore
@@ -21,8 +24,14 @@ assets/tools/<arch>/
 
 | GOOS / GOARCH     | key   | size    |
 |-------------------|-------|---------|
-| `linux` / `amd64` | `x64` | ~160 MB |
-| `linux` / `arm64` | `arm` | ~125 MB |
+| `linux` / `amd64` | `x64` | ~157 MB |
+| `linux` / `arm64` | `arm` | ~146 MB |
+
+A directory name is a release line, not a patch level: `mysql-26` holds one
+26.x build and serves every MySQL 26.x server, `mariadb-13.0` one 13.0.x build
+and every MariaDB 13.x server. The startup check runs each binary's version
+flag and rejects a bundle whose version belongs to a different line, so the
+name and the bytes cannot drift apart unnoticed.
 
 Bundled PostgreSQL minors (identical on both arches, Debian bookworm pgdg):
 
@@ -41,14 +50,70 @@ will ever exist. Keep every binary within one major on the same package build �
 a `pg_dump` older than its sibling `pg_basebackup` is how issue #725 (pg_dump
 18.1 silently emitting wrong sequence values) survived unnoticed.
 
-Notes:
-- MySQL `5.7` is amd64-only — `arm/mysql/mysql-5.7/` is intentionally absent.
-- MariaDB ships two client versions: legacy `10.6` (for MariaDB servers 5.5 / 10.1) and modern `12.1` (for 10.2+). The mapping lives in `tools/mariadb.go`.
-- MongoDB Database Tools are version 100.16.1 across all arches and are backward-compatible with all supported server versions (4.2 – 8.2). MongoDB 4.0 is not supported (wire version 7, requires older mongodump).
+Bundled MySQL patches (identical on both arches, upstream glibc2.28 tarballs
+from `https://cdn.mysql.com/Downloads/MySQL-<line>/mysql-<patch>-linux-glibc2.28-{x86_64,aarch64}.tar.xz`):
 
-To refresh a tool set, drop the corresponding `bin/` contents in place
-and commit. There are no install scripts in this directory; binaries
-are sourced from the upstream vendor downloads. For PostgreSQL that means
-`postgresql-client-<major>` from `apt.postgresql.org` for `bookworm`, both
+| bundle     | patch  | notes                                     |
+|------------|--------|-------------------------------------------|
+| `mysql-5.7`  | 5.7.44 | final patch of the line; amd64 only      |
+| `mysql-8.0`  | 8.0.46 |                                           |
+| `mysql-8.4`  | 8.4.11 | long-term support line                    |
+| `mysql-9`    | 9.7.2  | serves every 9.x server                   |
+| `mysql-26`   | 26.7.0 | calendar scheme; serves every 26.x server |
+
+Bundled MariaDB patches, unpacked from the vendor's own package repositories
+by `tools/refresh-mariadb-bundle.sh`:
+
+| bundle         | patch    | source repository and suite            |
+|----------------|----------|----------------------------------------|
+| `mariadb-10.6` | 10.6.28  | `repo/10.6/ubuntu`, `ubu2204`          |
+| `mariadb-12.3` | 12.3.3   | `repo/12.3/debian`, `deb12` (bookworm) |
+| `mariadb-13.0` | 13.0.2   | `repo/13.0/ubuntu`, `ubu2204`          |
+
+MariaDB ships three client tiers, mapped to server versions in
+`backend/internal/util/tools/mariadb.go`:
+
+- `10.6` (legacy) serves MariaDB 5.5 and 10.1. It exists because the newer
+  clients query `generation_expression`, a column MariaDB added in 10.2.
+  In 10.6 the real programs are still named `mysql` and `mysqldump`; the
+  refresh script installs them under the `mariadb` names the backend uses.
+- `12.3` (modern) serves every line from 10.2 through 12.x.
+- `13.0` serves the 13 line, which the 12.3 client predates.
+
+MongoDB Database Tools are version 100.16.1 across all arches and are
+backward-compatible with all supported server versions (4.2 – 8.2). MongoDB
+4.0 is not supported (wire version 7, requires older mongodump).
+
+Notes:
+- MySQL `5.7` is amd64-only — `arm/mysql/mysql-5.7/` is intentionally absent,
+  because upstream never built a 5.7 client for aarch64. A MySQL 5.7 server is
+  refused at the connection test on an arm64 deployment.
+
+Shared libraries the binaries need from the runtime image
+(`debian:bookworm-slim`, glibc 2.36; every bundled binary targets glibc 2.28
+or lower):
+
+| library                             | needed by                                    |
+|-------------------------------------|----------------------------------------------|
+| `libc`, `libm`, `libgcc_s`, `libstdc++` | everything                                |
+| `libssl.so.3`, `libcrypto.so.3`     | MySQL and MariaDB clients, `libpq`            |
+| `libz.so.1`, `libzstd.so.1`, `liblz4.so.1` | MariaDB clients, `libpq`               |
+| `libncurses.so.6`, `libtinfo.so.6`  | MySQL 8.0+ and MariaDB interactive clients    |
+| `libncurses.so.5`, `libtinfo.so.5`  | the MySQL 5.7 interactive client only         |
+| `libreadline.so.8`                  | `psql` for PostgreSQL 13 and later            |
+| `libedit.so.2`                      | every `mariadb` interactive client, and `psql` for PostgreSQL 12 |
+| `libpq.so.5`                        | the PostgreSQL clients                        |
+| `libgssapi_krb5.so.2`               | the MongoDB tools                             |
+
+`libedit.so.2` is not installed explicitly in the `Dockerfile`: it reaches the
+image as a dependency of `postgresql-common`. A change that drops that package
+takes the MariaDB interactive client with it. It is also the one soname a
+non-Debian development host is missing — Fedora ships the upstream
+`libedit.so.0` — which is what `make test-fedora` and `make run-fedora` in
+`backend/` shim around.
+
+To refresh a tool set, run the script for that engine, or drop the
+corresponding `bin/` contents in place, and commit. For PostgreSQL the source
+is `postgresql-client-<major>` from `apt.postgresql.org` for `bookworm`, both
 `amd64` and `arm64`, matching the `debian:bookworm-slim` runtime base in the
-Dockerfile. Update the minor table above in the same commit.
+Dockerfile. Update the tables above in the same commit.

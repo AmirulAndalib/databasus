@@ -16,12 +16,26 @@ const (
 
 const mariadbPort = "3306/tcp"
 
-func mariadbEnv() map[string]string {
+// legacyMariadbImages predate the MARIADB_* variables the entrypoint gained in
+// 10.5; they provision themselves from the MYSQL_* names only, and exit with
+// "database is uninitialized and password option is not specified" when given
+// the newer ones.
+var legacyMariadbImages = map[string]bool{
+	"mariadb:5.5":  true,
+	"mariadb:10.1": true,
+}
+
+func mariadbEnv(image string) map[string]string {
+	prefix := "MARIADB"
+	if legacyMariadbImages[image] {
+		prefix = "MYSQL"
+	}
+
 	return map[string]string{
-		"MARIADB_ROOT_PASSWORD": MariadbRootPassword,
-		"MARIADB_DATABASE":      MariadbDatabase,
-		"MARIADB_USER":          MariadbUsername,
-		"MARIADB_PASSWORD":      MariadbPassword,
+		prefix + "_ROOT_PASSWORD": MariadbRootPassword,
+		prefix + "_DATABASE":      MariadbDatabase,
+		prefix + "_USER":          MariadbUsername,
+		prefix + "_PASSWORD":      MariadbPassword,
 	}
 }
 
@@ -40,7 +54,7 @@ func mariadbRequest(image string) testcontainers.ContainerRequest {
 	return testcontainers.ContainerRequest{
 		Image:        image,
 		ExposedPorts: []string{mariadbPort},
-		Env:          mariadbEnv(),
+		Env:          mariadbEnv(image),
 		Cmd:          mysqlFamilyCmd(),
 		Tmpfs:        map[string]string{"/var/lib/mysql": dataDirTmpfsOptions},
 		WaitingFor:   mysqlFamilyReady(mariadbReadinessSpec(false)),

@@ -110,11 +110,16 @@ func (uc *CreateMariadbBackupUsecase) Execute(
 
 	args := uc.buildMariadbDumpArgs(mariadbDatabase)
 
+	mariadbDumpBin, err := tools.GetMariadbExecutable(mariadbDatabase.Version, tools.MariadbExecutableMariadbDump)
+	if err != nil {
+		return nil, err
+	}
+
 	return uc.streamToStorage(
 		ctx,
 		backup,
 		backupConfig,
-		tools.GetMariadbExecutable(mariadbDatabase.Version, tools.MariadbExecutableMariadbDump),
+		mariadbDumpBin,
 		args,
 		decryptedPassword,
 		fileStore,
