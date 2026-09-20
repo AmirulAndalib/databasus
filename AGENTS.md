@@ -29,6 +29,15 @@ Work happens inside the repo's [Dev Container](.devcontainer/devcontainer.json).
 
 Running the backend suite host-native is supported on Fedora via `make test-fedora`, which shims the Debian soname the bundled `assets/tools` clients expect. Any other host distro is on its own — the container stays the reference environment. Also project sometimes is run in different worktrees, in this case it is needed to copy .env.example -> .env, `make swagger` and `pnpm install` to run tests
 
+### Several agents, one set of containers
+
+Several agents may work on this repo at once, in different worktrees, sharing one Docker daemon, one set of test containers and one pool of test metadata databases. Don't let that stop you from running tests — simultaneous runs are rare and usually harmless. Two habits keep them that way:
+
+- Lint and format whenever you want. `make lint`, `pnpm lint`, `pnpm format`, `npm run lint` and the frontend's `pnpm test` touch nothing shared.
+- Test the package you touched: `go test ./internal/features/<feature>/... -count=1` loads the repo-root `.env` itself and claims a free database slot through an advisory lock (`backend/internal/config/config.go`). Leave `make test` and `make test-fedora` for the end of a change — they start by removing every `org.testcontainers` container and recreating every slot database, which those slots also come from, so a fresh environment needs one full run first.
+
+When a failure makes no sense — a container that vanished, a database that emptied itself — a parallel run is worth suspecting in maybe one case in twenty. Re-run before hunting the bug.
+
 ---
 
 ## Language in code
