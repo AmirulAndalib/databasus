@@ -249,7 +249,7 @@ helm install databasus oci://ghcr.io/databasus/charts/databasus \
 
 ## 🚀 使用
 
-1. **打开控制台**：访问 `http://localhost:4005`
+1. **创建第一个账户**：访问 `http://localhost:4005` 并注册。实例上创建的第一个账户就是它的管理员
 2. **添加第一个要备份的数据库**：点击 "New Database"，跟着向导走完
 3. **配置计划**：可选每小时、每天、每周、每月或 cron 周期
 4. **填写数据库连接**：输入数据库的凭据和连接信息
@@ -263,10 +263,18 @@ helm install databasus oci://ghcr.io/databasus/charts/databasus \
 如果需要重置密码，可以用内置的密码重置命令：
 
 ```bash
-docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"
+docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-把 `admin` 换成要重置密码的那个用户的邮箱地址。
+把 `owner@example.com` 换成要重置密码的那个账户的邮箱地址。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址 `admin`，此时请传入 `--email="admin"`。
+
+如果你不记得哪个地址是该实例的管理员，可以列出管理员账户：
+
+```bash
+docker exec -it databasus ./main --list-admins
+```
+
+输出会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并标记实例所认可的管理员。不会输出任何密码或密码哈希。
 
 ### 💾 给 Databasus 自身做备份
 

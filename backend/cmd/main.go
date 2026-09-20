@@ -106,11 +106,7 @@ func main() {
 		logger.ExitAfterFlush(1)
 	}
 
-	err = users_services.GetUserService().CreateInitialAdmin(ctx)
-	if err != nil {
-		log.Error("failed to create initial admin", "error", err)
-		logger.ExitAfterFlush(1)
-	}
+	listAdminsIfRequested(ctx, log, commandLineOptions)
 
 	resetPasswordIfRequested(ctx, log, commandLineOptions)
 
@@ -147,21 +143,49 @@ func main() {
 
 type commandLineOptions struct {
 	shouldTestStorage  bool
+	shouldListAdmins   bool
 	newPassword        string
 	passwordResetEmail string
 }
 
 func parseCommandLineOptions() commandLineOptions {
 	shouldTestStorage := flag.Bool("test-storage", false, "Save and delete a local storage probe")
+	shouldListAdmins := flag.Bool("list-admins", false, "Print every administrator account of this instance")
 	newPassword := flag.String("new-password", "", "Set a new password for the user")
 	passwordResetEmail := flag.String("email", "", "Email of the user to reset password")
 	flag.Parse()
 
 	return commandLineOptions{
 		shouldTestStorage:  *shouldTestStorage,
+		shouldListAdmins:   *shouldListAdmins,
 		newPassword:        *newPassword,
 		passwordResetEmail: *passwordResetEmail,
 	}
+}
+
+// The listing only reads, so unlike the password reset below it installs no
+// audit writer - the console path has none, and UserService dereferences its
+// writer without a nil check.
+func listAdminsIfRequested(
+	ctx context.Context,
+	log *slog.Logger,
+	commandLineOptions commandLineOptions,
+) {
+	if !commandLineOptions.shouldListAdmins {
+		return
+	}
+
+	listing, err := users_services.GetManagementService().RenderAdminListing(ctx)
+	if err != nil {
+		log.ErrorContext(ctx, "failed to list administrators", "error", err)
+		logger.ExitAfterFlush(1)
+	}
+
+	// Printed rather than logged: the owner runs this to read the addresses, and
+	// the logger masks them as the PII they otherwise are.
+	fmt.Println(listing)
+
+	logger.ExitAfterFlush(0)
 }
 
 func resetPasswordIfRequested(

@@ -249,7 +249,7 @@ Pour les autres options (NodePort, TLS, HTTPRoute pour Gateway API), consultez l
 
 ## 🚀 Utilisation
 
-1. **Ouvrez le tableau de bord** : rendez-vous sur `http://localhost:4005`
+1. **Créez le premier compte** : rendez-vous sur `http://localhost:4005` et inscrivez-vous. Le premier compte créé sur une instance est celui qui l'administre
 2. **Ajoutez votre première base à sauvegarder** : cliquez sur "New Database" et suivez l'assistant
 3. **Configurez la planification** : toutes les heures, chaque jour, chaque semaine, chaque mois ou selon un intervalle cron
 4. **Renseignez la connexion** : saisissez les identifiants et les paramètres de connexion de votre base
@@ -263,10 +263,18 @@ Pour les autres options (NodePort, TLS, HTTPRoute pour Gateway API), consultez l
 Si vous devez réinitialiser le mot de passe, utilisez la commande intégrée :
 
 ```bash
-docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"
+docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Remplacez `admin` par l'adresse e-mail de l'utilisateur dont vous voulez réinitialiser le mot de passe.
+Remplacez `owner@example.com` par l'adresse e-mail du compte dont vous voulez réinitialiser le mot de passe. Une instance créée avant que le premier compte ne l'administre porte encore l'adresse provisoire `admin` tant que son propriétaire ne l'a pas remplacée : indiquez alors `--email="admin"`.
+
+Si vous ne savez plus quelle adresse administre l'instance, listez les comptes administrateurs :
+
+```bash
+docker exec -it databasus ./main --list-admins
+```
+
+La sortie nomme chaque compte administrateur avec son adresse e-mail, son nom affiché, sa date de création et son état d'activité, et marque celui que l'instance reconnaît comme son administrateur. Aucun mot de passe ni empreinte de mot de passe n'est affiché.
 
 ### 💾 Sauvegarder Databasus lui-même
 

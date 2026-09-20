@@ -221,6 +221,14 @@ export default function Index() {
                   text: "Databasus prend en charge les sauvegardes physiques, complètes, incrémentales, WAL et logiques. Les sauvegardes physiques sont une copie au niveau fichier de l'ensemble du cluster de base de données : plus rapides à sauvegarder et à restaurer pour les gros volumes que les dumps logiques, et construites sur le mécanisme de sauvegarde natif de PostgreSQL 17, nous nous appuyons donc sur l'outillage éprouvé de PostgreSQL au lieu de le réinventer. Les sauvegardes complètes sont une copie intégrale et autonome du cluster, la base de départ de chaque chaîne de sauvegardes. Les sauvegardes incrémentales ne stockent que ce qui a changé depuis la sauvegarde précédente, elles restent donc petites et rapides. Le streaming WAL capture en continu le flux d'écriture de la base, ce qui permet la récupération à un instant donné (PITR) pour la reprise après sinistre et une perte de données quasi nulle. Les sauvegardes logiques sont un dump natif de la base dans son format binaire propre au moteur, compressé et envoyé en flux directement vers le stockage sans fichiers intermédiaires. Toutes ces sauvegardes peuvent passer par un tunnel SSH si vous exigez des connexions non publiques, la base n'a donc jamais à être exposée publiquement. Le tunnel SSH est intégré.",
                 },
               },
+              {
+                "@type": "Question",
+                name: "J'ai oublié l'e-mail ou le mot de passe de l'administrateur",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Le premier compte créé sur l'instance est celui qui l'administre. Si vous ne savez plus quelle est cette adresse, exécutez docker exec -it databasus ./main --list-admins sur le serveur où Databasus tourne : la commande nomme chaque compte administrateur avec son adresse e-mail, son nom affiché, sa date de création et son état d'activité, et n'affiche aucun mot de passe. Pour définir un nouveau mot de passe pour ce compte, exécutez docker exec -it databasus ./main --new-password=\"YourNewSecurePassword123\" --email=\"owner@example.com\". Une instance créée avant que le premier compte ne l'administre porte encore l'adresse provisoire admin tant que son propriétaire ne l'a pas remplacée. Les deux commandes sont documentées sur la page mot de passe.",
+                },
+              },
             ],
           }),
         }}
@@ -1699,6 +1707,36 @@ export default function Index() {
                   est le premier outil de sauvegarde construit sur le protocole
                   de sauvegarde natif, efficace et désormais standard de
                   PostgreSQL au lieu d&apos;écrire ses propres implémentations.
+                </>
+              }
+            />
+            <FaqItem
+              number="15"
+              question="J'ai oublié l'e-mail ou le mot de passe de l'administrateur"
+              answer={
+                <>
+                  Le premier compte créé sur l&apos;instance est celui qui
+                  l&apos;administre. Si vous ne savez plus quelle est cette
+                  adresse, exécutez docker exec -it databasus ./main
+                  --list-admins sur le serveur où Databasus tourne : la commande
+                  nomme chaque compte administrateur avec son adresse e-mail,
+                  son nom affiché, sa date de création et son état
+                  d&apos;activité, et n&apos;affiche aucun mot de passe. Pour
+                  définir un nouveau mot de passe pour ce compte, exécutez
+                  docker exec -it databasus ./main
+                  --new-password=&quot;YourNewSecurePassword123&quot;
+                  --email=&quot;owner@example.com&quot;. Une instance créée
+                  avant que le premier compte ne l&apos;administre porte encore
+                  l&apos;adresse provisoire admin tant que son propriétaire ne
+                  l&apos;a pas remplacée. Les deux commandes sont documentées
+                  sur la
+                  <a
+                    href="/fr/password"
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    page mot de passe
+                  </a>
+                  .
                 </>
               }
             />

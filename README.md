@@ -249,7 +249,7 @@ For more options (NodePort, TLS, HTTPRoute for Gateway API), see the [Helm chart
 
 ## 🚀 Usage
 
-1. **Access the dashboard**: Navigate to `http://localhost:4005`
+1. **Create the first account**: Navigate to `http://localhost:4005` and sign up. The first account created on an instance administers it
 2. **Add your first database for backup**: Click "New Database" and follow the setup wizard
 3. **Configure schedule**: Choose from hourly, daily, weekly, monthly or cron intervals
 4. **Set database connection**: Enter your database credentials and connection details
@@ -263,10 +263,18 @@ For more options (NodePort, TLS, HTTPRoute for Gateway API), see the [Helm chart
 If you need to reset the password, you can use the built-in password reset command:
 
 ```bash
-docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"
+docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Replace `admin` with the actual email address of the user whose password you want to reset.
+Replace `owner@example.com` with the actual email address of the account whose password you want to reset. An instance created before the first account administered it still carries the placeholder address `admin` until its owner replaces it, so pass `--email="admin"` there.
+
+If you do not remember which address administers the instance, list the administrator accounts:
+
+```bash
+docker exec -it databasus ./main --list-admins
+```
+
+The output names every administrator account with its email address, display name, creation date and active state, and marks the one the instance recognizes as its administrator. It prints no password material.
 
 ### 💾 Backuping Databasus itself
 

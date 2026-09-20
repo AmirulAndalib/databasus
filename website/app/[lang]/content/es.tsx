@@ -221,6 +221,14 @@ export default function Index() {
                   text: "Databasus admite copias físicas, completas, incrementales, de WAL y lógicas. Las copias físicas son una copia a nivel de archivos de todo el clúster de la base de datos: más rápidas de crear y restaurar en conjuntos de datos grandes que los volcados lógicos, y construidas sobre el mecanismo nativo de respaldo de PostgreSQL 17, así que nos apoyamos en las herramientas probadas de PostgreSQL en lugar de reinventarlas. Las copias completas son una copia íntegra y autocontenida del clúster, la base de la que parte cada cadena de respaldos. Las copias incrementales guardan solo lo que cambió desde la copia anterior, así que los respaldos se mantienen pequeños y rápidos. El streaming de WAL captura de forma continua el flujo de escritura de la base de datos, lo que habilita la recuperación a un punto en el tiempo (PITR) para recuperación ante desastres y una pérdida de datos casi nula. Las copias lógicas son un volcado nativo de la base de datos en su formato binario específico del motor, comprimido y transmitido directamente al almacenamiento sin archivos intermedios. Todas estas copias pueden ejecutarse por un túnel SSH si necesita conexiones no públicas, de modo que la base de datos nunca tiene que exponerse públicamente. El túnel SSH viene integrado.",
                 },
               },
+              {
+                "@type": "Question",
+                name: "Olvidé el correo o la contraseña del administrador",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: 'La primera cuenta creada en la instancia es la que la administra. Si no recuerda cuál es esa dirección, ejecute docker exec -it databasus ./main --list-admins en el servidor donde se ejecuta Databasus: nombra cada cuenta de administrador con su correo electrónico, nombre visible, fecha de creación y estado de actividad, y no imprime ninguna contraseña. Para establecer una nueva contraseña para esa cuenta, ejecute docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com". Una instancia creada antes de que la primera cuenta la administrara todavía lleva la dirección provisional admin hasta que su propietario la reemplace. Ambos comandos están documentados en la página de contraseña.',
+                },
+              },
             ],
           }),
         }}
@@ -1685,6 +1693,34 @@ export default function Index() {
                   sobre el protocolo de respaldo nativo, eficiente y ya estándar
                   de PostgreSQL, en lugar de escribir sus propias
                   implementaciones.
+                </>
+              }
+            />
+            <FaqItem
+              number="15"
+              question="Olvidé el correo o la contraseña del administrador"
+              answer={
+                <>
+                  La primera cuenta creada en la instancia es la que la
+                  administra. Si no recuerda cuál es esa dirección, ejecute
+                  docker exec -it databasus ./main --list-admins en el servidor
+                  donde se ejecuta Databasus: nombra cada cuenta de
+                  administrador con su correo electrónico, nombre visible, fecha
+                  de creación y estado de actividad, y no imprime ninguna
+                  contraseña. Para establecer una nueva contraseña para esa
+                  cuenta, ejecute docker exec -it databasus ./main
+                  --new-password=&quot;YourNewSecurePassword123&quot;
+                  --email=&quot;owner@example.com&quot;. Una instancia creada
+                  antes de que la primera cuenta la administrara todavía lleva
+                  la dirección provisional admin hasta que su propietario la
+                  reemplace. Ambos comandos están documentados en
+                  <a
+                    href="/es/password"
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    la página de contraseña
+                  </a>
+                  .
                 </>
               }
             />

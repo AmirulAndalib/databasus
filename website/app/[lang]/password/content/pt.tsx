@@ -39,7 +39,8 @@ export const metadata: Metadata = {
 };
 
 export default function PasswordResetPage() {
-  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"`;
+  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
+  const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
 
   return (
     <>
@@ -140,11 +141,40 @@ export default function PasswordResetPage() {
                   especiais.
                 </li>
                 <li>
-                  <strong>--email</strong>: o endereço de email do usuário cuja
-                  senha você quer redefinir (por exemplo, <code>admin</code>,{" "}
-                  <code>user@example.com</code>).
+                  <strong>--email</strong>: o endereço de email da conta cuja
+                  senha você quer redefinir (por exemplo,{" "}
+                  <code>owner@example.com</code>). Uma instância criada antes de
+                  a primeira conta administrá-la ainda carrega o endereço
+                  provisório <code>admin</code> até que seu dono o substitua,
+                  então informe <code>admin</code> nesse caso.
                 </li>
               </ul>
+
+              <h2 id="list-admins">Listar as contas de administrador</h2>
+
+              <p>
+                Se você não lembra qual endereço administra a instância, liste
+                as contas de administrador no servidor onde o Databasus está em
+                execução:
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{listAdminsCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={listAdminsCommand} lang="pt" />
+                </div>
+              </div>
+
+              <p>
+                A saída nomeia cada conta de administrador com seu endereço de
+                email, nome de exibição, data de criação e estado de atividade,
+                e marca aquela que a instância reconhece como seu administrador.
+                Nenhuma senha, hash de senha ou token é impresso. Em uma
+                instância onde ninguém criou uma conta ainda, ela informa que a
+                instância não tem administrador.
+              </p>
             </article>
           </div>
         </main>

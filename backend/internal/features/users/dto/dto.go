@@ -9,7 +9,7 @@ import (
 )
 
 type SignUpRequestDTO struct {
-	Email                    string  `json:"email"                    binding:"required"`
+	Email                    string  `json:"email"                    binding:"required,email"`
 	Password                 string  `json:"password"                 binding:"required,min=8"`
 	Name                     string  `json:"name"                     binding:"required"`
 	CloudflareTurnstileToken *string `json:"cloudflareTurnstileToken"`
@@ -27,12 +27,10 @@ type SignInResponseDTO struct {
 	Token  string    `json:"token"`
 }
 
-type SetAdminPasswordRequestDTO struct {
-	Password string `json:"password" binding:"required,min=8"`
-}
-
-type IsAdminHasPasswordResponseDTO struct {
-	HasPassword bool `json:"hasPassword"`
+// The wire name is isExist rather than hasAnyUser because the client already
+// reads that key (frontend/src/entity/users/api/userApi.ts).
+type HasAnyUserResponseDTO struct {
+	HasAnyUser bool `json:"isExist"`
 }
 
 type ChangePasswordRequestDTO struct {

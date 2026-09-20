@@ -39,7 +39,8 @@ export const metadata: Metadata = {
 };
 
 export default function PasswordResetPage() {
-  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"`;
+  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
+  const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
 
   return (
     <>
@@ -112,9 +113,7 @@ export default function PasswordResetPage() {
 
               <h2 id="reset-password-command">重置密码命令</h2>
 
-              <p>
-                要重置用户密码，在运行 Databasus 的服务器上执行以下命令：
-              </p>
+              <p>要重置用户密码，在运行 Databasus 的服务器上执行以下命令：</p>
 
               <div className="relative my-6">
                 <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
@@ -135,10 +134,33 @@ export default function PasswordResetPage() {
                   安全，包含字母、数字和特殊字符。
                 </li>
                 <li>
-                  <strong>--email</strong>：要重置密码的用户邮箱（例如{" "}
-                  <code>admin</code>、<code>user@example.com</code>）。
+                  <strong>--email</strong>：要重置密码的账户邮箱（例如{" "}
+                  <code>owner@example.com</code>
+                  ）。在第一个账户成为管理员之前创建的实例，
+                  在其所有者替换之前仍使用占位地址 <code>admin</code>
+                  ，此时请传入 <code>admin</code>。
                 </li>
               </ul>
+
+              <h2 id="list-admins">列出管理员账户</h2>
+
+              <p>
+                如果你不记得哪个地址是该实例的管理员，可以在运行 Databasus
+                的服务器上列出管理员账户：
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{listAdminsCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={listAdminsCommand} lang="zh" />
+                </div>
+              </div>
+
+              <p>
+                输出会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并标记实例所认可的管理员。不会输出任何密码、密码哈希或令牌。如果实例上还没有人创建账户，命令会提示该实例没有管理员。
+              </p>
             </article>
           </div>
         </main>

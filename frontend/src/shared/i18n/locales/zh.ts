@@ -104,7 +104,7 @@ export const zh: typeof en = {
       placeholder: '在此粘贴连接字符串',
     },
     auth: {
-      adminPasswordCheckFailed: '无法检查管理员密码状态：{{error}}',
+      accountsCheckFailed: '无法检查该实例是否已有账户：{{error}}',
     },
     oauthCallback: {
       failedTitle: '认证失败',
@@ -834,12 +834,8 @@ export const zh: typeof en = {
       title: '注册',
       namePlaceholder: '张三',
       submit: '注册',
+      administersInstance: '这是该实例上的第一个账户，它将成为实例的管理员。',
       hasAccount: '已有账号？<signInLink>登录</signInLink>',
-    },
-    adminPassword: {
-      title: '注册管理员',
-      description: '之后你就可以用登录名“admin”和你设置的密码登录',
-      submit: '设置密码',
     },
     requestPasswordReset: {
       title: '重置密码',
@@ -865,7 +861,6 @@ export const zh: typeof en = {
       userId: '用户 ID',
       namePlaceholder: '输入你的姓名',
       emailPlaceholder: '输入你的邮箱',
-      adminEmailReadOnly: '管理员邮箱不能修改',
       role: '角色',
       saveChanges: '保存更改',
       noChanges: '没有需要保存的更改',

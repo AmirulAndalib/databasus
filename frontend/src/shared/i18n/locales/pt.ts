@@ -105,8 +105,8 @@ export const pt: typeof en = {
       placeholder: 'Cole aqui a string de conexão...',
     },
     auth: {
-      adminPasswordCheckFailed:
-        'Não foi possível verificar se a senha do administrador está definida: {{error}}',
+      accountsCheckFailed:
+        'Não foi possível verificar se a instância possui alguma conta: {{error}}',
     },
     oauthCallback: {
       failedTitle: 'Falha na autenticação',
@@ -883,12 +883,8 @@ export const pt: typeof en = {
       title: 'Criar conta',
       namePlaceholder: 'João Silva',
       submit: 'Criar conta',
+      administersInstance: 'Esta é a primeira conta desta instância, portanto ela a administrará.',
       hasAccount: 'Já tem uma conta? <signInLink>Entre</signInLink>',
-    },
-    adminPassword: {
-      title: 'Cadastro do administrador',
-      description: 'Depois disso, você poderá entrar com o login "admin" e a senha que definir',
-      submit: 'Definir senha',
     },
     requestPasswordReset: {
       title: 'Redefinir senha',
@@ -914,7 +910,6 @@ export const pt: typeof en = {
       userId: 'ID do usuário',
       namePlaceholder: 'Digite seu nome',
       emailPlaceholder: 'Digite seu e-mail',
-      adminEmailReadOnly: 'O e-mail do administrador não pode ser alterado',
       role: 'Papel',
       saveChanges: 'Salvar alterações',
       noChanges: 'Não há alterações para salvar',

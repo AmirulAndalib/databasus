@@ -27,9 +27,7 @@ func (c *UserController) RegisterRoutes(router *gin.RouterGroup) {
 	router.POST("/users/signup", c.SignUp)
 	router.POST("/users/signin", c.SignIn)
 
-	// Admin password setup (no auth required)
-	router.GET("/users/admin/has-password", c.IsAdminHasPassword)
-	router.POST("/users/admin/set-password", c.SetAdminPassword)
+	router.GET("/users/is-any-user-exist", c.HasAnyUser)
 
 	// Password reset (no auth required)
 	router.POST("/users/send-reset-password-code", c.SendResetPasswordCode)
@@ -167,33 +165,22 @@ func (c *UserController) SignIn(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-// Admin password endpoints
-func (c *UserController) IsAdminHasPassword(ctx *gin.Context) {
-	hasPassword, err := c.userService.IsRootAdminHasPassword(ctx.Request.Context())
+// HasAnyUser
+// @Summary Check whether the instance holds any account
+// @Description Tells the entry screen whether to offer signing in or the registration that claims the instance
+// @Tags users
+// @Produce json
+// @Success 200 {object} users_dto.HasAnyUserResponseDTO
+// @Failure 500
+// @Router /users/is-any-user-exist [get]
+func (c *UserController) HasAnyUser(ctx *gin.Context) {
+	hasAnyUser, err := c.userService.HasAnyUser()
 	if err != nil {
-		ctx.JSON(
-			http.StatusInternalServerError,
-			gin.H{"error": err.Error()},
-		)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user_dto.IsAdminHasPasswordResponseDTO{HasPassword: hasPassword})
-}
-
-func (c *UserController) SetAdminPassword(ctx *gin.Context) {
-	var request user_dto.SetAdminPasswordRequestDTO
-	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := c.userService.SetRootAdminPassword(ctx.Request.Context(), request.Password); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Admin password set successfully"})
+	ctx.JSON(http.StatusOK, user_dto.HasAnyUserResponseDTO{HasAnyUser: hasAnyUser})
 }
 
 // ChangePassword

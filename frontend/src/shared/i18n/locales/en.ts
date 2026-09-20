@@ -104,7 +104,7 @@ export const en = {
       placeholder: 'Paste your connection string here...',
     },
     auth: {
-      adminPasswordCheckFailed: 'Failed to check admin password status: {{error}}',
+      accountsCheckFailed: 'Failed to check whether the instance has any account: {{error}}',
     },
     oauthCallback: {
       failedTitle: 'Authentication Failed',
@@ -866,12 +866,8 @@ export const en = {
       title: 'Sign up',
       namePlaceholder: 'John Doe',
       submit: 'Sign up',
+      administersInstance: 'This is the first account on this instance, so it will administer it.',
       hasAccount: 'Already have an account? <signInLink>Sign in</signInLink>',
-    },
-    adminPassword: {
-      title: 'Sign up admin',
-      description: 'Then you will be able to sign in with login "admin" and password you set',
-      submit: 'Set password',
     },
     requestPasswordReset: {
       title: 'Reset password',
@@ -897,7 +893,6 @@ export const en = {
       userId: 'User ID',
       namePlaceholder: 'Enter your name',
       emailPlaceholder: 'Enter your email',
-      adminEmailReadOnly: 'Admin email cannot be changed',
       role: 'Role',
       saveChanges: 'Save changes',
       noChanges: 'No changes to save',

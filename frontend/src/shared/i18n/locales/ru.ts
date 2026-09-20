@@ -105,7 +105,7 @@ export const ru: typeof en = {
       placeholder: 'Вставьте строку подключения...',
     },
     auth: {
-      adminPasswordCheckFailed: 'Не удалось проверить, задан ли пароль администратора: {{error}}',
+      accountsCheckFailed: 'Не удалось проверить, есть ли на инстансе учетные записи: {{error}}',
     },
     oauthCallback: {
       failedTitle: 'Не удалось войти',
@@ -869,12 +869,8 @@ export const ru: typeof en = {
       title: 'Регистрация',
       namePlaceholder: 'Иван Иванов',
       submit: 'Зарегистрироваться',
+      administersInstance: 'Это первая учетная запись на инстансе — она будет им управлять.',
       hasAccount: 'Уже есть аккаунт? <signInLink>Войдите</signInLink>',
-    },
-    adminPassword: {
-      title: 'Регистрация администратора',
-      description: 'После этого вы сможете входить с логином «admin» и паролем, который зададите',
-      submit: 'Задать пароль',
     },
     requestPasswordReset: {
       title: 'Сброс пароля',
@@ -900,7 +896,6 @@ export const ru: typeof en = {
       userId: 'ID пользователя',
       namePlaceholder: 'Введите имя',
       emailPlaceholder: 'Введите email',
-      adminEmailReadOnly: 'Email администратора изменить нельзя',
       role: 'Роль',
       saveChanges: 'Сохранить изменения',
       noChanges: 'Изменений нет',

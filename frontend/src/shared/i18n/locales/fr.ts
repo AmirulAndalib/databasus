@@ -105,8 +105,7 @@ export const fr: typeof en = {
       placeholder: 'Collez votre chaîne de connexion ici...',
     },
     auth: {
-      adminPasswordCheckFailed:
-        'Impossible de vérifier si le mot de passe administrateur est défini : {{error}}',
+      accountsCheckFailed: "Impossible de vérifier si l'instance possède un compte : {{error}}",
     },
     oauthCallback: {
       failedTitle: "Échec de l'authentification",
@@ -893,13 +892,9 @@ export const fr: typeof en = {
       title: 'Inscription',
       namePlaceholder: 'Jean Dupont',
       submit: "S'inscrire",
+      administersInstance:
+        "Il s'agit du premier compte de cette instance : il en sera l'administrateur.",
       hasAccount: 'Vous avez déjà un compte ? <signInLink>Connectez-vous</signInLink>',
-    },
-    adminPassword: {
-      title: 'Créer le compte administrateur',
-      description:
-        "Vous pourrez ensuite vous connecter avec l'identifiant « admin » et le mot de passe choisi",
-      submit: 'Définir le mot de passe',
     },
     requestPasswordReset: {
       title: 'Réinitialiser le mot de passe',
@@ -928,7 +923,6 @@ export const fr: typeof en = {
       userId: 'ID utilisateur',
       namePlaceholder: 'Saisissez votre nom',
       emailPlaceholder: 'Saisissez votre e-mail',
-      adminEmailReadOnly: "L'e-mail de l'administrateur ne peut pas être modifié",
       role: 'Rôle',
       saveChanges: 'Enregistrer les modifications',
       noChanges: 'Aucune modification à enregistrer',

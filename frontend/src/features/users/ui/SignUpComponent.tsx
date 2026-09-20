@@ -19,9 +19,13 @@ import { GoogleOAuthComponent } from './oauth/GoogleOAuthComponent';
 
 interface SignUpComponentProps {
   onSwitchToSignIn?: () => void;
+  isClaimingInstance?: boolean;
 }
 
-export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX.Element {
+export function SignUpComponent({
+  onSwitchToSignIn,
+  isClaimingInstance,
+}: SignUpComponentProps): JSX.Element {
   const { t } = useTranslation();
   const { message } = App.useApp();
   const [name, setName] = useState('');
@@ -110,6 +114,12 @@ export function SignUpComponent({ onSwitchToSignIn }: SignUpComponentProps): JSX
   return (
     <div className="w-full max-w-[300px]">
       <div className="mb-5 text-center text-2xl font-bold">{t('users.signUp.title')}</div>
+
+      {isClaimingInstance && (
+        <div className="mb-5 text-center text-sm text-gray-600 dark:text-gray-400">
+          {t('users.signUp.administersInstance')}
+        </div>
+      )}
 
       <div className="mt-4">
         <div className="space-y-2">

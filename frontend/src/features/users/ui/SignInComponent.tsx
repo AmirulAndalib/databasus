@@ -47,6 +47,8 @@ export function SignInComponent({
       return false;
     }
 
+    // 'admin' is not an address, but an instance created before the first account
+    // administered it still signs in with that login until its owner replaces it.
     if (!FormValidator.isValidEmail(email) && email !== 'admin') {
       setEmailError(true);
       return false;

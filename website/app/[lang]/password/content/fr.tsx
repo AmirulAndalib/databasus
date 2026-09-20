@@ -39,7 +39,8 @@ export const metadata: Metadata = {
 };
 
 export default function PasswordResetPage() {
-  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"`;
+  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
+  const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
 
   return (
     <>
@@ -143,12 +144,42 @@ export default function PasswordResetPage() {
                   lettres, de chiffres et de caractères spéciaux.
                 </li>
                 <li>
-                  <strong>--email</strong> : l&apos;adresse e-mail de
-                  l&apos;utilisateur dont vous voulez réinitialiser le mot de
-                  passe (par exemple <code>admin</code>,{" "}
-                  <code>user@example.com</code>).
+                  <strong>--email</strong> : l&apos;adresse e-mail du compte
+                  dont vous voulez réinitialiser le mot de passe (par exemple{" "}
+                  <code>owner@example.com</code>). Une instance créée avant que
+                  le premier compte ne l&apos;administre porte encore
+                  l&apos;adresse provisoire <code>admin</code> tant que son
+                  propriétaire ne l&apos;a pas remplacée : indiquez alors{" "}
+                  <code>admin</code>.
                 </li>
               </ul>
+
+              <h2 id="list-admins">Lister les comptes administrateurs</h2>
+
+              <p>
+                Si vous ne savez plus quelle adresse administre l&apos;instance,
+                listez les comptes administrateurs sur le serveur où Databasus
+                tourne :
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{listAdminsCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={listAdminsCommand} lang="fr" />
+                </div>
+              </div>
+
+              <p>
+                La sortie nomme chaque compte administrateur avec son adresse
+                e-mail, son nom affiché, sa date de création et son état
+                d&apos;activité, et marque celui que l&apos;instance reconnaît
+                comme son administrateur. Aucun mot de passe, empreinte de mot
+                de passe ni jeton n&apos;est affiché. Sur une instance où
+                personne n&apos;a encore créé de compte, elle indique que
+                l&apos;instance n&apos;a pas d&apos;administrateur.
+              </p>
             </article>
           </div>
         </main>

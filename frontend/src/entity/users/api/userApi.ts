@@ -5,12 +5,10 @@ import { apiHelper } from '../../../shared/api/apiHelper';
 import type { ChangePasswordRequest } from '../model/ChangePasswordRequest';
 import type { InviteUserRequest } from '../model/InviteUserRequest';
 import type { InviteUserResponse } from '../model/InviteUserResponse';
-import type { IsAdminHasPasswordResponse } from '../model/IsAdminHasPasswordResponse';
 import type { OAuthCallbackRequest } from '../model/OAuthCallbackRequest';
 import type { OAuthCallbackResponse } from '../model/OAuthCallbackResponse';
 import type { ResetPasswordRequest } from '../model/ResetPasswordRequest';
 import type { SendResetPasswordCodeRequest } from '../model/SendResetPasswordCodeRequest';
-import type { SetAdminPasswordRequest } from '../model/SetAdminPasswordRequest';
 import type { SignInRequest } from '../model/SignInRequest';
 import type { SignInResponse } from '../model/SignInResponse';
 import type { SignUpRequest } from '../model/SignUpRequest';
@@ -71,23 +69,6 @@ export const userApi = {
         const typedResponse = response as { isExist: boolean };
         return typedResponse.isExist;
       });
-  },
-
-  async isAdminHasPassword(): Promise<IsAdminHasPasswordResponse> {
-    const requestOptions: RequestOptions = new RequestOptions();
-    return apiHelper.fetchGetJson(
-      `${getApplicationServer()}/api/v1/users/admin/has-password`,
-      requestOptions,
-    );
-  },
-
-  async setAdminPassword(request: SetAdminPasswordRequest): Promise<{ message: string }> {
-    const requestOptions: RequestOptions = new RequestOptions();
-    requestOptions.setBody(JSON.stringify(request));
-    return apiHelper.fetchPostJson(
-      `${getApplicationServer()}/api/v1/users/admin/set-password`,
-      requestOptions,
-    );
   },
 
   async changePassword(request: ChangePasswordRequest): Promise<{ message: string }> {

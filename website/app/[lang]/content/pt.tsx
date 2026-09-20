@@ -221,6 +221,14 @@ export default function Index() {
                   text: "O Databasus suporta backups físicos, completos, incrementais, de WAL e lógicos. Os backups físicos são uma cópia no nível de arquivos de todo o cluster da base de dados — mais rápidos de fazer e de restaurar para grandes volumes de dados do que dumps lógicos, e construídos sobre o mecanismo nativo de backup do PostgreSQL 17, então usamos as ferramentas testadas do próprio PostgreSQL em vez de reinventá-las. Os backups completos são uma cópia integral e autossuficiente do cluster, a base de onde parte toda cadeia de backups. Os backups incrementais guardam apenas o que mudou desde o backup anterior, mantendo os backups pequenos e rápidos. O streaming de WAL captura continuamente o fluxo de escrita da base, permitindo Point-in-Time Recovery (PITR) para recuperação de desastres e perda de dados próxima de zero. Os backups lógicos são um dump nativo da base no formato binário do próprio motor, comprimido e enviado diretamente ao armazenamento, sem arquivos intermediários. Todos esses backups podem passar por um túnel SSH se você precisar de conexões não públicas, então a base de dados nunca precisa ficar exposta publicamente. O túnel SSH já vem integrado.",
                 },
               },
+              {
+                "@type": "Question",
+                name: "Esqueci o email ou a senha do administrador",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: 'A primeira conta criada na instância é quem a administra. Se você não lembra qual é esse endereço, execute docker exec -it databasus ./main --list-admins no servidor onde o Databasus está em execução: ele nomeia cada conta de administrador com seu endereço de email, nome de exibição, data de criação e estado de atividade, e não imprime nenhuma senha. Para definir uma nova senha para essa conta, execute docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com". Uma instância criada antes de a primeira conta administrá-la ainda carrega o endereço provisório admin até que seu dono o substitua. Os dois comandos estão documentados na página de senha.',
+                },
+              },
             ],
           }),
         }}
@@ -1672,6 +1680,34 @@ export default function Index() {
                   primeira ferramenta de backup construída sobre o protocolo de
                   backup nativo, eficiente e agora padrão do PostgreSQL, em vez
                   de escrever implementações próprias.
+                </>
+              }
+            />
+            <FaqItem
+              number="15"
+              question="Esqueci o email ou a senha do administrador"
+              answer={
+                <>
+                  A primeira conta criada na instância é quem a administra. Se
+                  você não lembra qual é esse endereço, execute docker exec -it
+                  databasus ./main --list-admins no servidor onde o Databasus
+                  está em execução: ele nomeia cada conta de administrador com
+                  seu endereço de email, nome de exibição, data de criação e
+                  estado de atividade, e não imprime nenhuma senha. Para definir
+                  uma nova senha para essa conta, execute docker exec -it
+                  databasus ./main
+                  --new-password=&quot;YourNewSecurePassword123&quot;
+                  --email=&quot;owner@example.com&quot;. Uma instância criada
+                  antes de a primeira conta administrá-la ainda carrega o
+                  endereço provisório admin até que seu dono o substitua. Os
+                  dois comandos estão documentados na
+                  <a
+                    href="/pt/password"
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    página de senha
+                  </a>
+                  .
                 </>
               }
             />

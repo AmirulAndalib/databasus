@@ -225,8 +225,8 @@ export default function AccessManagementPage() {
               </table>
 
               <p>
-                Normalmente hay un solo usuario <code>admin</code> en el
-                sistema: el que se crea al iniciar Databasus por primera vez.
+                Normalmente hay un solo administrador en el sistema: la primera
+                cuenta creada en la instancia, que es la que la administra.
               </p>
 
               <p>

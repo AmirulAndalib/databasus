@@ -249,7 +249,7 @@ Para mais opções (NodePort, TLS, HTTPRoute do Gateway API), veja o [README do 
 
 ## 🚀 Como usar
 
-1. **Abra o painel**: acesse `http://localhost:4005`
+1. **Crie a primeira conta**: acesse `http://localhost:4005` e cadastre-se. A primeira conta criada em uma instância é quem a administra
 2. **Adicione a sua primeira base de dados para backup**: clique em "New Database" e siga o assistente de configuração
 3. **Configure o agendamento**: escolha entre intervalos de hora em hora, diário, semanal, mensal ou cron
 4. **Informe a conexão com a base**: preencha as credenciais e os dados de conexão da sua base de dados
@@ -263,10 +263,18 @@ Para mais opções (NodePort, TLS, HTTPRoute do Gateway API), veja o [README do 
 Se precisar redefinir a senha, use o comando de redefinição já incluído:
 
 ```bash
-docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"
+docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Troque `admin` pelo e-mail do usuário cuja senha você quer redefinir.
+Troque `owner@example.com` pelo e-mail da conta cuja senha você quer redefinir. Uma instância criada antes de a primeira conta administrá-la ainda carrega o endereço provisório `admin` até que seu dono o substitua, então informe `--email="admin"` nesse caso.
+
+Se você não lembra qual endereço administra a instância, liste as contas de administrador:
+
+```bash
+docker exec -it databasus ./main --list-admins
+```
+
+A saída nomeia cada conta de administrador com seu e-mail, nome de exibição, data de criação e estado de atividade, e marca aquela que a instância reconhece como seu administrador. Nenhuma senha ou hash de senha é impresso.
 
 ### 💾 Fazer backup do próprio Databasus
 

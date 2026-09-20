@@ -7,8 +7,6 @@ export { userManagementApi } from './api/userManagementApi';
 export type { SignInRequest } from './model/SignInRequest';
 export type { SignInResponse } from './model/SignInResponse';
 export type { SignUpRequest } from './model/SignUpRequest';
-export type { SetAdminPasswordRequest } from './model/SetAdminPasswordRequest';
-export type { IsAdminHasPasswordResponse } from './model/IsAdminHasPasswordResponse';
 export type { ChangePasswordRequest } from './model/ChangePasswordRequest';
 export type { InviteUserRequest } from './model/InviteUserRequest';
 export type { InviteUserResponse } from './model/InviteUserResponse';

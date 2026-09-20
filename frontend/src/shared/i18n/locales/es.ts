@@ -105,8 +105,7 @@ export const es: typeof en = {
       placeholder: 'Pegue aquí la cadena de conexión...',
     },
     auth: {
-      adminPasswordCheckFailed:
-        'No se pudo comprobar si la contraseña de administrador está configurada: {{error}}',
+      accountsCheckFailed: 'No se pudo comprobar si la instancia tiene alguna cuenta: {{error}}',
     },
     oauthCallback: {
       failedTitle: 'Error de autenticación',
@@ -887,13 +886,8 @@ export const es: typeof en = {
       title: 'Registro',
       namePlaceholder: 'Juan Pérez',
       submit: 'Registrarse',
+      administersInstance: 'Esta es la primera cuenta de esta instancia, así que la administrará.',
       hasAccount: '¿Ya tiene cuenta? <signInLink>Inicie sesión</signInLink>',
-    },
-    adminPassword: {
-      title: 'Registro del administrador',
-      description:
-        'Después podrá iniciar sesión con el usuario "admin" y la contraseña que establezca',
-      submit: 'Establecer contraseña',
     },
     requestPasswordReset: {
       title: 'Restablecer contraseña',
@@ -920,7 +914,6 @@ export const es: typeof en = {
       userId: 'ID de usuario',
       namePlaceholder: 'Introduzca su nombre',
       emailPlaceholder: 'Introduzca su correo electrónico',
-      adminEmailReadOnly: 'El correo electrónico del administrador no se puede cambiar',
       role: 'Rol',
       saveChanges: 'Guardar cambios',
       noChanges: 'No hay cambios que guardar',

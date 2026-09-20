@@ -221,6 +221,14 @@ export default function Index() {
                   text: "Databasus 支持物理备份、全量备份、增量备份、WAL 备份和逻辑备份。物理备份是对整个数据库集群的文件级复制，对大数据集来说备份和恢复都比逻辑转储更快，并且构建在 PostgreSQL 17 的原生备份机制之上，我们依赖 PostgreSQL 自身久经考验的工具，而不是重新造轮子。全量备份是集群的完整、自包含副本，是每条备份链的起点。增量备份只存储自上次备份以来的变化，让备份保持小而快。WAL 流式复制持续捕获数据库的写入流，支持时间点恢复（PITR），用于灾难恢复并将数据丢失降到接近于零。逻辑备份是数据库引擎专用二进制格式的原生转储，压缩后直接流式写入存储，没有中间文件。如果你要求非公开连接，所有这些备份都可以通过 SSH 隧道运行，数据库永远无需公开暴露。SSH 隧道是内置功能。",
                 },
               },
+              {
+                "@type": "Question",
+                name: "我忘记了管理员邮箱或密码",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: '实例上创建的第一个账户就是它的管理员。如果你不记得那个地址，可以在运行 Databasus 的服务器上执行 docker exec -it databasus ./main --list-admins：它会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并且不会输出任何密码。要为该账户设置新密码，请执行 docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址 admin。这两条命令都记录在密码页面上。',
+                },
+              },
             ],
           }),
         }}
@@ -1564,6 +1572,28 @@ export default function Index() {
                   我们的目标是成为 PostgreSQL 17
                   及以上版本的标准备份工具。Databasus 是第一个构建在 PostgreSQL
                   原生、高效且如今已成为标准的备份协议之上的备份工具，而不是编写自己的实现。
+                </>
+              }
+            />
+            <FaqItem
+              number="15"
+              question="我忘记了管理员邮箱或密码"
+              answer={
+                <>
+                  实例上创建的第一个账户就是它的管理员。如果你不记得那个地址，可以在运行
+                  Databasus 的服务器上执行 docker exec -it databasus ./main
+                  --list-admins：它会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并且不会输出任何密码。要为该账户设置新密码，请执行
+                  docker exec -it databasus ./main
+                  --new-password=&quot;YourNewSecurePassword123&quot;
+                  --email=&quot;owner@example.com&quot;。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址
+                  admin。这两条命令都记录在
+                  <a
+                    href="/zh/password"
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    密码页面
+                  </a>
+                  上。
                 </>
               }
             />

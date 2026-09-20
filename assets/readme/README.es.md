@@ -249,7 +249,7 @@ Para más opciones (NodePort, TLS, HTTPRoute para Gateway API), consulte el [REA
 
 ## 🚀 Uso
 
-1. **Entre en el panel**: abra `http://localhost:4005`
+1. **Cree la primera cuenta**: abra `http://localhost:4005` y regístrese. La primera cuenta creada en una instancia es la que la administra
 2. **Añada su primera base de datos para respaldar**: pulse "New Database" y siga el asistente
 3. **Configure la programación**: elija entre intervalos horarios, diarios, semanales, mensuales o cron
 4. **Indique la conexión a la base de datos**: introduzca sus credenciales y los datos de conexión
@@ -263,10 +263,18 @@ Para más opciones (NodePort, TLS, HTTPRoute para Gateway API), consulte el [REA
 Si necesita restablecer la contraseña, use el comando integrado:
 
 ```bash
-docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"
+docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Sustituya `admin` por la dirección de correo real del usuario cuya contraseña quiere restablecer.
+Sustituya `owner@example.com` por la dirección de correo real de la cuenta cuya contraseña quiere restablecer. Una instancia creada antes de que la primera cuenta la administrara todavía lleva la dirección provisional `admin` hasta que su propietario la reemplace, así que allí pase `--email="admin"`.
+
+Si no recuerda qué dirección administra la instancia, liste las cuentas de administrador:
+
+```bash
+docker exec -it databasus ./main --list-admins
+```
+
+La salida nombra cada cuenta de administrador con su correo electrónico, nombre visible, fecha de creación y estado de actividad, y marca la que la instancia reconoce como su administrador. No imprime ninguna contraseña ni su hash.
 
 ### 💾 Respaldar el propio Databasus
 

@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 
 import { userApi } from '../entity/users';
 import {
-  AdminPasswordComponent,
   AuthNavbarComponent,
   RequestResetPasswordComponent,
   ResetPasswordComponent,
@@ -17,7 +16,7 @@ import { translateApiError } from '../shared/i18n';
 
 export function AuthPageComponent() {
   const { t } = useTranslation();
-  const [isAdminHasPassword, setIsAdminHasPassword] = useState(false);
+  const [isAnyUserExist, setIsAnyUserExist] = useState(true);
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp' | 'requestReset' | 'resetPassword'>(
     'signUp',
   );
@@ -25,22 +24,19 @@ export function AuthPageComponent() {
   const [isLoading, setLoading] = useState(true);
   const screenHeight = useScreenHeight();
 
-  const checkAdminPasswordStatus = () => {
+  useEffect(() => {
     setLoading(true);
 
     userApi
-      .isAdminHasPassword()
-      .then((response) => {
-        setIsAdminHasPassword(response.hasPassword);
+      .isAnyUserExists()
+      .then((isExist) => {
+        setIsAnyUserExist(isExist);
         setLoading(false);
       })
       .catch((e) => {
-        alert(t('app.auth.adminPasswordCheckFailed', { error: translateApiError(e, t) }));
+        alert(t('app.auth.accountsCheckFailed', { error: translateApiError(e, t) }));
+        setLoading(false);
       });
-  };
-
-  useEffect(() => {
-    checkAdminPasswordStatus();
   }, []);
 
   return (
@@ -55,31 +51,30 @@ export function AuthPageComponent() {
             <AuthNavbarComponent />
 
             <div className="mt-10 flex justify-center sm:mt-[10vh]">
-              {isAdminHasPassword ? (
-                authMode === 'signUp' ? (
-                  <SignUpComponent onSwitchToSignIn={() => setAuthMode('signIn')} />
-                ) : authMode === 'signIn' ? (
-                  <SignInComponent
-                    onSwitchToSignUp={() => setAuthMode('signUp')}
-                    onSwitchToResetPassword={() => setAuthMode('requestReset')}
-                  />
-                ) : authMode === 'requestReset' ? (
-                  <RequestResetPasswordComponent
-                    onSwitchToSignIn={() => setAuthMode('signIn')}
-                    onSwitchToResetPassword={(email) => {
-                      setResetEmail(email);
-                      setAuthMode('resetPassword');
-                    }}
-                  />
-                ) : (
-                  <ResetPasswordComponent
-                    onSwitchToSignIn={() => setAuthMode('signIn')}
-                    onSwitchToRequestCode={() => setAuthMode('requestReset')}
-                    initialEmail={resetEmail}
-                  />
-                )
+              {authMode === 'signUp' ? (
+                <SignUpComponent
+                  onSwitchToSignIn={isAnyUserExist ? () => setAuthMode('signIn') : undefined}
+                  isClaimingInstance={!isAnyUserExist}
+                />
+              ) : authMode === 'signIn' ? (
+                <SignInComponent
+                  onSwitchToSignUp={() => setAuthMode('signUp')}
+                  onSwitchToResetPassword={() => setAuthMode('requestReset')}
+                />
+              ) : authMode === 'requestReset' ? (
+                <RequestResetPasswordComponent
+                  onSwitchToSignIn={() => setAuthMode('signIn')}
+                  onSwitchToResetPassword={(email) => {
+                    setResetEmail(email);
+                    setAuthMode('resetPassword');
+                  }}
+                />
               ) : (
-                <AdminPasswordComponent onPasswordSet={checkAdminPasswordStatus} />
+                <ResetPasswordComponent
+                  onSwitchToSignIn={() => setAuthMode('signIn')}
+                  onSwitchToRequestCode={() => setAuthMode('requestReset')}
+                  initialEmail={resetEmail}
+                />
               )}
             </div>
           </div>

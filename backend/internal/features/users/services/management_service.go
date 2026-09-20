@@ -70,8 +70,8 @@ func (s *UserManagementService) DeactivateUser(
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
-	// Only user with email "admin" can deactivate ADMIN users
-	if user.Role == user_enums.UserRoleAdmin && deactivatedBy.Email != "admin" {
+	// Only the instance's bootstrap administrator can deactivate ADMIN accounts
+	if user.Role == user_enums.UserRoleAdmin && !deactivatedBy.IsRootAdmin {
 		return errors.New("only the root admin user can deactivate admin accounts")
 	}
 
@@ -104,8 +104,8 @@ func (s *UserManagementService) ActivateUser(
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
-	// Only user with email "admin" can activate ADMIN users
-	if user.Role == user_enums.UserRoleAdmin && activatedBy.Email != "admin" {
+	// Only the instance's bootstrap administrator can reactivate ADMIN accounts
+	if user.Role == user_enums.UserRoleAdmin && !activatedBy.IsRootAdmin {
 		return errors.New("only the root admin user can activate admin accounts")
 	}
 
@@ -149,9 +149,9 @@ func (s *UserManagementService) ChangeUserRole(
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
-	// Only user with email "admin" can promote users to ADMIN or demote ADMIN users
+	// Only the instance's bootstrap administrator can grant or revoke the ADMIN role
 	if (newRole == user_enums.UserRoleAdmin || user.Role == user_enums.UserRoleAdmin) &&
-		changedBy.Email != "admin" {
+		!changedBy.IsRootAdmin {
 		return errors.New(
 			"only the root admin user can promote users to admin or demote admin users",
 		)

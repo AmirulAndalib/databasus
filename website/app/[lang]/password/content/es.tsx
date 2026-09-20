@@ -1,9 +1,5 @@
 import type { Metadata } from "next";
-import {
-  OG_LOCALES,
-  getLanguageAlternates,
-  getLocalizedUrl,
-} from "@/app/i18n";
+import { OG_LOCALES, getLanguageAlternates, getLocalizedUrl } from "@/app/i18n";
 import { CopyButton } from "@/app/components/CopyButton";
 import DocsNavbarComponent from "@/app/components/DocsNavbarComponent";
 import DocsSidebarComponent from "@/app/components/DocsSidebarComponent";
@@ -43,7 +39,8 @@ export const metadata: Metadata = {
 };
 
 export default function PasswordResetPage() {
-  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"`;
+  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
+  const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
 
   return (
     <>
@@ -144,11 +141,41 @@ export default function PasswordResetPage() {
                   caracteres especiales.
                 </li>
                 <li>
-                  <strong>--email</strong>: el correo electrónico del usuario
+                  <strong>--email</strong>: el correo electrónico de la cuenta
                   cuya contraseña quiere restablecer (por ejemplo,{" "}
-                  <code>admin</code>, <code>user@example.com</code>).
+                  <code>owner@example.com</code>). Una instancia creada antes de
+                  que la primera cuenta la administrara todavía lleva la
+                  dirección provisional <code>admin</code> hasta que su
+                  propietario la reemplace, así que allí indique{" "}
+                  <code>admin</code>.
                 </li>
               </ul>
+
+              <h2 id="list-admins">Listar las cuentas de administrador</h2>
+
+              <p>
+                Si no recuerda qué dirección administra la instancia, liste las
+                cuentas de administrador en el servidor donde se ejecuta
+                Databasus:
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{listAdminsCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={listAdminsCommand} lang="es" />
+                </div>
+              </div>
+
+              <p>
+                La salida nombra cada cuenta de administrador con su correo
+                electrónico, nombre visible, fecha de creación y estado de
+                actividad, y marca la que la instancia reconoce como su
+                administrador. No imprime ninguna contraseña, ni su hash, ni
+                ningún token. En una instancia donde todavía nadie ha creado una
+                cuenta, informa de que la instancia no tiene administrador.
+              </p>
             </article>
           </div>
         </main>

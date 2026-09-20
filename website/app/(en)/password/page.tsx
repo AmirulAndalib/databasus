@@ -38,7 +38,8 @@ export const metadata: Metadata = {
 };
 
 export default function PasswordResetPage() {
-  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"`;
+  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
+  const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
 
   return (
     <>
@@ -137,11 +138,40 @@ export default function PasswordResetPage() {
                   special characters.
                 </li>
                 <li>
-                  <strong>--email</strong>: The email address of the user whose
-                  password you want to reset (e.g., <code>admin</code>,{" "}
-                  <code>user@example.com</code>).
+                  <strong>--email</strong>: The email address of the account
+                  whose password you want to reset (e.g.,{" "}
+                  <code>owner@example.com</code>). An instance created before
+                  the first account administered it still carries the
+                  placeholder address <code>admin</code> until its owner
+                  replaces it, so pass <code>admin</code> there.
                 </li>
               </ul>
+
+              <h2 id="list-admins">List administrator accounts</h2>
+
+              <p>
+                If you do not remember which address administers the instance,
+                list the administrator accounts on the server where Databasus is
+                running:
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{listAdminsCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={listAdminsCommand} />
+                </div>
+              </div>
+
+              <p>
+                The output names every administrator account with its email
+                address, display name, creation date and active state, and marks
+                the one the instance recognizes as its administrator. It prints
+                no password, no password hash and no token. On an instance where
+                nobody has created an account yet, it reports that the instance
+                has no administrator.
+              </p>
             </article>
           </div>
         </main>
