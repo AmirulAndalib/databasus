@@ -188,9 +188,14 @@ COPY --from=verification-agent-build /verification-agent-binaries/* ./agent-bina
 
 # Bake .env.example as /.env so the binary has defaults when no env file is
 # mounted. The backend looks for .env at the parent of cwd (= /app), i.e. /.
-# Real env vars (-e, compose, k8s) take precedence — godotenv.Load does not
-# overwrite already-set variables.
+# Real env vars (-e, compose, k8s) win, then the connection string start.sh
+# publishes for the embedded database, then these defaults. godotenv.Load does
+# not overwrite already-set variables, which is what puts these defaults last.
+# DATABASE_DSN is stripped because its development password cannot authenticate
+# against the embedded database, whose password is generated at every start.
+# Keeping it would turn a missing configuration into an authentication failure.
 COPY .env.example /.env
+RUN sed -i '/^DATABASE_DSN=/d' /.env
 
 COPY --chmod=0755 docker/start.sh /app/start.sh
 

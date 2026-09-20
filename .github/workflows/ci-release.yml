@@ -460,6 +460,21 @@ jobs:
             rm -f "$out"
           done
 
+          # A console command is the only user of the credential start.sh publishes for
+          # processes that miss PID 1's environment, so nothing else here notices when
+          # publishing breaks.
+          echo "Checking that a console command reaches the metadata database..."
+          console_output=$(mktemp)
+          if ! docker exec databasus-dev-smoke ./main --list-admins >"$console_output" 2>&1; then
+            echo "console command could not reach the metadata database"
+            cat "$console_output"
+            docker logs databasus-dev-smoke
+            rm -f "$console_output"
+            exit 1
+          fi
+          rm -f "$console_output"
+          echo "console command OK"
+
       - name: Install Trivy
         run: |
           sudo apt-get update
@@ -661,6 +676,21 @@ jobs:
             echo "verification agent ($arch) OK (${size} bytes)"
             rm -f "$out"
           done
+
+          # A console command is the only user of the credential start.sh publishes for
+          # processes that miss PID 1's environment, so nothing else here notices when
+          # publishing breaks.
+          echo "Checking that a console command reaches the metadata database..."
+          console_output=$(mktemp)
+          if ! docker exec databasus-smoke ./main --list-admins >"$console_output" 2>&1; then
+            echo "console command could not reach the metadata database"
+            cat "$console_output"
+            docker logs databasus-smoke
+            rm -f "$console_output"
+            exit 1
+          fi
+          rm -f "$console_output"
+          echo "console command OK"
 
       - name: Install Trivy
         run: |

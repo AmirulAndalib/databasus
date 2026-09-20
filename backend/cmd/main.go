@@ -149,7 +149,11 @@ type commandLineOptions struct {
 }
 
 func parseCommandLineOptions() commandLineOptions {
-	shouldTestStorage := flag.Bool("test-storage", false, "Save and delete a local storage probe")
+	shouldTestStorage := flag.Bool(
+		config.StorageProbeFlagName,
+		false,
+		"Save and delete a local storage probe",
+	)
 	shouldListAdmins := flag.Bool("list-admins", false, "Print every administrator account of this instance")
 	newPassword := flag.String("new-password", "", "Set a new password for the user")
 	passwordResetEmail := flag.String("email", "", "Email of the user to reset password")

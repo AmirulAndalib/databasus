@@ -104,6 +104,31 @@ embedded credential override an operator's deliberate choice of an external
 metadata database, inverting the precedence the current startup already
 guarantees.
 
+### Exempt the storage probe from the metadata-database requirement
+
+`prepare_and_verify_storage` (`docker/start.sh:343-352`) ends with
+`gosu databasus /app/main --test-storage`, and it runs before
+`bootstrap_postgresql`, so the generated password does not exist yet. Once the
+baked default is gone, that probe is refused for a connection string that
+cannot be available at that point, and the container never starts. The probe
+itself only needs `TempFolder` and `DataFolder`, both derived from paths.
+
+Configuration loading therefore recognises the `--test-storage` process from
+`os.Args` and skips the missing-connection-string exit for it, the way it
+already recognises a test binary. The flag is read inside
+`backend/internal/config` rather than passed in from `main`, because
+package-level dependency wiring such as `backend/internal/features/email/di.go:9`
+calls `GetEnv` during program initialisation, before `main` runs.
+
+Alternatives rejected:
+
+- **Running the probe after `bootstrap_postgresql`.** The permission checks
+  around it exist to fail early with the documentation URL; an operator with a
+  broken `/databasus-data` would instead first see `initdb` fail.
+- **Handing the probe a placeholder connection string from `start.sh`.**
+  Reinstates the fake credential this change deletes, and it is the value the
+  probe would connect with if it ever grew a database dependency.
+
 ### Delete `DATABASE_DSN` from the baked `/.env`, keep it in `.env.example`
 
 `.env.example` stays as it is, because the repository's Docker Compose stack
@@ -141,6 +166,16 @@ Alternatives rejected:
   (`docker/start.sh:121-136`) has applied `PUID`/`PGID`, so publishing must stay
   ordered after it. `bootstrap_postgresql` already runs later in `main()`
   (`docker/start.sh:586-595`), so the required order is the existing one.
+- **Who writes and who reads the published file** → The application reads it as
+  the runtime account (`docker/start.sh:605` ends with
+  `exec gosu databasus ./main`), so that account must own it. Startup runs as
+  root, and writing into a `0600` file owned by another account was refused on
+  the host this was verified on, so startup creates the file with `install` and
+  fills it through `gosu databasus tee`, the idiom the script already uses for
+  `pg_hba.conf`. The image declares no `USER`, so the documented
+  `docker exec <container> ./main ...` runs as root; root reading that file
+  worked on the same host, and a deployment that drops `CAP_DAC_OVERRIDE` would
+  lose the documented recovery command.
 - **Silent regression** → The failure is invisible to normal startup: PID 1
   keeps working even when publishing is broken. An automated check that runs a
   console command against a started container is the only thing that catches

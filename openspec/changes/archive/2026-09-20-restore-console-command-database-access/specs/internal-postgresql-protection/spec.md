@@ -68,11 +68,18 @@ An operator-supplied connection string SHALL take precedence over the one startu
 
 When no metadata-database connection string is available from any source, a starting process SHALL report that the configuration is missing and SHALL NOT attempt a connection with a default credential. A rejected credential and an absent configuration SHALL produce distinguishable messages.
 
+A process that never opens the metadata database SHALL be exempt from this requirement, because container startup runs the storage probe before the embedded database exists.
+
 #### Scenario: No connection string anywhere
 
 - **WHEN** a process starts in a container where startup published no connection string and the operator supplied none
 - **THEN** it reports the metadata-database configuration as missing
 - **AND** the message does not describe an authentication failure
+
+#### Scenario: Storage probe before the database exists
+
+- **WHEN** container startup runs the storage probe, before any metadata-database credential exists
+- **THEN** the probe completes on its own merits rather than being refused for a missing connection string
 
 #### Scenario: Wrong credential supplied
 
