@@ -250,11 +250,9 @@ export const pt: typeof en = {
         'Quando ativado, os membros (usuários que não são administradores) podem criar novos espaços de trabalho. Quando desativado, só os administradores podem criá-los.',
     },
     twoFactorAuth: {
-      title: 'Pedir um código ao entrar',
+      title: 'Ativar o login em duas etapas',
       description:
         'Quando ativado, além da senha é preciso informar um código de seis dígitos enviado para o e-mail da conta. Não vale para o login pelo Google ou pelo GitHub.',
-      appliesToNextSignIn:
-        'A configuração vale a partir do próximo login. As sessões já abertas continuam funcionando.',
       mailServerRequired:
         'É preciso ter um servidor de e-mail. <docsLink>Configure o SMTP</docsLink> primeiro.',
     },

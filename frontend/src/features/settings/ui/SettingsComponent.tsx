@@ -210,10 +210,6 @@ export function SettingsComponent({ contentHeight }: Props) {
                         {t('settings.twoFactorAuth.description')}
                       </div>
 
-                      <div className="mt-1 text-gray-500 dark:text-gray-400">
-                        {t('settings.twoFactorAuth.appliesToNextSignIn')}
-                      </div>
-
                       {!settings?.isEmailConfigured && (
                         <div className="mt-1 text-gray-500 dark:text-gray-400">
                           <Trans

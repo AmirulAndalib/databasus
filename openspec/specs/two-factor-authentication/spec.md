@@ -10,7 +10,7 @@ Lets the owner of an instance require a second, emailed factor before a password
 
 The instance SHALL offer a single global setting that requires a second factor for password sign-in. It SHALL be off until an administrator turns it on, SHALL apply to every account on the instance once on, and SHALL be changeable only by an administrator.
 
-Turning the setting on SHALL NOT end sessions that already exist. An access token issued before the change SHALL keep working until it expires or a password change invalidates it, and the interface offering the setting SHALL say so, so that an administrator reacting to a leaked password knows the switch alone does not shut that password's session out.
+Turning the setting on SHALL NOT end sessions that already exist. An access token issued before the change SHALL keep working until it expires or a password change invalidates it.
 
 #### Scenario: Default state
 
@@ -25,7 +25,7 @@ Turning the setting on SHALL NOT end sessions that already exist. An access toke
 #### Scenario: A session that predates the switch
 
 - **WHEN** an administrator turns the second factor on while another user is already signed in
-- **THEN** that user's session keeps working, and the interface has told the administrator that the setting applies to the next sign-in
+- **THEN** that user's session keeps working
 
 ### Requirement: The second factor cannot be turned on unless the instance can deliver codes
 

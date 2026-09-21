@@ -250,11 +250,9 @@ export const es: typeof en = {
         'Si está activado, los miembros (usuarios que no son administradores) pueden crear espacios de trabajo. Si no, solo pueden crearlos los administradores.',
     },
     twoFactorAuth: {
-      title: 'Pedir un código al iniciar sesión',
+      title: 'Activar el inicio de sesión en dos pasos',
       description:
         'Si se activa, además de la contraseña hay que introducir un código de seis dígitos enviado al correo de la cuenta. No se aplica al inicio de sesión con Google ni con GitHub.',
-      appliesToNextSignIn:
-        'El ajuste se aplica al siguiente inicio de sesión. Las sesiones ya abiertas siguen funcionando.',
       mailServerRequired:
         'Hace falta un servidor de correo. <docsLink>Configure SMTP</docsLink> primero.',
     },

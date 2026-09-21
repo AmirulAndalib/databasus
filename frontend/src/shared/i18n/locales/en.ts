@@ -246,11 +246,9 @@ export const en = {
         'When enabled, members (non-admin users) can create new workspaces. If not - only admins can create workspaces.',
     },
     twoFactorAuth: {
-      title: 'Require a code at sign-in',
+      title: 'Enable two-factor sign-in',
       description:
         "When enabled, a password sign-in also has to present a six-digit code sent to the account's email address. Sign-in through Google or GitHub is not covered.",
-      appliesToNextSignIn:
-        'The setting applies to the next sign-in. Sessions that are already open keep working.',
       mailServerRequired: 'This needs a mail server. <docsLink>Configure SMTP</docsLink> first.',
     },
     saving: 'Saving...',

@@ -239,10 +239,9 @@ export const zh: typeof en = {
         '开启后，成员（非管理员用户）可以创建新的工作区。关闭后，只有管理员能创建工作区。',
     },
     twoFactorAuth: {
-      title: '登录时要求验证码',
+      title: '启用双因素登录',
       description:
         '启用后，输入密码之后还需要填写发送到账号邮箱的六位验证码。通过 Google 或 GitHub 登录不受此设置影响。',
-      appliesToNextSignIn: '该设置从下次登录开始生效，已经打开的会话不受影响。',
       mailServerRequired: '这需要邮件服务器，请先<docsLink>配置 SMTP</docsLink>。',
     },
     saving: '正在保存…',

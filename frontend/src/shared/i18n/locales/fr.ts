@@ -249,11 +249,9 @@ export const fr: typeof en = {
         "Si l'option est activée, les membres (utilisateurs non administrateurs) peuvent créer des espaces de travail. Sinon, seuls les administrateurs peuvent en créer.",
     },
     twoFactorAuth: {
-      title: 'Demander un code à la connexion',
+      title: 'Activer la connexion en deux étapes',
       description:
         "Une fois activé, la connexion par mot de passe demande aussi un code à six chiffres envoyé à l'adresse du compte. La connexion par Google ou GitHub n'est pas concernée.",
-      appliesToNextSignIn:
-        "Le réglage s'applique à la prochaine connexion. Les sessions déjà ouvertes continuent de fonctionner.",
       mailServerRequired:
         "Il faut un serveur de messagerie. <docsLink>Configurez le SMTP</docsLink> d'abord.",
     },
