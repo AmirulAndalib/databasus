@@ -538,9 +538,9 @@ configure_application_database_dsn() {
 
     export DATABASE_DSN="host=localhost user=postgres password=${internal_postgres_password} dbname=databasus port=5437 sslmode=disable"
 
-    install -m 0600 -o databasus -g databasus /dev/null "${published_database_dsn_path}"
+    # The runtime user creates the file itself, so startup needs no CHOWN capability.
     printf '%s\n' "${DATABASE_DSN}" \
-        | gosu databasus tee "${published_database_dsn_path}" >/dev/null
+        | gosu databasus /bin/sh -c 'umask 077 && cat > "$1"' sh "${published_database_dsn_path}"
 }
 
 bootstrap_postgresql() {

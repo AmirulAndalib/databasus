@@ -45,7 +45,11 @@ first two items often end the job early.
       `objdump -T <binary> | grep -oE 'GLIBC_2\.[0-9]+' | sort -uV | tail -1`
       and list the shared libraries with `objdump -p <binary> | grep NEEDED`.
       Every library must already be in the image; see the table in
-      `README.md` in this directory.
+      `README.md` in this directory. A matching soname is not enough: check
+      the OpenSSL symbol versions the same way with `OPENSSL_3\.[0-9]+`,
+      because bookworm ships OpenSSL 3.0 and a newer requirement fails only at
+      run time. A development host with a newer OpenSSL hides the problem, so
+      run the binary in the runtime image as the refresh checklist shows.
 - [ ] **Know which of the two identity shapes the engine uses.** MySQL's
       identity doubles as the name of its bundle directory, because each MySQL
       line gets a client of its own. MariaDB keeps two values, a server

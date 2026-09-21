@@ -478,6 +478,16 @@ jobs:
           rm -f "$console_output"
           echo "console command OK"
 
+          # A broken non-PostgreSQL bundle only logs a warning and disables that engine,
+          # so the container stays healthy. The image ships every bundle, so any such
+          # warning here means one of them cannot run in the image.
+          echo "Checking that every bundled client tool runs in the image..."
+          if docker logs databasus-dev-smoke 2>&1 | grep -F "client tools check failed"; then
+            echo "a bundled client tool cannot run in the image"
+            exit 1
+          fi
+          echo "client tools OK"
+
       - name: Install Trivy
         run: |
           sudo apt-get update
@@ -694,6 +704,16 @@ jobs:
           fi
           rm -f "$console_output"
           echo "console command OK"
+
+          # A broken non-PostgreSQL bundle only logs a warning and disables that engine,
+          # so the container stays healthy. The image ships every bundle, so any such
+          # warning here means one of them cannot run in the image.
+          echo "Checking that every bundled client tool runs in the image..."
+          if docker logs databasus-smoke 2>&1 | grep -F "client tools check failed"; then
+            echo "a bundled client tool cannot run in the image"
+            exit 1
+          fi
+          echo "client tools OK"
 
       - name: Install Trivy
         run: |

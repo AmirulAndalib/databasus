@@ -14,6 +14,8 @@ assets/tools/<arch>/
     pg_dump, pg_restore, psql
   mysql/mysql-{5.7,8.0,8.4,9,26}/bin/
     mysql, mysqldump
+  mysql/mysql-26/lib/private/
+    libssl.so.3, libcrypto.so.3
   mariadb/mariadb-{10.6,12.3,13.0}/bin/
     mariadb, mariadb-dump
   mongodb/bin/
@@ -51,7 +53,9 @@ a `pg_dump` older than its sibling `pg_basebackup` is how issue #725 (pg_dump
 18.1 silently emitting wrong sequence values) survived unnoticed.
 
 Bundled MySQL patches (identical on both arches, upstream glibc2.28 tarballs
-from `https://cdn.mysql.com/Downloads/MySQL-<line>/mysql-<patch>-linux-glibc2.28-{x86_64,aarch64}.tar.xz`):
+from `https://cdn.mysql.com/Downloads/MySQL-<dir>/mysql-<patch>-linux-glibc2.28-{x86_64,aarch64}.tar.xz`,
+where `<dir>` is the line for 5.7 through 9 and `<major>.<minor>` from 26 on,
+for example `MySQL-26.7`):
 
 | bundle     | patch  | notes                                     |
 |------------|--------|-------------------------------------------|
@@ -59,7 +63,7 @@ from `https://cdn.mysql.com/Downloads/MySQL-<line>/mysql-<patch>-linux-glibc2.28
 | `mysql-8.0`  | 8.0.46 |                                           |
 | `mysql-8.4`  | 8.4.11 | long-term support line                    |
 | `mysql-9`    | 9.7.2  | serves every 9.x server                   |
-| `mysql-26`   | 26.7.0 | calendar scheme; serves every 26.x server |
+| `mysql-26`   | 26.7.0 | calendar scheme; serves every 26.x server; ships its own OpenSSL |
 
 Bundled MariaDB patches, unpacked from the vendor's own package repositories
 by `tools/refresh-mariadb-bundle.sh`:
@@ -96,7 +100,7 @@ or lower):
 | library                             | needed by                                    |
 |-------------------------------------|----------------------------------------------|
 | `libc`, `libm`, `libgcc_s`, `libstdc++` | everything                                |
-| `libssl.so.3`, `libcrypto.so.3`     | MySQL and MariaDB clients, `libpq`            |
+| `libssl.so.3`, `libcrypto.so.3`     | MySQL 8.0 to 9 and MariaDB clients, `libpq`   |
 | `libz.so.1`, `libzstd.so.1`, `liblz4.so.1` | MariaDB clients, `libpq`               |
 | `libncurses.so.6`, `libtinfo.so.6`  | MySQL 8.0+ and MariaDB interactive clients    |
 | `libncurses.so.5`, `libtinfo.so.5`  | the MySQL 5.7 interactive client only         |
@@ -104,6 +108,12 @@ or lower):
 | `libedit.so.2`                      | every `mariadb` interactive client, and `psql` for PostgreSQL 12 |
 | `libpq.so.5`                        | the PostgreSQL clients                        |
 | `libgssapi_krb5.so.2`               | the MongoDB tools                             |
+
+The MySQL 26 clients are the exception for OpenSSL: they call symbols from
+OpenSSL 3.2, while bookworm ships 3.0. Their `RUNPATH` is
+`$ORIGIN/../lib/private`, so `mysql-26/lib/private/` holds the `libssl.so.3`
+and `libcrypto.so.3` (OpenSSL 3.5.7) from the same upstream tarball as the
+binaries, and the loader picks them before the image's copies.
 
 `libedit.so.2` is not installed explicitly in the `Dockerfile`: it reaches the
 image as a dependency of `postgresql-common`. A change that drops that package
