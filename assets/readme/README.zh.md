@@ -113,7 +113,7 @@ Databasus 会真正执行一次恢复，确认备份可用，而不只是检查�
 ### 💾 **支持的数据库**
 
 - **PostgreSQL**：14、15、16、17 和 18（物理和逻辑）
-- **MySQL**：5.7（仅 x86-64）、8.0、8.4、9 和 26（仅逻辑）
+- **MySQL**：5.7、8.0、8.4、9 和 26（仅逻辑）
 - **MariaDB**：5.5、10、11、12 和 13（仅逻辑）
 - **MongoDB**：4.2+、5、6、7 和 8（仅逻辑）
 
@@ -267,7 +267,7 @@ helm install databasus oci://ghcr.io/databasus/charts/databasus \
 docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-把 `owner@example.com` 换成要重置密码的那个账户的邮箱地址。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址 `admin`，此时请传入 `--email="admin"`。
+把 `owner@example.com` 换成要重置密码的那个账户的邮箱地址。
 
 如果你不记得哪个地址是该实例的管理员，可以列出管理员账户：
 
@@ -276,14 +276,6 @@ docker exec -it databasus ./main --list-admins
 ```
 
 输出会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并标记实例所认可的管理员。不会输出任何密码或密码哈希。
-
-如果开启了双因素验证，而邮件服务器不再送达验证码，谁都无法用密码登录。请直接在服务器上关掉第二重验证：
-
-```bash
-docker exec -it databasus ./main --disable-2fa
-```
-
-命令会说明它改了什么，设置本来就关着时也会正常结束，并把这次改动写入审计日志。
 
 ### 💾 给 Databasus 自身做备份
 
