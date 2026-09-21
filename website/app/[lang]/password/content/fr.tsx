@@ -41,6 +41,7 @@ export const metadata: Metadata = {
 export default function PasswordResetPage() {
   const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
   const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
+  const disableTwoFactorCommand = `docker exec -it databasus ./main --disable-2fa`;
 
   return (
     <>
@@ -179,6 +180,36 @@ export default function PasswordResetPage() {
                 de passe ni jeton n&apos;est affiché. Sur une instance où
                 personne n&apos;a encore créé de compte, elle indique que
                 l&apos;instance n&apos;a pas d&apos;administrateur.
+              </p>
+              <h2 id="disable-two-factor">
+                Cesser de demander un code à la connexion
+              </h2>
+
+              <p>
+                Une instance peut exiger, en plus du mot de passe, un code à six
+                chiffres envoyé par e-mail à la connexion. Si le serveur de
+                messagerie cesse de délivrer ces codes, plus personne
+                n&apos;entre avec un mot de passe, et réinitialiser le mot de
+                passe n&apos;y change rien. Désactivez le second facteur sur le
+                serveur où Databasus tourne :
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{disableTwoFactorCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={disableTwoFactorCommand} />
+                </div>
+              </div>
+
+              <p>
+                La commande indique si elle a changé quelque chose, se termine
+                sans se plaindre quand le second facteur est déjà désactivé, et
+                inscrit le changement au journal d&apos;audit. La prochaine
+                connexion par mot de passe se passe alors de code, et un
+                administrateur pourra réactiver le réglage dès que la messagerie
+                refonctionnera.
               </p>
             </article>
           </div>

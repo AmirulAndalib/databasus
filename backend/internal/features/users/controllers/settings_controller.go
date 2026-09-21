@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	users_dto "databasus-backend/internal/features/users/dto"
 	user_enums "databasus-backend/internal/features/users/enums"
 	user_middleware "databasus-backend/internal/features/users/middleware"
-	user_models "databasus-backend/internal/features/users/models"
 	users_services "databasus-backend/internal/features/users/services"
 )
 
@@ -30,13 +30,13 @@ func (c *SettingsController) RegisterRoutes(router *gin.RouterGroup) {
 // @Tags settings
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} users_models.UsersSettings
+// @Success 200 {object} users_dto.SettingsResponseDTO
 // @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 403 {object} map[string]string "Forbidden"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /users/settings [get]
 func (c *SettingsController) GetUsersSettings(ctx *gin.Context) {
-	settings, err := c.settingsService.GetSettings(ctx.Request.Context())
+	settings, err := c.settingsService.GetSettingsResponse(ctx.Request.Context())
 	if err != nil {
 		_ = ctx.Error(err)
 
@@ -54,8 +54,8 @@ func (c *SettingsController) GetUsersSettings(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body users_models.UsersSettings true "Settings update data"
-// @Success 200 {object} users_models.UsersSettings
+// @Param request body users_dto.UpdateSettingsRequestDTO true "Settings update data"
+// @Success 200 {object} users_dto.SettingsResponseDTO
 // @Failure 400 {object} map[string]string "Bad request"
 // @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 403 {object} map[string]string "Forbidden"
@@ -67,7 +67,7 @@ func (c *SettingsController) UpdateUsersSettings(ctx *gin.Context) {
 		return
 	}
 
-	var request user_models.UsersSettings
+	var request users_dto.UpdateSettingsRequestDTO
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return

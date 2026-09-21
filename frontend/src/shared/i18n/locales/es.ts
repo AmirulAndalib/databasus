@@ -133,6 +133,16 @@ export const es: typeof en = {
       'No se puede conectar con el servidor de Databasus. Compruebe su conexión e inténtelo de nuevo.',
     requestFailed:
       'El servidor no pudo completar la solicitud (HTTP {{status}}). Inténtelo de nuevo más tarde.',
+    signInCodeIncorrect: 'El código no es correcto.',
+    pendingSignInNotUsable:
+      'Este inicio de sesión ya no puede completarse. Vuelva a iniciar sesión.',
+    signInCodeNotSent:
+      'La instancia no ha podido enviar el código de acceso. Inténtelo más tarde o avise a un administrador.',
+    tooManySignInCodes:
+      'Se han pedido demasiados códigos de acceso para esta cuenta en la última hora. Inténtelo más tarde.',
+    signInCodeResentTooSoon:
+      'Se envió un código hace menos de un minuto. Espere un minuto antes de pedir otro.',
+    rateLimitExceeded: 'Demasiados intentos. Espere un poco e inténtelo de nuevo.',
   },
   status: {
     logicalBackup: {
@@ -238,6 +248,15 @@ export const es: typeof en = {
       title: 'Los miembros pueden crear espacios de trabajo',
       description:
         'Si está activado, los miembros (usuarios que no son administradores) pueden crear espacios de trabajo. Si no, solo pueden crearlos los administradores.',
+    },
+    twoFactorAuth: {
+      title: 'Pedir un código al iniciar sesión',
+      description:
+        'Si se activa, además de la contraseña hay que introducir un código de seis dígitos enviado al correo de la cuenta. No se aplica al inicio de sesión con Google ni con GitHub.',
+      appliesToNextSignIn:
+        'El ajuste se aplica al siguiente inicio de sesión. Las sesiones ya abiertas siguen funcionando.',
+      mailServerRequired:
+        'Hace falta un servidor de correo. <docsLink>Configure SMTP</docsLink> primero.',
     },
     saving: 'Guardando...',
     saveChanges: 'Guardar cambios',
@@ -881,6 +900,17 @@ export const es: typeof en = {
       submit: 'Iniciar sesión',
       noAccount: '¿No tiene cuenta? <signUpLink>Regístrese</signUpLink>',
       forgotPassword: '¿Olvidó su contraseña?',
+    },
+    signInCode: {
+      title: 'Introduzca el código',
+      description:
+        'Hemos enviado un código de seis dígitos a {{email}}. Deja de funcionar 10 minutos después de enviarse.',
+      code: 'Código de acceso',
+      submit: 'Iniciar sesión',
+      resend: 'Enviar otro código',
+      backToSignIn: 'Volver al inicio de sesión',
+      invalidCode: 'El código tiene 6 dígitos',
+      codeResent: 'Hemos enviado un código nuevo. El anterior ya no funciona.',
     },
     signUp: {
       title: 'Registro',

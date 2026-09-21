@@ -2,4 +2,5 @@ export interface UsersSettings {
   isAllowExternalRegistrations: boolean;
   isAllowMemberInvitations: boolean;
   isMemberAllowedToCreateWorkspaces: boolean;
+  isTwoFactorAuthRequired: boolean;
 }

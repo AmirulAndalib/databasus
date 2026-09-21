@@ -130,6 +130,15 @@ export const en = {
     networkUnreachable: 'Cannot reach the Databasus server. Check your connection and try again.',
     requestFailed:
       'The server could not complete the request (HTTP {{status}}). Please try again later.',
+    signInCodeIncorrect: 'The code is incorrect.',
+    pendingSignInNotUsable: 'This sign-in can no longer be completed. Sign in again.',
+    signInCodeNotSent:
+      'The instance could not send the sign-in code. Try again later or ask an administrator.',
+    tooManySignInCodes:
+      'Too many sign-in codes were requested for this account in the last hour. Try again later.',
+    signInCodeResentTooSoon:
+      'A code was sent less than a minute ago. Wait a minute before requesting another.',
+    rateLimitExceeded: 'Too many attempts. Wait a little and try again.',
   },
   status: {
     logicalBackup: {
@@ -235,6 +244,14 @@ export const en = {
       title: 'Members can create workspaces',
       description:
         'When enabled, members (non-admin users) can create new workspaces. If not - only admins can create workspaces.',
+    },
+    twoFactorAuth: {
+      title: 'Require a code at sign-in',
+      description:
+        "When enabled, a password sign-in also has to present a six-digit code sent to the account's email address. Sign-in through Google or GitHub is not covered.",
+      appliesToNextSignIn:
+        'The setting applies to the next sign-in. Sessions that are already open keep working.',
+      mailServerRequired: 'This needs a mail server. <docsLink>Configure SMTP</docsLink> first.',
     },
     saving: 'Saving...',
     saveChanges: 'Save Changes',
@@ -861,6 +878,17 @@ export const en = {
       submit: 'Sign in',
       noAccount: "Don't have an account? <signUpLink>Sign up</signUpLink>",
       forgotPassword: 'Forgot password?',
+    },
+    signInCode: {
+      title: 'Enter the code',
+      description:
+        'We sent a six-digit code to {{email}}. It stops working 10 minutes after it was sent.',
+      code: 'Sign-in code',
+      submit: 'Sign in',
+      resend: 'Send another code',
+      backToSignIn: 'Back to sign in',
+      invalidCode: 'Code must be 6 digits',
+      codeResent: 'A new code is on its way. The previous one no longer works.',
     },
     signUp: {
       title: 'Sign up',

@@ -41,6 +41,7 @@ export const metadata: Metadata = {
 export default function PasswordResetPage() {
   const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
   const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
+  const disableTwoFactorCommand = `docker exec -it databasus ./main --disable-2fa`;
 
   return (
     <>
@@ -170,6 +171,34 @@ export default function PasswordResetPage() {
                 отдельно. Пароли, их хеши и токены не выводятся. На инстансе,
                 где еще никто не завел учетную запись, команда сообщит, что
                 администратора нет.
+              </p>
+              <h2 id="disable-two-factor">
+                Перестать запрашивать код при входе
+              </h2>
+
+              <p>
+                Инстанс может требовать при входе шестизначный код, присланный
+                по почте, в дополнение к паролю. Если почтовый сервер перестал
+                доставлять такие письма, по паролю не войдет никто, и сброс
+                пароля сам по себе не поможет. Выключите второй фактор на
+                сервере, где запущен Databasus:
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{disableTwoFactorCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={disableTwoFactorCommand} />
+                </div>
+              </div>
+
+              <p>
+                Команда сообщает, изменила ли она что-нибудь, спокойно
+                отрабатывает, если второй фактор уже выключен, и записывает
+                изменение в журнал аудита. Следующий вход по паролю пройдет без
+                кода, а когда почта заработает, администратор может снова
+                включить настройку.
               </p>
             </article>
           </div>

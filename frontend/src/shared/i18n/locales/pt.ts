@@ -134,6 +134,15 @@ export const pt: typeof en = {
       'Não foi possível acessar o servidor do Databasus. Verifique sua conexão e tente novamente.',
     requestFailed:
       'O servidor não conseguiu concluir a solicitação (HTTP {{status}}). Tente novamente mais tarde.',
+    signInCodeIncorrect: 'Código incorreto.',
+    pendingSignInNotUsable: 'Este login não pode mais ser concluído. Entre novamente.',
+    signInCodeNotSent:
+      'A instância não conseguiu enviar o código de acesso. Tente mais tarde ou fale com um administrador.',
+    tooManySignInCodes:
+      'Foram solicitados códigos de acesso demais para esta conta na última hora. Tente mais tarde.',
+    signInCodeResentTooSoon:
+      'Um código foi enviado há menos de um minuto. Espere um minuto antes de pedir outro.',
+    rateLimitExceeded: 'Tentativas demais. Espere um pouco e tente novamente.',
   },
   status: {
     logicalBackup: {
@@ -239,6 +248,15 @@ export const pt: typeof en = {
       title: 'Membros podem criar espaços de trabalho',
       description:
         'Quando ativado, os membros (usuários que não são administradores) podem criar novos espaços de trabalho. Quando desativado, só os administradores podem criá-los.',
+    },
+    twoFactorAuth: {
+      title: 'Pedir um código ao entrar',
+      description:
+        'Quando ativado, além da senha é preciso informar um código de seis dígitos enviado para o e-mail da conta. Não vale para o login pelo Google ou pelo GitHub.',
+      appliesToNextSignIn:
+        'A configuração vale a partir do próximo login. As sessões já abertas continuam funcionando.',
+      mailServerRequired:
+        'É preciso ter um servidor de e-mail. <docsLink>Configure o SMTP</docsLink> primeiro.',
     },
     saving: 'Salvando...',
     saveChanges: 'Salvar alterações',
@@ -878,6 +896,17 @@ export const pt: typeof en = {
       submit: 'Entrar',
       noAccount: 'Não tem uma conta? <signUpLink>Crie uma</signUpLink>',
       forgotPassword: 'Esqueceu a senha?',
+    },
+    signInCode: {
+      title: 'Digite o código',
+      description:
+        'Enviamos um código de seis dígitos para {{email}}. Ele para de funcionar 10 minutos depois do envio.',
+      code: 'Código de acesso',
+      submit: 'Entrar',
+      resend: 'Enviar outro código',
+      backToSignIn: 'Voltar para o login',
+      invalidCode: 'O código tem 6 dígitos',
+      codeResent: 'Enviamos um novo código. O anterior não funciona mais.',
     },
     signUp: {
       title: 'Criar conta',

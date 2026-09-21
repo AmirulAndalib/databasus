@@ -41,6 +41,7 @@ export const metadata: Metadata = {
 export default function PasswordResetPage() {
   const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
   const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
+  const disableTwoFactorCommand = `docker exec -it databasus ./main --disable-2fa`;
 
   return (
     <>
@@ -174,6 +175,34 @@ export default function PasswordResetPage() {
                 Nenhuma senha, hash de senha ou token é impresso. Em uma
                 instância onde ninguém criou uma conta ainda, ela informa que a
                 instância não tem administrador.
+              </p>
+              <h2 id="disable-two-factor">
+                Parar de pedir um código no login
+              </h2>
+
+              <p>
+                Uma instância pode exigir, além da senha, um código de seis
+                dígitos enviado por e-mail no login. Se o servidor de e-mail
+                parar de entregar esses códigos, ninguém entra com senha, e
+                redefinir a senha sozinho não resolve. Desligue o segundo fator
+                no servidor onde o Databasus está em execução:
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{disableTwoFactorCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={disableTwoFactorCommand} />
+                </div>
+              </div>
+
+              <p>
+                O comando informa se mudou alguma coisa, termina sem reclamar
+                quando o segundo fator já está desligado e registra a mudança no
+                log de auditoria. O próximo login por senha dispensa o código, e
+                um administrador pode ligar a opção de novo assim que o e-mail
+                voltar a funcionar.
               </p>
             </article>
           </div>

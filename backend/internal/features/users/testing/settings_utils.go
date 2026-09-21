@@ -30,6 +30,14 @@ func DisableMemberWorkspaceCreation(ctx context.Context) {
 	updateUsersSetting(ctx, "is_member_allowed_to_create_workspaces", false)
 }
 
+func EnableTwoFactorAuth(ctx context.Context) {
+	updateUsersSetting(ctx, "is_two_factor_auth_required", true)
+}
+
+func DisableTwoFactorAuth(ctx context.Context) {
+	updateUsersSetting(ctx, "is_two_factor_auth_required", false)
+}
+
 func ResetSettingsToDefaults(ctx context.Context) {
 	repository := &users_repositories.UsersSettingsRepository{}
 	settings, err := repository.GetSettings(ctx)
@@ -40,6 +48,7 @@ func ResetSettingsToDefaults(ctx context.Context) {
 	settings.IsAllowExternalRegistrations = true
 	settings.IsAllowMemberInvitations = true
 	settings.IsMemberAllowedToCreateWorkspaces = true
+	settings.IsTwoFactorAuthRequired = false
 
 	err = repository.UpdateSettings(ctx, settings)
 	if err != nil {
@@ -61,6 +70,8 @@ func updateUsersSetting(ctx context.Context, column string, value bool) {
 		settings.IsAllowExternalRegistrations = value
 	case "is_member_allowed_to_create_workspaces":
 		settings.IsMemberAllowedToCreateWorkspaces = value
+	case "is_two_factor_auth_required":
+		settings.IsTwoFactorAuthRequired = value
 	}
 
 	err = repository.UpdateSettings(ctx, settings)

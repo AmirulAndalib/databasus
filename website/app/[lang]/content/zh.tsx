@@ -178,7 +178,7 @@ export default function Index() {
                 name: "Databasus 如何保证安全性？",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Databasus 从三个层面保障安全：（1）敏感数据加密——所有密码、令牌和凭据均使用 AES-256-GCM 加密，并与数据库分开存储；（2）备份加密——每个备份文件都使用由主密钥、备份 ID 和随机盐派生出的唯一密钥加密，即使有人获得了存储的访问权限，没有你的加密密钥备份也毫无用处；（3）只读数据库访问——Databasus 只需要 SELECT 权限，并会做全面检查确保不存在任何写权限，即使工具本身被攻破也不会破坏数据。在运行时之外，安全性和可靠性也被落实到每一次提交和 PR：CodeQL 静态分析、集成 gitleaks 和 semgrep 的 CodeRabbit、Dependabot CVE 监控、Trivy 镜像与 Dockerfile 扫描，以及 OpenAI 定期进行的 Codex Security 审计。集成测试针对真实的 PostgreSQL、MySQL、MariaDB 和 MongoDB 容器运行，并在每个 PR 上验证完整的备份加恢复流程。GitHub Actions 固定到提交 SHA，工作流遵循最小权限原则。所有操作都在你控制的容器和你拥有的服务器上运行，而且因为它是开源的，你的安全团队可以在部署前审计每一行代码。",
+                  text: "Databasus 从三个层面保障安全：（1）敏感数据加密——所有密码、令牌和凭据均使用 AES-256-GCM 加密，并与数据库分开存储；（2）备份加密——每个备份文件都使用由主密钥、备份 ID 和随机盐派生出的唯一密钥加密，即使有人获得了存储的访问权限，没有你的加密密钥备份也毫无用处；（3）只读数据库访问——Databasus 只需要 SELECT 权限，并会做全面检查确保不存在任何写权限，即使工具本身被攻破也不会破坏数据。登录本身也可以要求第二重验证：启用后，密码正确之后账号邮箱会收到六位验证码，而通过 Google 或 GitHub 登录仍然依赖这些服务商自己的验证。在运行时之外，安全性和可靠性也被落实到每一次提交和 PR：CodeQL 静态分析、集成 gitleaks 和 semgrep 的 CodeRabbit、Dependabot CVE 监控、Trivy 镜像与 Dockerfile 扫描，以及 OpenAI 定期进行的 Codex Security 审计。集成测试针对真实的 PostgreSQL、MySQL、MariaDB 和 MongoDB 容器运行，并在每个 PR 上验证完整的备份加恢复流程。GitHub Actions 固定到提交 SHA，工作流遵循最小权限原则。所有操作都在你控制的容器和你拥有的服务器上运行，而且因为它是开源的，你的安全团队可以在部署前审计每一行代码。",
                 },
               },
               {
@@ -226,7 +226,7 @@ export default function Index() {
                 name: "我忘记了管理员邮箱或密码",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: '实例上创建的第一个账户就是它的管理员。如果你不记得那个地址，可以在运行 Databasus 的服务器上执行 docker exec -it databasus ./main --list-admins：它会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并且不会输出任何密码。要为该账户设置新密码，请执行 docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址 admin。这两条命令都记录在密码页面上。',
+                  text: '实例上创建的第一个账户就是它的管理员。如果你不记得那个地址，可以在运行 Databasus 的服务器上执行 docker exec -it databasus ./main --list-admins：它会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并且不会输出任何密码。要为该账户设置新密码，请执行 docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址 admin。如果实例还要求登录验证码，而邮件服务器已经无法送达，请执行 docker exec -it databasus ./main --disable-2fa，让实例不再要求验证码。这三条命令都记录在密码页面上。',
                 },
               },
             ],
@@ -1275,6 +1275,10 @@ export default function Index() {
                   权限，并会做全面检查确保不存在任何写权限，即使工具本身被攻破也不会破坏数据。
                   <br />
                   <br />
+                  登录本身也可以要求第二重验证：启用后，密码正确之后账号邮箱会收到六位验证码，而通过
+                  Google 或 GitHub 登录仍然依赖这些服务商自己的验证。
+                  <br />
+                  <br />
                   在运行时之外，安全性和可靠性也被落实到每一次提交和 PR：CodeQL
                   静态分析、集成 gitleaks 和 semgrep 的 CodeRabbit、Dependabot
                   CVE 监控、Trivy 镜像与 Dockerfile 扫描，以及 OpenAI 定期进行的
@@ -1586,7 +1590,9 @@ export default function Index() {
                   docker exec -it databasus ./main
                   --new-password=&quot;YourNewSecurePassword123&quot;
                   --email=&quot;owner@example.com&quot;。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址
-                  admin。这两条命令都记录在
+                  admin。如果实例还要求登录验证码，而邮件服务器已经无法送达，请执行
+                  docker exec -it databasus ./main
+                  --disable-2fa，让实例不再要求验证码。这三条命令都记录在
                   <a
                     href="/zh/password"
                     className="text-blue-400 hover:text-blue-600"

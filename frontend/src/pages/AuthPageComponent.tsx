@@ -3,11 +3,12 @@ import { Spin } from 'antd';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { userApi } from '../entity/users';
+import { type PendingSignIn, userApi } from '../entity/users';
 import {
   AuthNavbarComponent,
   RequestResetPasswordComponent,
   ResetPasswordComponent,
+  SignInCodeComponent,
   SignInComponent,
   SignUpComponent,
 } from '../features/users';
@@ -17,12 +18,18 @@ import { translateApiError } from '../shared/i18n';
 export function AuthPageComponent() {
   const { t } = useTranslation();
   const [isAnyUserExist, setIsAnyUserExist] = useState(true);
-  const [authMode, setAuthMode] = useState<'signIn' | 'signUp' | 'requestReset' | 'resetPassword'>(
-    'signUp',
-  );
+  const [authMode, setAuthMode] = useState<
+    'signIn' | 'signUp' | 'requestReset' | 'resetPassword' | 'signInCode'
+  >('signUp');
   const [resetEmail, setResetEmail] = useState('');
+  const [pendingSignIn, setPendingSignIn] = useState<PendingSignIn | undefined>(undefined);
   const [isLoading, setLoading] = useState(true);
   const screenHeight = useScreenHeight();
+
+  const returnToPasswordStep = () => {
+    setPendingSignIn(undefined);
+    setAuthMode('signIn');
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -60,6 +67,17 @@ export function AuthPageComponent() {
                 <SignInComponent
                   onSwitchToSignUp={() => setAuthMode('signUp')}
                   onSwitchToResetPassword={() => setAuthMode('requestReset')}
+                  onCodeRequired={(newPendingSignIn) => {
+                    setPendingSignIn(newPendingSignIn);
+                    setAuthMode('signInCode');
+                  }}
+                />
+              ) : authMode === 'signInCode' && pendingSignIn ? (
+                <SignInCodeComponent
+                  pendingSignIn={pendingSignIn}
+                  onPendingSignInReplaced={setPendingSignIn}
+                  onPendingSignInLost={returnToPasswordStep}
+                  onSwitchToSignIn={returnToPasswordStep}
                 />
               ) : authMode === 'requestReset' ? (
                 <RequestResetPasswordComponent

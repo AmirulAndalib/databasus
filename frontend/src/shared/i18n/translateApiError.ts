@@ -9,6 +9,12 @@ import type { TranslationKey } from './TranslationKey';
 const API_ERROR_CODE_KEYS: Record<string, TranslationKey> = {
   [API_ERROR_CODES.networkUnreachable]: 'errors.networkUnreachable',
   [API_ERROR_CODES.requestFailed]: 'errors.requestFailed',
+  rate_limit_exceeded: 'errors.rateLimitExceeded',
+  sign_in_code_incorrect: 'errors.signInCodeIncorrect',
+  pending_sign_in_not_usable: 'errors.pendingSignInNotUsable',
+  sign_in_code_not_sent: 'errors.signInCodeNotSent',
+  too_many_sign_in_codes: 'errors.tooManySignInCodes',
+  sign_in_code_resent_too_soon: 'errors.signInCodeResentTooSoon',
 };
 
 // The one way an error reaches the screen. The message of anything that is not an ApiError comes

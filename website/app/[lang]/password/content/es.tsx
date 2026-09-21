@@ -41,6 +41,7 @@ export const metadata: Metadata = {
 export default function PasswordResetPage() {
   const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
   const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
+  const disableTwoFactorCommand = `docker exec -it databasus ./main --disable-2fa`;
 
   return (
     <>
@@ -175,6 +176,34 @@ export default function PasswordResetPage() {
                 administrador. No imprime ninguna contraseña, ni su hash, ni
                 ningún token. En una instancia donde todavía nadie ha creado una
                 cuenta, informa de que la instancia no tiene administrador.
+              </p>
+              <h2 id="disable-two-factor">
+                Dejar de pedir un código al iniciar sesión
+              </h2>
+
+              <p>
+                Una instancia puede exigir, además de la contraseña, un código
+                de seis dígitos enviado por correo al iniciar sesión. Si el
+                servidor de correo deja de entregar esos códigos, nadie entra
+                con contraseña, y restablecerla no basta. Desactive el segundo
+                factor en el servidor donde se ejecuta Databasus:
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{disableTwoFactorCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={disableTwoFactorCommand} />
+                </div>
+              </div>
+
+              <p>
+                El comando informa de si ha cambiado algo, termina sin quejarse
+                cuando el segundo factor ya está desactivado y registra el
+                cambio en el historial de auditoría. El siguiente inicio de
+                sesión con contraseña ya no pide código, y un administrador
+                puede volver a activar el ajuste cuando el correo funcione.
               </p>
             </article>
           </div>

@@ -22,6 +22,11 @@ export const WEBSITE_PAGES = {
     anchor: 'global-settings',
     isTranslated: true,
   },
+  advancedConfigEmailSmtp: {
+    path: 'advanced-config',
+    anchor: 'email-smtp',
+    isTranslated: true,
+  },
   restoreVerification: { path: 'restore-verification', isTranslated: true },
   faqLocalhost: { path: 'faq/localhost', isTranslated: true },
   faqSupabase: { path: 'faq/supabase', isTranslated: true },

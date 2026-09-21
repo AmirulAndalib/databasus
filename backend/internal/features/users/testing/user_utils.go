@@ -29,6 +29,46 @@ func CreateTestUser(ctx context.Context, role users_enums.UserRole) *users_dto.S
 	return response
 }
 
+// An address the profile form would refuse is only reachable this way: the API
+// binds the address of every account it creates.
+func CreateTestUserWithEmail(
+	ctx context.Context,
+	role users_enums.UserRole,
+	email string,
+) *users_dto.SignInResponseDTO {
+	user := insertTestUser(role, false)
+
+	if err := storage.GetDb().WithContext(ctx).Model(&users_models.User{}).
+		Where("id = ?", user.ID).
+		Update("email", email).Error; err != nil {
+		panic(fmt.Errorf("failed to set the address of a test user: %w", err))
+	}
+
+	response, err := users_services.GetUserService().GenerateAccessToken(ctx, user)
+	if err != nil {
+		panic(err)
+	}
+
+	response.Email = email
+
+	return response
+}
+
+func DeactivateTestUser(ctx context.Context, userID uuid.UUID) {
+	userRepository := &users_repositories.UserRepository{}
+	if err := userRepository.UpdateUserStatus(userID, users_enums.UserStatusInactive); err != nil {
+		panic(fmt.Errorf("failed to deactivate a test user: %w", err))
+	}
+}
+
+func DeleteTestUser(ctx context.Context, userID uuid.UUID) {
+	if err := storage.GetDb().WithContext(ctx).
+		Where("id = ?", userID).
+		Delete(&users_models.User{}).Error; err != nil {
+		panic(fmt.Errorf("failed to delete a test user: %w", err))
+	}
+}
+
 // The token is minted from the account RecreateInitialAdmin just created rather
 // than read back by address, which would hand a nil user to GenerateAccessToken
 // once that address changes.

@@ -94,6 +94,7 @@ Databasus effectue une vraie restauration pour confirmer que les sauvegardes son
 - **Stockage zero-trust** : les sauvegardes sont chiffrées et restent inutilisables pour un attaquant, vous pouvez donc les déposer sans risque sur un stockage partagé comme S3, Azure Blob Storage, etc.
 - **Chiffrement des secrets** : toute donnée sensible est chiffrée et n'est jamais exposée, pas même dans les logs ou les messages d'erreur
 - **Utilisateur en lecture seule** : par défaut, Databasus sauvegarde via un utilisateur en lecture seule et ne conserve rien qui permette de modifier vos données
+- **Authentification à deux facteurs** : la connexion par mot de passe peut exiger un code à six chiffres envoyé à l'adresse du compte. Se connecter par Google ou GitHub continue de s'appuyer sur les vérifications de ces fournisseurs
 
 ### 👥 **Adapté aux équipes** <a href="https://databasus.com/fr/access-management/">(docs)</a>
 
@@ -275,6 +276,14 @@ docker exec -it databasus ./main --list-admins
 ```
 
 La sortie nomme chaque compte administrateur avec son adresse e-mail, son nom affiché, sa date de création et son état d'activité, et marque celui que l'instance reconnaît comme son administrateur. Aucun mot de passe ni empreinte de mot de passe n'est affiché.
+
+Si l'authentification à deux facteurs est activée et que le serveur de messagerie cesse de délivrer les codes, plus personne n'entre avec un mot de passe. Désactivez le second facteur depuis le serveur :
+
+```bash
+docker exec -it databasus ./main --disable-2fa
+```
+
+La commande indique ce qu'elle a changé, se termine sans se plaindre quand le réglage est déjà désactivé, et inscrit le changement au journal d'audit.
 
 ### 💾 Sauvegarder Databasus lui-même
 

@@ -128,6 +128,12 @@ export const zh: typeof en = {
     unknown: '出了点问题，请重试。',
     networkUnreachable: '无法连接 Databasus 服务器。请检查网络连接后重试。',
     requestFailed: '服务器未能完成请求（HTTP {{status}}）。请稍后重试。',
+    signInCodeIncorrect: '验证码不正确。',
+    pendingSignInNotUsable: '这次登录无法继续，请重新登录。',
+    signInCodeNotSent: '实例无法发送登录验证码，请稍后重试或联系管理员。',
+    tooManySignInCodes: '该账户在过去一小时内请求的登录验证码过多，请稍后重试。',
+    signInCodeResentTooSoon: '验证码发送不到一分钟，请稍等一分钟后再请求新的验证码。',
+    rateLimitExceeded: '尝试次数过多，请稍后重试。',
   },
   status: {
     logicalBackup: {
@@ -231,6 +237,13 @@ export const zh: typeof en = {
       title: '允许成员创建工作区',
       description:
         '开启后，成员（非管理员用户）可以创建新的工作区。关闭后，只有管理员能创建工作区。',
+    },
+    twoFactorAuth: {
+      title: '登录时要求验证码',
+      description:
+        '启用后，输入密码之后还需要填写发送到账号邮箱的六位验证码。通过 Google 或 GitHub 登录不受此设置影响。',
+      appliesToNextSignIn: '该设置从下次登录开始生效，已经打开的会话不受影响。',
+      mailServerRequired: '这需要邮件服务器，请先<docsLink>配置 SMTP</docsLink>。',
     },
     saving: '正在保存…',
     saveChanges: '保存更改',
@@ -829,6 +842,16 @@ export const zh: typeof en = {
       submit: '登录',
       noAccount: '还没有账号？<signUpLink>注册</signUpLink>',
       forgotPassword: '忘记密码？',
+    },
+    signInCode: {
+      title: '输入验证码',
+      description: '我们已将六位验证码发送到 {{email}}，它在发送 10 分钟后失效。',
+      code: '登录验证码',
+      submit: '登录',
+      resend: '重新发送验证码',
+      backToSignIn: '返回登录',
+      invalidCode: '验证码为 6 位数字',
+      codeResent: '新的验证码已发送，之前的验证码已失效。',
     },
     signUp: {
       title: '注册',

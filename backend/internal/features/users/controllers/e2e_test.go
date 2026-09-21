@@ -1,6 +1,7 @@
 package users_controllers
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"databasus-backend/internal/features/email"
 	users_dto "databasus-backend/internal/features/users/dto"
 	users_enums "databasus-backend/internal/features/users/enums"
 	users_middleware "databasus-backend/internal/features/users/middleware"
@@ -201,6 +203,29 @@ func createSettingsTestRouter() *gin.Engine {
 	users_services.GetManagementService().SetAuditLogWriter(auditLogRecorder)
 
 	return router
+}
+
+// A settings test that reads the mail-server answer has to own the sender the
+// answer comes from, because the wired one reports whatever the environment
+// running the suite happens to configure.
+func createSettingsTestRouterWithMailSender(
+	t *testing.T,
+	isMailServerMissing bool,
+) (*gin.Engine, *users_testing.MockEmailSender) {
+	router := createSettingsTestRouter()
+
+	mockEmailSender := users_testing.NewMockEmailSender()
+	mockEmailSender.IsMailServerMissing = isMailServerMissing
+	users_services.GetSettingsService().SetEmailSender(mockEmailSender)
+
+	// The services are process-global, so a mock left installed would decide
+	// what every later test in the package believes about the mail server.
+	t.Cleanup(func() {
+		users_services.GetSettingsService().SetEmailSender(email.GetEmailSMTPSender())
+		users_testing.ResetSettingsToDefaults(context.Background())
+	})
+
+	return router, mockEmailSender
 }
 
 func createManagementTestRouter() *gin.Engine {

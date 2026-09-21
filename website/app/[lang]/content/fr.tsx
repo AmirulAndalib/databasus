@@ -178,7 +178,7 @@ export default function Index() {
                 name: "Comment Databasus assure-t-il la sécurité ?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Databasus applique la sécurité à trois niveaux : (1) Chiffrement des données sensibles — tous les mots de passe, jetons et identifiants sont chiffrés avec AES-256-GCM et stockés séparément de la base de données ; (2) Chiffrement des sauvegardes — chaque fichier de sauvegarde est chiffré avec une clé unique dérivée d'une clé maître, de l'ID de la sauvegarde et d'un sel aléatoire, ce qui rend les sauvegardes inutilisables sans votre clé de chiffrement même si quelqu'un accède au stockage ; (3) Accès en lecture seule à la base — Databasus ne requiert que des permissions SELECT et effectue des vérifications complètes pour s'assurer qu'aucun privilège d'écriture n'existe, ce qui empêche toute corruption de données même si l'outil est compromis. Au-delà de l'exécution, la sécurité et la fiabilité sont intégrées à chaque commit et PR : analyse statique CodeQL, CodeRabbit avec gitleaks et semgrep, surveillance des CVE par Dependabot, scans Trivy des images et Dockerfiles, et audits périodiques Codex Security d'OpenAI. Les tests d'intégration s'exécutent contre de vrais conteneurs PostgreSQL, MySQL, MariaDB et MongoDB et vérifient des cycles complets sauvegarde puis restauration à chaque PR. Les GitHub Actions sont épinglées sur des SHA de commit et les workflows suivent le principe du moindre privilège. Toutes les opérations tournent dans des conteneurs que vous contrôlez sur des serveurs qui vous appartiennent, et comme le projet est open source, votre équipe de sécurité peut auditer chaque ligne de code avant le déploiement.",
+                  text: "Databasus applique la sécurité à trois niveaux : (1) Chiffrement des données sensibles — tous les mots de passe, jetons et identifiants sont chiffrés avec AES-256-GCM et stockés séparément de la base de données ; (2) Chiffrement des sauvegardes — chaque fichier de sauvegarde est chiffré avec une clé unique dérivée d'une clé maître, de l'ID de la sauvegarde et d'un sel aléatoire, ce qui rend les sauvegardes inutilisables sans votre clé de chiffrement même si quelqu'un accède au stockage ; (3) Accès en lecture seule à la base — Databasus ne requiert que des permissions SELECT et effectue des vérifications complètes pour s'assurer qu'aucun privilège d'écriture n'existe, ce qui empêche toute corruption de données même si l'outil est compromis. La connexion elle-même peut exiger un second facteur : une fois activé, un mot de passe correct est suivi d'un code à six chiffres envoyé à l'adresse du compte, tandis que la connexion par Google ou GitHub continue de s'appuyer sur les vérifications de ces fournisseurs. Au-delà de l'exécution, la sécurité et la fiabilité sont intégrées à chaque commit et PR : analyse statique CodeQL, CodeRabbit avec gitleaks et semgrep, surveillance des CVE par Dependabot, scans Trivy des images et Dockerfiles, et audits périodiques Codex Security d'OpenAI. Les tests d'intégration s'exécutent contre de vrais conteneurs PostgreSQL, MySQL, MariaDB et MongoDB et vérifient des cycles complets sauvegarde puis restauration à chaque PR. Les GitHub Actions sont épinglées sur des SHA de commit et les workflows suivent le principe du moindre privilège. Toutes les opérations tournent dans des conteneurs que vous contrôlez sur des serveurs qui vous appartiennent, et comme le projet est open source, votre équipe de sécurité peut auditer chaque ligne de code avant le déploiement.",
                 },
               },
               {
@@ -226,7 +226,7 @@ export default function Index() {
                 name: "J'ai oublié l'e-mail ou le mot de passe de l'administrateur",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Le premier compte créé sur l'instance est celui qui l'administre. Si vous ne savez plus quelle est cette adresse, exécutez docker exec -it databasus ./main --list-admins sur le serveur où Databasus tourne : la commande nomme chaque compte administrateur avec son adresse e-mail, son nom affiché, sa date de création et son état d'activité, et n'affiche aucun mot de passe. Pour définir un nouveau mot de passe pour ce compte, exécutez docker exec -it databasus ./main --new-password=\"YourNewSecurePassword123\" --email=\"owner@example.com\". Une instance créée avant que le premier compte ne l'administre porte encore l'adresse provisoire admin tant que son propriétaire ne l'a pas remplacée. Les deux commandes sont documentées sur la page mot de passe.",
+                  text: "Le premier compte créé sur l'instance est celui qui l'administre. Si vous ne savez plus quelle est cette adresse, exécutez docker exec -it databasus ./main --list-admins sur le serveur où Databasus tourne : la commande nomme chaque compte administrateur avec son adresse e-mail, son nom affiché, sa date de création et son état d'activité, et n'affiche aucun mot de passe. Pour définir un nouveau mot de passe pour ce compte, exécutez docker exec -it databasus ./main --new-password=\"YourNewSecurePassword123\" --email=\"owner@example.com\". Une instance créée avant que le premier compte ne l'administre porte encore l'adresse provisoire admin tant que son propriétaire ne l'a pas remplacée. Si l'instance exige en plus un code à la connexion et que le serveur de messagerie ne le délivre plus, exécutez docker exec -it databasus ./main --disable-2fa pour qu'elle cesse de le demander. Les trois commandes sont documentées sur la page mot de passe.",
                 },
               },
             ],
@@ -1344,6 +1344,13 @@ export default function Index() {
                   si l&apos;outil est compromis.
                   <br />
                   <br />
+                  La connexion elle-même peut exiger un second facteur : une
+                  fois activé, un mot de passe correct est suivi d&apos;un code
+                  à six chiffres envoyé à l&apos;adresse du compte, tandis que
+                  la connexion par Google ou GitHub continue de s&apos;appuyer
+                  sur les vérifications de ces fournisseurs.
+                  <br />
+                  <br />
                   Au-delà de l&apos;exécution, la sécurité et la fiabilité sont
                   intégrées à chaque commit et PR : analyse statique CodeQL,
                   CodeRabbit avec gitleaks et semgrep, surveillance des CVE par
@@ -1728,8 +1735,11 @@ export default function Index() {
                   --email=&quot;owner@example.com&quot;. Une instance créée
                   avant que le premier compte ne l&apos;administre porte encore
                   l&apos;adresse provisoire admin tant que son propriétaire ne
-                  l&apos;a pas remplacée. Les deux commandes sont documentées
-                  sur la
+                  l&apos;a pas remplacée. Si l&apos;instance exige en plus un
+                  code à la connexion et que le serveur de messagerie ne le
+                  délivre plus, exécutez docker exec -it databasus ./main
+                  --disable-2fa pour qu&apos;elle cesse de le demander. Les
+                  trois commandes sont documentées sur la
                   <a
                     href="/fr/password"
                     className="text-blue-400 hover:text-blue-600"

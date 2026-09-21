@@ -4,6 +4,7 @@ var (
 	userRepository          = &UserRepository{}
 	usersSettingsRepository = &UsersSettingsRepository{}
 	passwordResetRepository = &PasswordResetRepository{}
+	twoFactorRepository     = &TwoFactorRepository{}
 )
 
 func GetUserRepository() *UserRepository {
@@ -16,4 +17,8 @@ func GetUsersSettingsRepository() *UsersSettingsRepository {
 
 func GetPasswordResetRepository() *PasswordResetRepository {
 	return passwordResetRepository
+}
+
+func GetTwoFactorRepository() *TwoFactorRepository {
+	return twoFactorRepository
 }

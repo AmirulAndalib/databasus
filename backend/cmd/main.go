@@ -110,6 +110,8 @@ func main() {
 
 	resetPasswordIfRequested(ctx, log, commandLineOptions)
 
+	disableTwoFactorAuthIfRequested(ctx, log, commandLineOptions)
+
 	go generateSwaggerDocs(log)
 
 	gin.SetMode(gin.ReleaseMode)
@@ -142,10 +144,11 @@ func main() {
 }
 
 type commandLineOptions struct {
-	shouldTestStorage  bool
-	shouldListAdmins   bool
-	newPassword        string
-	passwordResetEmail string
+	shouldTestStorage      bool
+	shouldListAdmins       bool
+	shouldDisableTwoFactor bool
+	newPassword            string
+	passwordResetEmail     string
 }
 
 func parseCommandLineOptions() commandLineOptions {
@@ -155,15 +158,23 @@ func parseCommandLineOptions() commandLineOptions {
 		"Save and delete a local storage probe",
 	)
 	shouldListAdmins := flag.Bool("list-admins", false, "Print every administrator account of this instance")
+	// The name carries a digit, unlike every other flag here, because it is the
+	// term an owner locked out by a dead mail server searches for.
+	shouldDisableTwoFactor := flag.Bool(
+		"disable-2fa",
+		false,
+		"Stop requiring an emailed code at sign-in",
+	)
 	newPassword := flag.String("new-password", "", "Set a new password for the user")
 	passwordResetEmail := flag.String("email", "", "Email of the user to reset password")
 	flag.Parse()
 
 	return commandLineOptions{
-		shouldTestStorage:  *shouldTestStorage,
-		shouldListAdmins:   *shouldListAdmins,
-		newPassword:        *newPassword,
-		passwordResetEmail: *passwordResetEmail,
+		shouldTestStorage:      *shouldTestStorage,
+		shouldListAdmins:       *shouldListAdmins,
+		shouldDisableTwoFactor: *shouldDisableTwoFactor,
+		newPassword:            *newPassword,
+		passwordResetEmail:     *passwordResetEmail,
 	}
 }
 
@@ -188,6 +199,32 @@ func listAdminsIfRequested(
 	// Printed rather than logged: the owner runs this to read the addresses, and
 	// the logger masks them as the PII they otherwise are.
 	fmt.Println(listing)
+
+	logger.ExitAfterFlush(0)
+}
+
+func disableTwoFactorAuthIfRequested(
+	ctx context.Context,
+	log *slog.Logger,
+	commandLineOptions commandLineOptions,
+) {
+	if !commandLineOptions.shouldDisableTwoFactor {
+		return
+	}
+
+	audit_logs.SetupDependencies()
+
+	isChanged, err := users_services.GetSettingsService().DisableTwoFactorAuth(ctx)
+	if err != nil {
+		log.ErrorContext(ctx, "failed to switch the second factor off", "error", err)
+		logger.ExitAfterFlush(1)
+	}
+
+	if isChanged {
+		fmt.Println("Two-factor authentication is now off. The next password sign-in needs no code.")
+	} else {
+		fmt.Println("Two-factor authentication was already off. Nothing changed.")
+	}
 
 	logger.ExitAfterFlush(0)
 }
@@ -406,6 +443,10 @@ func runBackgroundTasks(log *slog.Logger) {
 
 	go runWithPanicLogging(log, "storage file deletion background service", func() {
 		storages.GetStorageFileDeletionWorker().Run(ctx)
+	})
+
+	go runWithPanicLogging(log, "sign-in code cleanup background service", func() {
+		users_services.GetSignInCodeBackgroundService().Run(ctx)
 	})
 
 	go runWithPanicLogging(log, "telemetry background service", func() {

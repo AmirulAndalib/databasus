@@ -27,6 +27,42 @@ type SignInResponseDTO struct {
 	Token  string    `json:"token"`
 }
 
+// SignInOutcomeResponseDTO exists for the published API description, which
+// cannot express two alternative bodies for one status. The token fields arrive
+// when the instance asks for one factor, and pendingSignInId arrives when it
+// asks for an emailed code. Nothing serializes this type.
+type SignInOutcomeResponseDTO struct {
+	UserID          uuid.UUID `json:"userId"`
+	Email           string    `json:"email"`
+	Token           string    `json:"token,omitzero"`
+	PendingSignInID uuid.UUID `json:"pendingSignInId,omitzero"`
+}
+
+// A sign-in answers with one of these shapes, never both: a token when the
+// instance asks for one factor, and a pending sign-in when it asks for two.
+type SignInOutcome struct {
+	CompletedSignIn *SignInResponseDTO
+	PendingSignIn   *PendingSignInResponseDTO
+}
+
+// The address is carried back so the code screen can say where the message went,
+// and the identifier is the only way to name the pending sign-in afterwards.
+type PendingSignInResponseDTO struct {
+	PendingSignInID uuid.UUID `json:"pendingSignInId"`
+	Email           string    `json:"email"`
+}
+
+type VerifySignInCodeRequestDTO struct {
+	PendingSignInID          uuid.UUID `json:"pendingSignInId"          binding:"required"`
+	Code                     string    `json:"code"                     binding:"required"`
+	CloudflareTurnstileToken *string   `json:"cloudflareTurnstileToken"`
+}
+
+type ResendSignInCodeRequestDTO struct {
+	PendingSignInID          uuid.UUID `json:"pendingSignInId"          binding:"required"`
+	CloudflareTurnstileToken *string   `json:"cloudflareTurnstileToken"`
+}
+
 // The wire name is isExist rather than hasAnyUser because the client already
 // reads that key (frontend/src/entity/users/api/userApi.ts).
 type HasAnyUserResponseDTO struct {
@@ -102,4 +138,22 @@ type ResetPasswordRequestDTO struct {
 	Email       string `json:"email"       binding:"required,email"`
 	Code        string `json:"code"        binding:"required"`
 	NewPassword string `json:"newPassword" binding:"required,min=8"`
+}
+
+// The mail-server answer is the instance's own, not the build-time flag the
+// interface used to predict it from, and it is derived rather than stored, so
+// the update request cannot carry it back.
+type SettingsResponseDTO struct {
+	IsAllowExternalRegistrations      bool `json:"isAllowExternalRegistrations"`
+	IsAllowMemberInvitations          bool `json:"isAllowMemberInvitations"`
+	IsMemberAllowedToCreateWorkspaces bool `json:"isMemberAllowedToCreateWorkspaces"`
+	IsTwoFactorAuthRequired           bool `json:"isTwoFactorAuthRequired"`
+	IsEmailConfigured                 bool `json:"isEmailConfigured"`
+}
+
+type UpdateSettingsRequestDTO struct {
+	IsAllowExternalRegistrations      bool `json:"isAllowExternalRegistrations"`
+	IsAllowMemberInvitations          bool `json:"isAllowMemberInvitations"`
+	IsMemberAllowedToCreateWorkspaces bool `json:"isMemberAllowedToCreateWorkspaces"`
+	IsTwoFactorAuthRequired           bool `json:"isTwoFactorAuthRequired"`
 }

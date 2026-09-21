@@ -40,6 +40,7 @@ export const metadata: Metadata = {
 export default function PasswordResetPage() {
   const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
   const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
+  const disableTwoFactorCommand = `docker exec -it databasus ./main --disable-2fa`;
 
   return (
     <>
@@ -171,6 +172,32 @@ export default function PasswordResetPage() {
                 no password, no password hash and no token. On an instance where
                 nobody has created an account yet, it reports that the instance
                 has no administrator.
+              </p>
+              <h2 id="disable-two-factor">Stop requiring a sign-in code</h2>
+
+              <p>
+                An instance can require a six-digit code emailed at sign-in on
+                top of the password. If the mail server stops delivering those
+                codes, nobody gets in with a password, and a password reset
+                alone does not help. Switch the second factor off on the server
+                where Databasus is running:
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{disableTwoFactorCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={disableTwoFactorCommand} />
+                </div>
+              </div>
+
+              <p>
+                The command reports whether it changed anything, succeeds
+                without complaint when the second factor is already off, and
+                records the change in the audit log. The next password sign-in
+                then needs no code, and an administrator can turn the setting
+                back on once mail works again.
               </p>
             </article>
           </div>

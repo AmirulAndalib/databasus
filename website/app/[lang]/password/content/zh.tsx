@@ -41,6 +41,7 @@ export const metadata: Metadata = {
 export default function PasswordResetPage() {
   const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
   const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
+  const disableTwoFactorCommand = `docker exec -it databasus ./main --disable-2fa`;
 
   return (
     <>
@@ -160,6 +161,25 @@ export default function PasswordResetPage() {
 
               <p>
                 输出会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并标记实例所认可的管理员。不会输出任何密码、密码哈希或令牌。如果实例上还没有人创建账户，命令会提示该实例没有管理员。
+              </p>
+              <h2 id="disable-two-factor">不再要求登录验证码</h2>
+
+              <p>
+                实例可以在密码之外，要求输入通过邮件发送的六位登录验证码。如果邮件服务器不再送达这些验证码，谁都无法用密码登录，单靠重置密码也不管用。请在运行
+                Databasus 的服务器上关掉第二重验证：
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{disableTwoFactorCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={disableTwoFactorCommand} />
+                </div>
+              </div>
+
+              <p>
+                命令会说明它是否改动了设置，第二重验证本来就关着时也会正常结束，并把这次改动写入审计日志。之后的密码登录不再需要验证码；等邮件恢复正常，管理员可以重新打开该设置。
               </p>
             </article>
           </div>

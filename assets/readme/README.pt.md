@@ -94,6 +94,7 @@ O Databasus faz uma restauração de verdade para confirmar que os backups serve
 - **Armazenamento zero-trust**: os backups são criptografados e continuam inúteis para um atacante, então você pode guardá-los com segurança em armazenamentos compartilhados como S3, Azure Blob Storage, etc.
 - **Criptografia de segredos**: qualquer dado sensível é criptografado e nunca fica exposto, nem em logs nem em mensagens de erro
 - **Usuário somente leitura**: por padrão, o Databasus usa um usuário somente leitura para os backups e nunca guarda nada capaz de alterar os seus dados
+- **Autenticação de dois fatores**: o login por senha pode exigir um código de seis dígitos enviado ao e-mail da conta. Entrar pelo Google ou pelo GitHub continua contando com as verificações desses provedores
 
 ### 👥 **Adequado para equipes** <a href="https://databasus.com/pt/access-management/">(docs)</a>
 
@@ -275,6 +276,14 @@ docker exec -it databasus ./main --list-admins
 ```
 
 A saída nomeia cada conta de administrador com seu e-mail, nome de exibição, data de criação e estado de atividade, e marca aquela que a instância reconhece como seu administrador. Nenhuma senha ou hash de senha é impresso.
+
+Se a autenticação de dois fatores estiver ligada e o servidor de e-mail parar de entregar os códigos, ninguém consegue entrar com senha. Desligue o segundo fator direto no servidor:
+
+```bash
+docker exec -it databasus ./main --disable-2fa
+```
+
+O comando informa o que mudou, termina sem reclamar quando a opção já está desligada e registra a mudança no log de auditoria.
 
 ### 💾 Fazer backup do próprio Databasus
 

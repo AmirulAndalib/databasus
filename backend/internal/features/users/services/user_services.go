@@ -2,7 +2,6 @@ package users_services
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,6 +27,7 @@ import (
 	users_interfaces "databasus-backend/internal/features/users/interfaces"
 	users_models "databasus-backend/internal/features/users/models"
 	users_repositories "databasus-backend/internal/features/users/repositories"
+	"databasus-backend/internal/util/ratelimiter"
 )
 
 // bootstrapAdminIndexName is the partial unique index that admits a single
@@ -42,6 +42,8 @@ type UserService struct {
 	auditLogWriter          users_interfaces.AuditLogWriter
 	emailSender             users_interfaces.EmailSender
 	passwordResetRepository *users_repositories.PasswordResetRepository
+	twoFactorRepository     *users_repositories.TwoFactorRepository
+	rateLimiter             ratelimiter.Counter
 	logger                  *slog.Logger
 }
 
@@ -136,7 +138,7 @@ func isBootstrapAdminTaken(err error) bool {
 func (s *UserService) SignIn(
 	ctx context.Context,
 	request *users_dto.SignInRequestDTO,
-) (*users_dto.SignInResponseDTO, error) {
+) (*users_dto.SignInOutcome, error) {
 	// Failed sign-ins are the only signal that someone is guessing credentials, so every branch that
 	// refuses one is logged. The handler's addresses are masked centrally by the log handler.
 	user, err := s.userRepository.GetUserByEmail(ctx, request.Email)
@@ -181,20 +183,26 @@ func (s *UserService) SignIn(
 		return nil, errors.New("password is incorrect")
 	}
 
-	s.logger.InfoContext(ctx, "user signed in", "user_id", user.ID)
+	settings, err := s.settingsService.GetSettings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings: %w", err)
+	}
 
-	response, err := s.GenerateAccessToken(ctx, user)
+	if settings.IsTwoFactorAuthRequired {
+		pendingSignIn, err := s.StartTwoFactorSignIn(ctx, user)
+		if err != nil {
+			return nil, err
+		}
+
+		return &users_dto.SignInOutcome{PendingSignIn: pendingSignIn}, nil
+	}
+
+	response, err := s.completeSignIn(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
-		Message:     fmt.Sprintf("User signed in with email: %s", user.Email),
-		UserID:      &user.ID,
-		WorkspaceID: nil,
-	})
-
-	return response, nil
+	return &users_dto.SignInOutcome{CompletedSignIn: response}, nil
 }
 
 func (s *UserService) GetUserFromToken(ctx context.Context, token string) (*users_models.User, error) {
@@ -521,26 +529,11 @@ func (s *UserService) SendResetPasswordCode(ctx context.Context, email string) e
 		return errors.New("too many password reset attempts, please try again later")
 	}
 
-	// Generate 6-digit random code using crypto/rand for better randomness
-	codeNum := make([]byte, 4)
-	_, err = io.ReadFull(rand.Reader, codeNum)
+	code, err := generateSixDigitCode()
 	if err != nil {
-		return fmt.Errorf("failed to generate random code: %w", err)
+		return err
 	}
 
-	// Convert bytes to uint32 and modulo to get 6 digits
-	randomInt := uint32(
-		codeNum[0],
-	)<<24 | uint32(
-		codeNum[1],
-	)<<16 | uint32(
-		codeNum[2],
-	)<<8 | uint32(
-		codeNum[3],
-	)
-	code := fmt.Sprintf("%06d", randomInt%1000000)
-
-	// Hash the code
 	hashedCode, err := bcrypt.GenerateFromPassword([]byte(code), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash code: %w", err)
@@ -649,6 +642,28 @@ func (s *UserService) ResetPassword(ctx context.Context, email, code, newPasswor
 	})
 
 	return nil
+}
+
+// The audit trail records a sign-in where access is actually granted, which is
+// the password step with one factor and the code step with two.
+func (s *UserService) completeSignIn(
+	ctx context.Context,
+	user *users_models.User,
+) (*users_dto.SignInResponseDTO, error) {
+	s.logger.InfoContext(ctx, "user signed in", "user_id", user.ID)
+
+	response, err := s.GenerateAccessToken(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
+		Message:     fmt.Sprintf("User signed in with email: %s", user.Email),
+		UserID:      &user.ID,
+		WorkspaceID: nil,
+	})
+
+	return response, nil
 }
 
 // Every audit entry this service writes goes through here, because the console
