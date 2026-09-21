@@ -113,7 +113,7 @@ Databasus performs a real restore to confirm backups are usable, not just intact
 ### 💾 **Supported databases**
 
 - **PostgreSQL**: 14, 15, 16, 17 and 18 (physical and logical)
-- **MySQL**: 5.7 (x86-64 only), 8.0, 8.4, 9 and 26 (logical only)
+- **MySQL**: 5.7, 8.0, 8.4, 9 and 26 (logical only)
 - **MariaDB**: 5.5, 10, 11, 12 and 13 (logical only)
 - **MongoDB**: 4.2+, 5, 6, 7 and 8 (logical only)
 
@@ -267,7 +267,7 @@ If you need to reset the password, you can use the built-in password reset comma
 docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Replace `owner@example.com` with the actual email address of the account whose password you want to reset. An instance created before the first account administered it still carries the placeholder address `admin` until its owner replaces it, so pass `--email="admin"` there.
+Replace `owner@example.com` with the actual email address of the account whose password you want to reset.
 
 If you do not remember which address administers the instance, list the administrator accounts:
 
@@ -276,14 +276,6 @@ docker exec -it databasus ./main --list-admins
 ```
 
 The output names every administrator account with its email address, display name, creation date and active state, and marks the one the instance recognizes as its administrator. It prints no password material.
-
-If two-factor authentication is on and the mail server stops delivering the codes, nobody can sign in with a password. Switch the second factor off from the host:
-
-```bash
-docker exec -it databasus ./main --disable-2fa
-```
-
-The command reports what it changed, succeeds without complaint when the setting is already off, and records the change in the audit log.
 
 ### 💾 Backuping Databasus itself
 

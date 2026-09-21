@@ -113,7 +113,7 @@ O Databasus faz uma restauração de verdade para confirmar que os backups serve
 ### 💾 **Bases de dados suportadas**
 
 - **PostgreSQL**: 14, 15, 16, 17 e 18 (físico e lógico)
-- **MySQL**: 5.7 (apenas x86-64), 8.0, 8.4, 9 e 26 (apenas lógico)
+- **MySQL**: 5.7, 8.0, 8.4, 9 e 26 (apenas lógico)
 - **MariaDB**: 5.5, 10, 11, 12 e 13 (apenas lógico)
 - **MongoDB**: 4.2+, 5, 6, 7 e 8 (apenas lógico)
 
@@ -267,7 +267,7 @@ Se precisar redefinir a senha, use o comando de redefinição já incluído:
 docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Troque `owner@example.com` pelo e-mail da conta cuja senha você quer redefinir. Uma instância criada antes de a primeira conta administrá-la ainda carrega o endereço provisório `admin` até que seu dono o substitua, então informe `--email="admin"` nesse caso.
+Troque `owner@example.com` pelo e-mail da conta cuja senha você quer redefinir.
 
 Se você não lembra qual endereço administra a instância, liste as contas de administrador:
 
@@ -276,14 +276,6 @@ docker exec -it databasus ./main --list-admins
 ```
 
 A saída nomeia cada conta de administrador com seu e-mail, nome de exibição, data de criação e estado de atividade, e marca aquela que a instância reconhece como seu administrador. Nenhuma senha ou hash de senha é impresso.
-
-Se a autenticação de dois fatores estiver ligada e o servidor de e-mail parar de entregar os códigos, ninguém consegue entrar com senha. Desligue o segundo fator direto no servidor:
-
-```bash
-docker exec -it databasus ./main --disable-2fa
-```
-
-O comando informa o que mudou, termina sem reclamar quando a opção já está desligada e registra a mudança no log de auditoria.
 
 ### 💾 Fazer backup do próprio Databasus
 

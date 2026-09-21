@@ -113,7 +113,7 @@ Databasus effectue une vraie restauration pour confirmer que les sauvegardes son
 ### 💾 **Bases de données prises en charge**
 
 - **PostgreSQL** : 14, 15, 16, 17 et 18 (physique et logique)
-- **MySQL** : 5.7 (x86-64 uniquement), 8.0, 8.4, 9 et 26 (logique uniquement)
+- **MySQL** : 5.7, 8.0, 8.4, 9 et 26 (logique uniquement)
 - **MariaDB** : 5.5, 10, 11, 12 et 13 (logique uniquement)
 - **MongoDB** : 4.2+, 5, 6, 7 et 8 (logique uniquement)
 
@@ -267,7 +267,7 @@ Si vous devez réinitialiser le mot de passe, utilisez la commande intégrée :
 docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Remplacez `owner@example.com` par l'adresse e-mail du compte dont vous voulez réinitialiser le mot de passe. Une instance créée avant que le premier compte ne l'administre porte encore l'adresse provisoire `admin` tant que son propriétaire ne l'a pas remplacée : indiquez alors `--email="admin"`.
+Remplacez `owner@example.com` par l'adresse e-mail du compte dont vous voulez réinitialiser le mot de passe.
 
 Si vous ne savez plus quelle adresse administre l'instance, listez les comptes administrateurs :
 
@@ -276,14 +276,6 @@ docker exec -it databasus ./main --list-admins
 ```
 
 La sortie nomme chaque compte administrateur avec son adresse e-mail, son nom affiché, sa date de création et son état d'activité, et marque celui que l'instance reconnaît comme son administrateur. Aucun mot de passe ni empreinte de mot de passe n'est affiché.
-
-Si l'authentification à deux facteurs est activée et que le serveur de messagerie cesse de délivrer les codes, plus personne n'entre avec un mot de passe. Désactivez le second facteur depuis le serveur :
-
-```bash
-docker exec -it databasus ./main --disable-2fa
-```
-
-La commande indique ce qu'elle a changé, se termine sans se plaindre quand le réglage est déjà désactivé, et inscrit le changement au journal d'audit.
 
 ### 💾 Sauvegarder Databasus lui-même
 
