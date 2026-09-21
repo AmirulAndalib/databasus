@@ -178,7 +178,7 @@ export default function Index() {
                 name: "How does Databasus ensure security?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Databasus enforces security on three levels: (1) Sensitive data encryption — all passwords, tokens and credentials are encrypted with AES-256-GCM and stored separately from the database; (2) Backup encryption — each backup file is encrypted with a unique key derived from a master key, backup ID and random salt, making backups useless without your encryption key even if someone gains storage access; (3) Read-only database access — Databasus only requires SELECT permissions and performs comprehensive checks to ensure no write privileges exist, preventing data corruption even if the tool is compromised. Beyond runtime, security and reliability are engineered into every commit and PR: CodeQL static analysis, CodeRabbit with gitleaks and semgrep, Dependabot CVE monitoring, Trivy image and Dockerfile scans, and periodic Codex Security audits from OpenAI. Integration tests run against real PostgreSQL, MySQL, MariaDB and MongoDB containers and verify full backup-then-restore cycles on every PR. GitHub Actions are pinned to commit SHAs and workflows follow least-privilege permissions. All operations run in containers you control on servers you own, and because it's open source, your security team can audit every line of code before deployment.",
+                  text: "Databasus enforces security on three levels: (1) Sensitive data encryption — all passwords, tokens and credentials are encrypted with AES-256-GCM and stored separately from the database; (2) Backup encryption — each backup file is encrypted with a unique key derived from a master key, backup ID and random salt, making backups useless without your encryption key even if someone gains storage access; (3) Read-only database access — Databasus only requires SELECT permissions and performs comprehensive checks to ensure no write privileges exist, preventing data corruption even if the tool is compromised. Sign-in itself can require a second factor: with it on, a correct password is followed by a six-digit code emailed to the account, while sign-in through Google or GitHub keeps relying on the provider's own checks. Beyond runtime, security and reliability are engineered into every commit and PR: CodeQL static analysis, CodeRabbit with gitleaks and semgrep, Dependabot CVE monitoring, Trivy image and Dockerfile scans, and periodic Codex Security audits from OpenAI. Integration tests run against real PostgreSQL, MySQL, MariaDB and MongoDB containers and verify full backup-then-restore cycles on every PR. GitHub Actions are pinned to commit SHAs and workflows follow least-privilege permissions. All operations run in containers you control on servers you own, and because it's open source, your security team can audit every line of code before deployment.",
                 },
               },
               {
@@ -219,6 +219,14 @@ export default function Index() {
                 acceptedAnswer: {
                   "@type": "Answer",
                   text: "Databasus supports physical, full, incremental, WAL and logical backups. Physical backups are a file-level copy of the entire database cluster — faster to back up and restore for large datasets than logical dumps, and built on PostgreSQL 17's native backup mechanism, so we rely on PostgreSQL's own battle-tested tooling instead of re-inventing it. Full backups are a complete, self-contained copy of the cluster, the base every backup chain starts from. Incremental backups store only what changed since the previous backup, so backups stay small and fast. WAL streaming continuously captures the database write stream, enabling Point-in-time recovery (PITR) for disaster recovery and near-zero data loss. Logical backups are a native dump of the database in its engine-specific binary format, compressed and streamed directly to storage with no intermediate files. All of these backups can run over an SSH tunnel if you have a requirement for non-public connections, so the database never has to be exposed publicly. SSH tunneling is built in.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "I forgot my admin email or password",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: 'The first account created on the instance administers it. If you cannot remember which address that is, run docker exec -it databasus ./main --list-admins on the server where Databasus runs — it names every administrator account with its email address, display name, creation date and active state, and prints no password material. To set a new password for that account, run docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com". An instance created before the first account administered it still carries the placeholder address admin until its owner replaces it. If the instance also requires an emailed code at sign-in and the mail server has stopped delivering it, run docker exec -it databasus ./main --disable-2fa to stop requiring the code. All three commands are documented on the password page.',
                 },
               },
             ],
@@ -1308,6 +1316,12 @@ export default function Index() {
                   tool is compromised.
                   <br />
                   <br />
+                  Sign-in itself can require a second factor: with it on, a
+                  correct password is followed by a six-digit code emailed to
+                  the account, while sign-in through Google or GitHub keeps
+                  relying on the provider&apos;s own checks.
+                  <br />
+                  <br />
                   Beyond runtime, security and reliability are engineered into
                   every commit and PR: CodeQL static analysis, CodeRabbit with
                   gitleaks and semgrep, Dependabot CVE monitoring, Trivy image
@@ -1643,6 +1657,36 @@ export default function Index() {
                   from version 17 and above. Databasus is the first backup tool
                   built on PostgreSQL&apos;s native, efficient and now standard
                   backup protocol instead of writing its own implementations.
+                </>
+              }
+            />
+            <FaqItem
+              number="15"
+              question="I forgot my admin email or password"
+              answer={
+                <>
+                  The first account created on the instance administers it. If
+                  you cannot remember which address that is, run docker exec -it
+                  databasus ./main --list-admins on the server where Databasus
+                  runs — it names every administrator account with its email
+                  address, display name, creation date and active state, and
+                  prints no password material. To set a new password for that
+                  account, run docker exec -it databasus ./main
+                  --new-password=&quot;YourNewSecurePassword123&quot;
+                  --email=&quot;owner@example.com&quot;. An instance created
+                  before the first account administered it still carries the
+                  placeholder address admin until its owner replaces it. If the
+                  instance also requires an emailed code at sign-in and the mail
+                  server has stopped delivering it, run docker exec -it
+                  databasus ./main --disable-2fa to stop requiring the code. All
+                  three commands are documented on the{" "}
+                  <a
+                    href="/password"
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    password page
+                  </a>
+                  .
                 </>
               }
             />

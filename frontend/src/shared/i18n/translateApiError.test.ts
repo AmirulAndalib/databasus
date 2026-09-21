@@ -25,6 +25,14 @@ describe('translateApiError', () => {
     expect(translateApiError(error, t)).toContain('502');
   });
 
+  it('tells the two sign-in code refusals that share a status apart', () => {
+    const resentTooSoon = new ApiError({ code: 'sign_in_code_resent_too_soon', status: 429 });
+    const hourlyCapReached = new ApiError({ code: 'too_many_sign_in_codes', status: 429 });
+
+    expect(translateApiError(resentTooSoon, t)).toBe(t('errors.signInCodeResentTooSoon'));
+    expect(translateApiError(hourlyCapReached, t)).toBe(t('errors.tooManySignInCodes'));
+  });
+
   it('shows the backend message for an unknown code', () => {
     const error = new ApiError({
       message: 'storage quota exceeded',

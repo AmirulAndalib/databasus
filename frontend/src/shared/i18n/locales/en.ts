@@ -104,7 +104,7 @@ export const en = {
       placeholder: 'Paste your connection string here...',
     },
     auth: {
-      adminPasswordCheckFailed: 'Failed to check admin password status: {{error}}',
+      accountsCheckFailed: 'Failed to check whether the instance has any account: {{error}}',
     },
     oauthCallback: {
       failedTitle: 'Authentication Failed',
@@ -130,6 +130,15 @@ export const en = {
     networkUnreachable: 'Cannot reach the Databasus server. Check your connection and try again.',
     requestFailed:
       'The server could not complete the request (HTTP {{status}}). Please try again later.',
+    signInCodeIncorrect: 'The code is incorrect.',
+    pendingSignInNotUsable: 'This sign-in can no longer be completed. Sign in again.',
+    signInCodeNotSent:
+      'The instance could not send the sign-in code. Try again later or ask an administrator.',
+    tooManySignInCodes:
+      'Too many sign-in codes were requested for this account in the last hour. Try again later.',
+    signInCodeResentTooSoon:
+      'A code was sent less than a minute ago. Wait a minute before requesting another.',
+    rateLimitExceeded: 'Too many attempts. Wait a little and try again.',
   },
   status: {
     logicalBackup: {
@@ -235,6 +244,12 @@ export const en = {
       title: 'Members can create workspaces',
       description:
         'When enabled, members (non-admin users) can create new workspaces. If not - only admins can create workspaces.',
+    },
+    twoFactorAuth: {
+      title: 'Enable two-factor sign-in',
+      description:
+        "When enabled, a password sign-in also has to present a six-digit code sent to the account's email address. Sign-in through Google or GitHub is not covered.",
+      mailServerRequired: 'This needs a mail server. <docsLink>Configure SMTP</docsLink> first.',
     },
     saving: 'Saving...',
     saveChanges: 'Save Changes',
@@ -862,16 +877,23 @@ export const en = {
       noAccount: "Don't have an account? <signUpLink>Sign up</signUpLink>",
       forgotPassword: 'Forgot password?',
     },
+    signInCode: {
+      title: 'Enter the code',
+      description:
+        'We sent a six-digit code to {{email}}. It stops working 10 minutes after it was sent.',
+      code: 'Sign-in code',
+      submit: 'Sign in',
+      resend: 'Send another code',
+      backToSignIn: 'Back to sign in',
+      invalidCode: 'Code must be 6 digits',
+      codeResent: 'A new code is on its way. The previous one no longer works.',
+    },
     signUp: {
       title: 'Sign up',
       namePlaceholder: 'John Doe',
       submit: 'Sign up',
+      administersInstance: 'This is the first account on this instance, so it will administer it.',
       hasAccount: 'Already have an account? <signInLink>Sign in</signInLink>',
-    },
-    adminPassword: {
-      title: 'Sign up admin',
-      description: 'Then you will be able to sign in with login "admin" and password you set',
-      submit: 'Set password',
     },
     requestPasswordReset: {
       title: 'Reset password',
@@ -897,7 +919,6 @@ export const en = {
       userId: 'User ID',
       namePlaceholder: 'Enter your name',
       emailPlaceholder: 'Enter your email',
-      adminEmailReadOnly: 'Admin email cannot be changed',
       role: 'Role',
       saveChanges: 'Save changes',
       noChanges: 'No changes to save',

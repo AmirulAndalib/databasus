@@ -11,5 +11,8 @@ type AuditLogWriter interface {
 }
 
 type EmailSender interface {
+	// SendEmail reports no error when the instance has no mail server, so a
+	// caller that must not admit a silent skip asks this first.
+	IsConfigured() bool
 	SendEmail(to, subject, body string) error
 }

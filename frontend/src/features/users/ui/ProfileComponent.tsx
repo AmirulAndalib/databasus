@@ -134,15 +134,12 @@ export function ProfileComponent({ contentHeight }: Props) {
     }
     setEditNameError(false);
 
-    // Validate email (only if not admin)
-    if (user?.email !== 'admin') {
-      if (!editEmail || editEmail.trim() === '') {
-        setEditEmailError(true);
-        message.error(t('users.validation.emailRequired'));
-        return;
-      }
-      setEditEmailError(false);
+    if (!editEmail || editEmail.trim() === '') {
+      setEditEmailError(true);
+      message.error(t('users.validation.emailRequired'));
+      return;
     }
+    setEditEmailError(false);
 
     setIsUpdatingProfile(true);
 
@@ -153,8 +150,7 @@ export function ProfileComponent({ contentHeight }: Props) {
       if (editName !== user?.name) {
         request.name = editName;
       }
-      // Only include email if not admin and changed
-      if (user?.email !== 'admin' && editEmail !== user?.email) {
+      if (editEmail !== user?.email) {
         request.email = editEmail;
       }
 
@@ -231,13 +227,7 @@ export function ProfileComponent({ contentHeight }: Props) {
                       placeholder={t('users.profile.emailPlaceholder')}
                       type="email"
                       className="mb-4"
-                      disabled={user.email === 'admin'}
                     />
-                    {user.email === 'admin' && (
-                      <div className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-                        {t('users.profile.adminEmailReadOnly')}
-                      </div>
-                    )}
 
                     <div className="mt-2 mb-1 text-xs font-semibold dark:text-gray-200">
                       {t('users.profile.role')}

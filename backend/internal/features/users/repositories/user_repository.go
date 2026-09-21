@@ -3,7 +3,6 @@ package users_repositories
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -53,6 +52,23 @@ func (r *UserRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (*us
 	return &user, nil
 }
 
+// The record lives in a column rather than in the text of an email address, so
+// the account keeps it after its owner moves to a real one. Returns nil when no
+// account holds the record yet.
+func (r *UserRepository) GetRootAdmin(ctx context.Context) (*users_models.User, error) {
+	var user users_models.User
+
+	if err := storage.GetDb().WithContext(ctx).Where("is_root_admin").First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func (r *UserRepository) UpdateUserPassword(userID uuid.UUID, hashedPassword string) error {
 	return storage.GetDb().Model(&users_models.User{}).
 		Where("id = ?", userID).
@@ -60,30 +76,6 @@ func (r *UserRepository) UpdateUserPassword(userID uuid.UUID, hashedPassword str
 			"hashed_password":        hashedPassword,
 			"password_creation_time": time.Now().UTC(),
 		}).Error
-}
-
-func (r *UserRepository) CreateInitialAdmin(ctx context.Context) error {
-	admin, err := r.GetUserByEmail(ctx, "admin")
-	if err != nil {
-		return fmt.Errorf("failed to get admin user: %w", err)
-	}
-
-	if admin != nil {
-		return nil
-	}
-
-	admin = &users_models.User{
-		ID:                   uuid.New(),
-		Email:                "admin",
-		Name:                 "Admin",
-		HashedPassword:       nil,
-		PasswordCreationTime: time.Now().UTC(),
-		Role:                 users_enums.UserRoleAdmin,
-		Status:               users_enums.UserStatusActive,
-		CreatedAt:            time.Now().UTC(),
-	}
-
-	return storage.GetDb().Create(admin).Error
 }
 
 func (r *UserRepository) GetUsers(
@@ -144,20 +136,17 @@ func (r *UserRepository) UpdateUserRole(userID uuid.UUID, role users_enums.UserR
 		}).Error
 }
 
-func (r *UserRepository) RenameUserEmailForTests(oldEmail, newEmail string) error {
-	result := storage.GetDb().Model(&users_models.User{}).
-		Where("email = ?", oldEmail).
-		Update("email", newEmail)
+func (r *UserRepository) GetAdmins(ctx context.Context) ([]*users_models.User, error) {
+	var admins []*users_models.User
 
-	if result.Error != nil {
-		return result.Error
+	if err := storage.GetDb().WithContext(ctx).
+		Where("role = ?", users_enums.UserRoleAdmin).
+		Order("created_at ASC").
+		Find(&admins).Error; err != nil {
+		return nil, err
 	}
 
-	if result.RowsAffected == 0 {
-		return nil
-	}
-
-	return nil
+	return admins, nil
 }
 
 func (r *UserRepository) UpdateUserInfo(userID uuid.UUID, name, email *string) error {

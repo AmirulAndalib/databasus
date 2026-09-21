@@ -84,10 +84,15 @@ func (uc *RestoreMysqlBackupUsecase) Execute(
 		args = append(args, *my.Database)
 	}
 
+	mysqlBin, err := tools.GetMysqlExecutable(my.Version, tools.MysqlExecutableMysql)
+	if err != nil {
+		return err
+	}
+
 	return uc.restoreFromStorage(
 		parentCtx,
 		originalDB,
-		tools.GetMysqlExecutable(my.Version, tools.MysqlExecutableMysql),
+		mysqlBin,
 		args,
 		my.Password,
 		backup,

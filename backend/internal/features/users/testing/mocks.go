@@ -1,10 +1,17 @@
 package users_testing
 
-import "errors"
+import (
+	"errors"
+	"sync"
+)
 
 type MockEmailSender struct {
-	SentEmails []EmailCall
-	ShouldFail bool
+	SentEmails          []EmailCall
+	ShouldFail          bool
+	IsMailServerMissing bool
+
+	// Concurrent sign-in tests send from several requests at once.
+	sentEmailsMutex sync.Mutex
 }
 
 type EmailCall struct {
@@ -20,7 +27,14 @@ func NewMockEmailSender() *MockEmailSender {
 	}
 }
 
+func (m *MockEmailSender) IsConfigured() bool {
+	return !m.IsMailServerMissing
+}
+
 func (m *MockEmailSender) SendEmail(to, subject, body string) error {
+	m.sentEmailsMutex.Lock()
+	defer m.sentEmailsMutex.Unlock()
+
 	m.SentEmails = append(m.SentEmails, EmailCall{
 		To:      to,
 		Subject: subject,

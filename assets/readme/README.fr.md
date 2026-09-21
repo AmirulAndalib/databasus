@@ -94,6 +94,7 @@ Databasus effectue une vraie restauration pour confirmer que les sauvegardes son
 - **Stockage zero-trust** : les sauvegardes sont chiffrées et restent inutilisables pour un attaquant, vous pouvez donc les déposer sans risque sur un stockage partagé comme S3, Azure Blob Storage, etc.
 - **Chiffrement des secrets** : toute donnée sensible est chiffrée et n'est jamais exposée, pas même dans les logs ou les messages d'erreur
 - **Utilisateur en lecture seule** : par défaut, Databasus sauvegarde via un utilisateur en lecture seule et ne conserve rien qui permette de modifier vos données
+- **Authentification à deux facteurs** : la connexion par mot de passe peut exiger un code à six chiffres envoyé à l'adresse du compte. Se connecter par Google ou GitHub continue de s'appuyer sur les vérifications de ces fournisseurs
 
 ### 👥 **Adapté aux équipes** <a href="https://databasus.com/fr/access-management/">(docs)</a>
 
@@ -112,8 +113,8 @@ Databasus effectue une vraie restauration pour confirmer que les sauvegardes son
 ### 💾 **Bases de données prises en charge**
 
 - **PostgreSQL** : 14, 15, 16, 17 et 18 (physique et logique)
-- **MySQL** : 5.7, 8.0, 8.4 et 9 (logique uniquement)
-- **MariaDB** : 10, 11 et 12 (logique uniquement)
+- **MySQL** : 5.7 (x86-64 uniquement), 8.0, 8.4, 9 et 26 (logique uniquement)
+- **MariaDB** : 5.5, 10, 11, 12 et 13 (logique uniquement)
 - **MongoDB** : 4.2+, 5, 6, 7 et 8 (logique uniquement)
 
 ### 🐳 **Auto-hébergé et sûr**
@@ -249,7 +250,7 @@ Pour les autres options (NodePort, TLS, HTTPRoute pour Gateway API), consultez l
 
 ## 🚀 Utilisation
 
-1. **Ouvrez le tableau de bord** : rendez-vous sur `http://localhost:4005`
+1. **Créez le premier compte** : rendez-vous sur `http://localhost:4005` et inscrivez-vous. Le premier compte créé sur une instance est celui qui l'administre
 2. **Ajoutez votre première base à sauvegarder** : cliquez sur "New Database" et suivez l'assistant
 3. **Configurez la planification** : toutes les heures, chaque jour, chaque semaine, chaque mois ou selon un intervalle cron
 4. **Renseignez la connexion** : saisissez les identifiants et les paramètres de connexion de votre base
@@ -263,10 +264,26 @@ Pour les autres options (NodePort, TLS, HTTPRoute pour Gateway API), consultez l
 Si vous devez réinitialiser le mot de passe, utilisez la commande intégrée :
 
 ```bash
-docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"
+docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Remplacez `admin` par l'adresse e-mail de l'utilisateur dont vous voulez réinitialiser le mot de passe.
+Remplacez `owner@example.com` par l'adresse e-mail du compte dont vous voulez réinitialiser le mot de passe. Une instance créée avant que le premier compte ne l'administre porte encore l'adresse provisoire `admin` tant que son propriétaire ne l'a pas remplacée : indiquez alors `--email="admin"`.
+
+Si vous ne savez plus quelle adresse administre l'instance, listez les comptes administrateurs :
+
+```bash
+docker exec -it databasus ./main --list-admins
+```
+
+La sortie nomme chaque compte administrateur avec son adresse e-mail, son nom affiché, sa date de création et son état d'activité, et marque celui que l'instance reconnaît comme son administrateur. Aucun mot de passe ni empreinte de mot de passe n'est affiché.
+
+Si l'authentification à deux facteurs est activée et que le serveur de messagerie cesse de délivrer les codes, plus personne n'entre avec un mot de passe. Désactivez le second facteur depuis le serveur :
+
+```bash
+docker exec -it databasus ./main --disable-2fa
+```
+
+La commande indique ce qu'elle a changé, se termine sans se plaindre quand le réglage est déjà désactivé, et inscrit le changement au journal d'audit.
 
 ### 💾 Sauvegarder Databasus lui-même
 

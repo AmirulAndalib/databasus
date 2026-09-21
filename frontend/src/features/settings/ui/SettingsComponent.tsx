@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { getApplicationServer } from '../../../constants';
-import { settingsApi } from '../../../entity/users/api/settingsApi';
-import type { UsersSettings } from '../../../entity/users/model/UsersSettings';
+import { type UsersSettings, type UsersSettingsResponse, settingsApi } from '../../../entity/users';
 import { getWebsitePageUrl, translateApiError, useLocale } from '../../../shared/i18n';
 import { ClipboardHelper } from '../../../shared/lib/ClipboardHelper';
 import { VerificationAgentsComponent } from '../../verification/agents';
@@ -15,11 +14,20 @@ interface Props {
   contentHeight: number;
 }
 
+// The response carries the instance's answer about its mail server, which the
+// form neither edits nor sends back.
+const toFormSettings = (settings: UsersSettingsResponse): UsersSettings => ({
+  isAllowExternalRegistrations: settings.isAllowExternalRegistrations,
+  isAllowMemberInvitations: settings.isAllowMemberInvitations,
+  isMemberAllowedToCreateWorkspaces: settings.isMemberAllowedToCreateWorkspaces,
+  isTwoFactorAuthRequired: settings.isTwoFactorAuthRequired,
+});
+
 export function SettingsComponent({ contentHeight }: Props) {
   const { t } = useTranslation();
   const { locale } = useLocale();
   const { message } = App.useApp();
-  const [settings, setSettings] = useState<UsersSettings | undefined>(undefined);
+  const [settings, setSettings] = useState<UsersSettingsResponse | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -32,6 +40,7 @@ export function SettingsComponent({ contentHeight }: Props) {
     isAllowExternalRegistrations: false,
     isAllowMemberInvitations: false,
     isMemberAllowedToCreateWorkspaces: false,
+    isTwoFactorAuthRequired: false,
   });
 
   useEffect(() => {
@@ -44,7 +53,7 @@ export function SettingsComponent({ contentHeight }: Props) {
     try {
       const currentSettings = await settingsApi.getSettings();
       setSettings(currentSettings);
-      setFormSettings(currentSettings);
+      setFormSettings(toFormSettings(currentSettings));
       setHasChanges(false);
     } catch (error: unknown) {
       message.error(translateApiError(error, t));
@@ -75,7 +84,7 @@ export function SettingsComponent({ contentHeight }: Props) {
     try {
       const updatedSettings = await settingsApi.updateSettings(formSettings);
       setSettings(updatedSettings);
-      setFormSettings(updatedSettings);
+      setFormSettings(toFormSettings(updatedSettings));
       setHasChanges(false);
       message.success(t('settings.updated'));
     } catch (error: unknown) {
@@ -87,7 +96,7 @@ export function SettingsComponent({ contentHeight }: Props) {
 
   const handleReset = () => {
     if (settings) {
-      setFormSettings(settings);
+      setFormSettings(toFormSettings(settings));
       setHasChanges(false);
     }
   };
@@ -184,6 +193,54 @@ export function SettingsComponent({ contentHeight }: Props) {
                         }
                         style={{
                           backgroundColor: formSettings.isMemberAllowedToCreateWorkspaces
+                            ? '#155dfc'
+                            : undefined,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-start justify-between border-b border-gray-200 pb-4 dark:border-gray-700">
+                    <div className="flex-1 pr-20">
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {t('settings.twoFactorAuth.title')}
+                      </div>
+
+                      <div className="mt-1 text-gray-500 dark:text-gray-400">
+                        {t('settings.twoFactorAuth.description')}
+                      </div>
+
+                      {!settings?.isEmailConfigured && (
+                        <div className="mt-1 text-gray-500 dark:text-gray-400">
+                          <Trans
+                            i18nKey="settings.twoFactorAuth.mailServerRequired"
+                            components={{
+                              docsLink: (
+                                <a
+                                  href={getWebsitePageUrl('advancedConfigEmailSmtp', locale)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="!text-blue-600"
+                                />
+                              ),
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="ml-4">
+                      <Switch
+                        checked={formSettings.isTwoFactorAuthRequired}
+                        // Switching off needs no mail server, so an instance that has
+                        // lost one can still be taken back to one factor from here.
+                        disabled={
+                          !settings?.isEmailConfigured && !settings?.isTwoFactorAuthRequired
+                        }
+                        onChange={(checked) =>
+                          handleSettingChange('isTwoFactorAuthRequired', checked)
+                        }
+                        style={{
+                          backgroundColor: formSettings.isTwoFactorAuthRequired
                             ? '#155dfc'
                             : undefined,
                         }}

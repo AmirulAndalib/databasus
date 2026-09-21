@@ -2,7 +2,6 @@ package users_services
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
@@ -27,7 +27,13 @@ import (
 	users_interfaces "databasus-backend/internal/features/users/interfaces"
 	users_models "databasus-backend/internal/features/users/models"
 	users_repositories "databasus-backend/internal/features/users/repositories"
+	"databasus-backend/internal/util/ratelimiter"
 )
+
+// bootstrapAdminIndexName is the partial unique index that admits a single
+// bootstrap administrator. Naming it is what lets a lost race be told apart from
+// a duplicate address, which must keep failing as it always has.
+const bootstrapAdminIndexName = "idx_users_is_root_admin"
 
 type UserService struct {
 	userRepository          *users_repositories.UserRepository
@@ -36,6 +42,8 @@ type UserService struct {
 	auditLogWriter          users_interfaces.AuditLogWriter
 	emailSender             users_interfaces.EmailSender
 	passwordResetRepository *users_repositories.PasswordResetRepository
+	twoFactorRepository     *users_repositories.TwoFactorRepository
+	rateLimiter             ratelimiter.Counter
 	logger                  *slog.Logger
 }
 
@@ -91,7 +99,7 @@ func (s *UserService) SignUp(ctx context.Context, request *users_dto.SignUpReque
 			return nil, fmt.Errorf("failed to get updated user: %w", err)
 		}
 
-		s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
+		s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
 			Message:     fmt.Sprintf("Invited user completed registration: %s", updatedUser.Email),
 			UserID:      &updatedUser.ID,
 			WorkspaceID: nil,
@@ -100,45 +108,37 @@ func (s *UserService) SignUp(ctx context.Context, request *users_dto.SignUpReque
 		return updatedUser, nil
 	}
 
-	// Get settings to check registration policy for new users
-	settings, err := s.settingsService.GetSettings(ctx)
+	user, err := s.createAccountClaimingEmptyInstance(
+		ctx,
+		func(isTakingTheInstance bool) *users_models.User {
+			return buildRegisteredUser(request, hashedPasswordStr, isTakingTheInstance)
+		},
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get settings: %w", err)
+		return nil, err
 	}
 
-	// Check if external registrations are allowed
-	if !settings.IsAllowExternalRegistrations {
-		return nil, errors.New("external registration is disabled")
-	}
-
-	user := &users_models.User{
-		ID:                   uuid.New(),
-		Email:                request.Email,
-		Name:                 request.Name,
-		HashedPassword:       &hashedPasswordStr,
-		PasswordCreationTime: time.Now().UTC(),
-		Role:                 users_enums.UserRoleMember,
-		Status:               users_enums.UserStatusActive,
-		CreatedAt:            time.Now().UTC(),
-	}
-
-	if err := s.userRepository.CreateUser(user); err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
 		Message:     fmt.Sprintf("User registered with email: %s", user.Email),
 		UserID:      &user.ID,
 		WorkspaceID: nil,
 	})
 
+	s.writeInstanceClaimedAuditLog(ctx, user)
+
 	return user, nil
+}
+
+func isBootstrapAdminTaken(err error) bool {
+	var pgError *pgconn.PgError
+
+	return errors.As(err, &pgError) && pgError.ConstraintName == bootstrapAdminIndexName
 }
 
 func (s *UserService) SignIn(
 	ctx context.Context,
 	request *users_dto.SignInRequestDTO,
-) (*users_dto.SignInResponseDTO, error) {
+) (*users_dto.SignInOutcome, error) {
 	// Failed sign-ins are the only signal that someone is guessing credentials, so every branch that
 	// refuses one is logged. The handler's addresses are masked centrally by the log handler.
 	user, err := s.userRepository.GetUserByEmail(ctx, request.Email)
@@ -149,17 +149,6 @@ func (s *UserService) SignIn(
 	}
 
 	if user == nil {
-		usersCount, err := s.userRepository.GetUsersCount()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get users count: %w", err)
-		}
-
-		if usersCount == 1 {
-			return nil, errors.New(
-				"user with this email does not exist, seems you need to sign in as \"admin\"",
-			)
-		}
-
 		s.logger.WarnContext(ctx, "sign-in refused: no user with this email", "email", request.Email)
 
 		return nil, errors.New("user with this email does not exist")
@@ -178,6 +167,15 @@ func (s *UserService) SignIn(
 		return nil, errors.New("user account is deactivated")
 	}
 
+	// An account created through an external identity provider has no password
+	// hash at all. Refuse it the way a wrong password is refused, rather than
+	// dereferencing nil and taking the process down.
+	if !user.HasPassword() {
+		s.logger.WarnContext(ctx, "sign-in refused: the account has no password", "user_id", user.ID)
+
+		return nil, errors.New("password is incorrect")
+	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(*user.HashedPassword), []byte(request.Password))
 	if err != nil {
 		s.logger.WarnContext(ctx, "sign-in refused: incorrect password", "user_id", user.ID)
@@ -185,20 +183,26 @@ func (s *UserService) SignIn(
 		return nil, errors.New("password is incorrect")
 	}
 
-	s.logger.InfoContext(ctx, "user signed in", "user_id", user.ID)
+	settings, err := s.settingsService.GetSettings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings: %w", err)
+	}
 
-	response, err := s.GenerateAccessToken(ctx, user)
+	if settings.IsTwoFactorAuthRequired {
+		pendingSignIn, err := s.StartTwoFactorSignIn(ctx, user)
+		if err != nil {
+			return nil, err
+		}
+
+		return &users_dto.SignInOutcome{PendingSignIn: pendingSignIn}, nil
+	}
+
+	response, err := s.completeSignIn(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
-		Message:     fmt.Sprintf("User signed in with email: %s", user.Email),
-		UserID:      &user.ID,
-		WorkspaceID: nil,
-	})
-
-	return response, nil
+	return &users_dto.SignInOutcome{CompletedSignIn: response}, nil
 }
 
 func (s *UserService) GetUserFromToken(ctx context.Context, token string) (*users_models.User, error) {
@@ -288,59 +292,19 @@ func (s *UserService) GenerateAccessToken(
 	}, nil
 }
 
-func (s *UserService) CreateInitialAdmin(ctx context.Context) error {
-	return s.userRepository.CreateInitialAdmin(ctx)
-}
-
 func (s *UserService) GetUsersCount() (int64, error) {
 	return s.userRepository.GetUsersCount()
 }
 
-func (s *UserService) IsRootAdminHasPassword(ctx context.Context) (bool, error) {
-	admin, err := s.userRepository.GetUserByEmail(ctx, "admin")
+// The entry screen asks this to decide between offering a sign-in and offering
+// the registration that claims the instance.
+func (s *UserService) HasAnyUser() (bool, error) {
+	isUnclaimed, err := s.isInstanceUnclaimed()
 	if err != nil {
-		return false, fmt.Errorf("failed to get admin user: %w", err)
+		return false, err
 	}
 
-	if admin == nil {
-		return false, errors.New("admin user does not exist")
-	}
-
-	return admin.HasPassword(), nil
-}
-
-func (s *UserService) SetRootAdminPassword(ctx context.Context, password string) error {
-	admin, err := s.userRepository.GetUserByEmail(ctx, "admin")
-	if err != nil {
-		return fmt.Errorf("failed to get admin user: %w", err)
-	}
-
-	if admin == nil {
-		return errors.New("admin user does not exist")
-	}
-
-	if admin.HasPassword() {
-		return errors.New("admin password is already set")
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("failed to hash password: %w", err)
-	}
-
-	if err := s.userRepository.UpdateUserPassword(admin.ID, string(hashedPassword)); err != nil {
-		return fmt.Errorf("failed to set admin password: %w", err)
-	}
-
-	if s.auditLogWriter != nil {
-		s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
-			Message:     "Admin password set",
-			UserID:      &admin.ID,
-			WorkspaceID: nil,
-		})
-	}
-
-	return nil
+	return !isUnclaimed, nil
 }
 
 func (s *UserService) ChangeUserPasswordByEmail(ctx context.Context, email, newPassword string) error {
@@ -362,7 +326,7 @@ func (s *UserService) ChangeUserPassword(ctx context.Context, userID uuid.UUID, 
 		return fmt.Errorf("failed to update password: %w", err)
 	}
 
-	s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
 		Message:     "Password changed",
 		UserID:      &userID,
 		WorkspaceID: nil,
@@ -415,7 +379,7 @@ func (s *UserService) InviteUser(
 	if request.IntendedWorkspaceID != nil {
 		message += " for workspace"
 	}
-	s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
 		Message:     message,
 		UserID:      &invitedBy.ID,
 		WorkspaceID: request.IntendedWorkspaceID,
@@ -465,10 +429,6 @@ func (s *UserService) UpdateUserInfo(
 	oldEmail := user.Email
 	oldName := user.Name
 
-	if user.Email == "admin" && request.Email != nil && *request.Email != user.Email {
-		return errors.New("admin email cannot be changed")
-	}
-
 	if request.Email != nil && *request.Email != user.Email {
 		existingUser, err := s.userRepository.GetUserByEmail(ctx, *request.Email)
 		if err != nil {
@@ -499,14 +459,14 @@ func (s *UserService) UpdateUserInfo(
 
 	if len(auditMessages) > 0 {
 		for _, message := range auditMessages {
-			s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
+			s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
 				Message:     message,
 				UserID:      &userID,
 				WorkspaceID: nil,
 			})
 		}
 	} else {
-		s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
+		s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
 			Message:     "User info updated",
 			UserID:      &userID,
 			WorkspaceID: nil,
@@ -569,26 +529,11 @@ func (s *UserService) SendResetPasswordCode(ctx context.Context, email string) e
 		return errors.New("too many password reset attempts, please try again later")
 	}
 
-	// Generate 6-digit random code using crypto/rand for better randomness
-	codeNum := make([]byte, 4)
-	_, err = io.ReadFull(rand.Reader, codeNum)
+	code, err := generateSixDigitCode()
 	if err != nil {
-		return fmt.Errorf("failed to generate random code: %w", err)
+		return err
 	}
 
-	// Convert bytes to uint32 and modulo to get 6 digits
-	randomInt := uint32(
-		codeNum[0],
-	)<<24 | uint32(
-		codeNum[1],
-	)<<16 | uint32(
-		codeNum[2],
-	)<<8 | uint32(
-		codeNum[3],
-	)
-	code := fmt.Sprintf("%06d", randomInt%1000000)
-
-	// Hash the code
 	hashedCode, err := bcrypt.GenerateFromPassword([]byte(code), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash code: %w", err)
@@ -648,13 +593,11 @@ func (s *UserService) SendResetPasswordCode(ctx context.Context, email string) e
 	}
 
 	// Audit log
-	if s.auditLogWriter != nil {
-		s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
-			Message:     fmt.Sprintf("Password reset code sent to: %s", user.Email),
-			UserID:      &user.ID,
-			WorkspaceID: nil,
-		})
-	}
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
+		Message:     fmt.Sprintf("Password reset code sent to: %s", user.Email),
+		UserID:      &user.ID,
+		WorkspaceID: nil,
+	})
 
 	return nil
 }
@@ -692,15 +635,180 @@ func (s *UserService) ResetPassword(ctx context.Context, email, code, newPasswor
 	}
 
 	// Audit log
-	if s.auditLogWriter != nil {
-		s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
-			Message:     "Password reset via email code",
-			UserID:      &user.ID,
-			WorkspaceID: nil,
-		})
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
+		Message:     "Password reset via email code",
+		UserID:      &user.ID,
+		WorkspaceID: nil,
+	})
+
+	return nil
+}
+
+// The audit trail records a sign-in where access is actually granted, which is
+// the password step with one factor and the code step with two.
+func (s *UserService) completeSignIn(
+	ctx context.Context,
+	user *users_models.User,
+) (*users_dto.SignInResponseDTO, error) {
+	s.logger.InfoContext(ctx, "user signed in", "user_id", user.ID)
+
+	response, err := s.GenerateAccessToken(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
+		Message:     fmt.Sprintf("User signed in with email: %s", user.Email),
+		UserID:      &user.ID,
+		WorkspaceID: nil,
+	})
+
+	return response, nil
+}
+
+// Every audit entry this service writes goes through here, because the console
+// path reaches the service without installing a writer and a missing entry must
+// not take the process down.
+func (s *UserService) writeAuditLog(ctx context.Context, entry audit_logs_models.AuditEntry) {
+	if s.auditLogWriter == nil {
+		return
+	}
+
+	s.auditLogWriter.WriteAuditLog(ctx, entry)
+}
+
+func (s *UserService) isInstanceUnclaimed() (bool, error) {
+	usersCount, err := s.userRepository.GetUsersCount()
+	if err != nil {
+		return false, fmt.Errorf("failed to get users count: %w", err)
+	}
+
+	return usersCount == 0, nil
+}
+
+func (s *UserService) checkExternalRegistrationAllowed(ctx context.Context) error {
+	settings, err := s.settingsService.GetSettings(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get settings: %w", err)
+	}
+
+	if !settings.IsAllowExternalRegistrations {
+		return errors.New("external registration is disabled")
 	}
 
 	return nil
+}
+
+// Both entry points that insert a new account share this path. An instance
+// holding no account hands the account the administrator role and records it as
+// the bootstrap administrator, and the question is asked before the registration
+// policy rather than inside the insert, because an empty instance whose policy
+// forbids registration would otherwise never gain an administrator at all.
+//
+// Losing the race for that record is not a failure: the partial unique index
+// admits one flagged account, so the loser is built again as an ordinary
+// account - now under the registration policy it was allowed to skip.
+func (s *UserService) createAccountClaimingEmptyInstance(
+	ctx context.Context,
+	build func(isTakingTheInstance bool) *users_models.User,
+) (*users_models.User, error) {
+	isTakingTheInstance, err := s.isInstanceUnclaimed()
+	if err != nil {
+		return nil, err
+	}
+
+	if !isTakingTheInstance {
+		if err := s.checkExternalRegistrationAllowed(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	user := build(isTakingTheInstance)
+
+	err = s.userRepository.CreateUser(user)
+	if err == nil {
+		return user, nil
+	}
+
+	// Anything but the contested bootstrap record - a duplicate address above all -
+	// stays the failure it has always been.
+	if !isTakingTheInstance || !isBootstrapAdminTaken(err) {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	if err := s.checkExternalRegistrationAllowed(ctx); err != nil {
+		return nil, err
+	}
+
+	user = build(false)
+
+	if err := s.userRepository.CreateUser(user); err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return user, nil
+}
+
+func buildRegisteredUser(
+	request *users_dto.SignUpRequestDTO,
+	hashedPassword string,
+	isTakingTheInstance bool,
+) *users_models.User {
+	return &users_models.User{
+		ID:                   uuid.New(),
+		Email:                request.Email,
+		Name:                 request.Name,
+		HashedPassword:       &hashedPassword,
+		PasswordCreationTime: time.Now().UTC(),
+		Role:                 roleForNewAccount(isTakingTheInstance),
+		Status:               users_enums.UserStatusActive,
+		IsRootAdmin:          isTakingTheInstance,
+		CreatedAt:            time.Now().UTC(),
+	}
+}
+
+func buildOAuthUser(
+	email, name string,
+	githubOAuthID, googleOAuthID *string,
+	isTakingTheInstance bool,
+) *users_models.User {
+	return &users_models.User{
+		ID:                   uuid.New(),
+		Email:                email,
+		Name:                 name,
+		HashedPassword:       nil,
+		PasswordCreationTime: time.Now().UTC(),
+		Role:                 roleForNewAccount(isTakingTheInstance),
+		Status:               users_enums.UserStatusActive,
+		GitHubOAuthID:        githubOAuthID,
+		GoogleOAuthID:        googleOAuthID,
+		IsRootAdmin:          isTakingTheInstance,
+		CreatedAt:            time.Now().UTC(),
+	}
+}
+
+func roleForNewAccount(isTakingTheInstance bool) users_enums.UserRole {
+	if isTakingTheInstance {
+		return users_enums.UserRoleAdmin
+	}
+
+	return users_enums.UserRoleMember
+}
+
+// The log has to explain an administrator nobody appointed.
+func (s *UserService) writeInstanceClaimedAuditLog(ctx context.Context, user *users_models.User) {
+	if !user.IsRootAdmin {
+		return
+	}
+
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
+		Message: fmt.Sprintf(
+			"First account on the instance now administers it: %s",
+			user.Email,
+		),
+		UserID:      &user.ID,
+		WorkspaceID: nil,
+	})
 }
 
 func (s *UserService) handleGitHubOAuthWithEndpoint(
@@ -873,13 +981,11 @@ func (s *UserService) getOrCreateUserFromOAuth(
 			return nil, err
 		}
 
-		if s.auditLogWriter != nil {
-			s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
-				Message:     fmt.Sprintf("User signed in via %s", provider),
-				UserID:      &existingUser.ID,
-				WorkspaceID: nil,
-			})
-		}
+		s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
+			Message:     fmt.Sprintf("User signed in via %s", provider),
+			UserID:      &existingUser.ID,
+			WorkspaceID: nil,
+		})
 
 		return &users_dto.OAuthCallbackResponseDTO{
 			UserID:    tokenResponse.UserID,
@@ -927,13 +1033,11 @@ func (s *UserService) getOrCreateUserFromOAuth(
 			return nil, err
 		}
 
-		if s.auditLogWriter != nil {
-			s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
-				Message:     fmt.Sprintf("%s OAuth linked to existing account", provider),
-				UserID:      &user.ID,
-				WorkspaceID: nil,
-			})
-		}
+		s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
+			Message:     fmt.Sprintf("%s OAuth linked to existing account", provider),
+			UserID:      &user.ID,
+			WorkspaceID: nil,
+		})
 
 		return &users_dto.OAuthCallbackResponseDTO{
 			UserID:    tokenResponse.UserID,
@@ -941,15 +1045,6 @@ func (s *UserService) getOrCreateUserFromOAuth(
 			Token:     tokenResponse.Token,
 			IsNewUser: false,
 		}, nil
-	}
-
-	settings, err := s.settingsService.GetSettings(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get settings: %w", err)
-	}
-
-	if !settings.IsAllowExternalRegistrations {
-		return nil, errors.New("external registration is disabled")
 	}
 
 	var githubOAuthID *string
@@ -960,21 +1055,14 @@ func (s *UserService) getOrCreateUserFromOAuth(
 		googleOAuthID = &oauthID
 	}
 
-	newUser := &users_models.User{
-		ID:                   uuid.New(),
-		Email:                email,
-		Name:                 name,
-		HashedPassword:       nil,
-		PasswordCreationTime: time.Now().UTC(),
-		Role:                 users_enums.UserRoleMember,
-		Status:               users_enums.UserStatusActive,
-		GitHubOAuthID:        githubOAuthID,
-		GoogleOAuthID:        googleOAuthID,
-		CreatedAt:            time.Now().UTC(),
-	}
-
-	if err := s.userRepository.CreateUser(newUser); err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
+	newUser, err := s.createAccountClaimingEmptyInstance(
+		ctx,
+		func(isTakingTheInstance bool) *users_models.User {
+			return buildOAuthUser(email, name, githubOAuthID, googleOAuthID, isTakingTheInstance)
+		},
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	tokenResponse, err := s.GenerateAccessToken(ctx, newUser)
@@ -982,13 +1070,13 @@ func (s *UserService) getOrCreateUserFromOAuth(
 		return nil, err
 	}
 
-	if s.auditLogWriter != nil {
-		s.auditLogWriter.WriteAuditLog(ctx, audit_logs_models.AuditEntry{
-			Message:     fmt.Sprintf("User registered via %s OAuth: %s", provider, email),
-			UserID:      &newUser.ID,
-			WorkspaceID: nil,
-		})
-	}
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{
+		Message:     fmt.Sprintf("User registered via %s OAuth: %s", provider, email),
+		UserID:      &newUser.ID,
+		WorkspaceID: nil,
+	})
+
+	s.writeInstanceClaimedAuditLog(ctx, newUser)
 
 	return &users_dto.OAuthCallbackResponseDTO{
 		UserID:    tokenResponse.UserID,

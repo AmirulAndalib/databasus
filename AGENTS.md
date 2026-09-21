@@ -21,6 +21,8 @@ At the start of every turn, before sending any message or taking any action, rea
 
 Apply the skill in embedded mode to all agent-authored prose, including chat responses, progress updates, plans, documentation, OpenSpec artifacts, review findings, commit messages and pull request text. Prioritize the reader's understanding, factual accuracy and necessary context before style and brevity. Run its draft, audit and final pass internally, then emit only the final text. Preserve exact code, commands, paths, identifiers, schemas, required templates, quotations and user-provided text unless the user asks to edit them. Select relevant information for original answers without hiding material limitations; preserve substantive claims when editing supplied text unless summarization is requested. Editing must not change facts, behavior, scope or technical meaning.
 
+Reply to the user in the language they write in, and keep everything committed to the repository in English, with only the exceptions [Language in code](#language-in-code) lists. Build sentences a reader parses on the first pass, and match an answer's size to the question's: a one-line question needs neither headings nor a list.
+
 ---
 
 ## Development environment
@@ -29,13 +31,22 @@ Work happens inside the repo's [Dev Container](.devcontainer/devcontainer.json).
 
 Running the backend suite host-native is supported on Fedora via `make test-fedora`, which shims the Debian soname the bundled `assets/tools` clients expect. Any other host distro is on its own — the container stays the reference environment. Also project sometimes is run in different worktrees, in this case it is needed to copy .env.example -> .env, `make swagger` and `pnpm install` to run tests
 
+### Several agents, one set of containers
+
+Several agents may work on this repo at once, in different worktrees, sharing one Docker daemon, one set of test containers and one pool of test metadata databases. Don't let that stop you from running tests — simultaneous runs are rare and usually harmless. Two habits keep them that way:
+
+- Lint and format whenever you want. `make lint`, `pnpm lint`, `pnpm format`, `npm run lint` and the frontend's `pnpm test` touch nothing shared.
+- Test the package you touched: `go test ./internal/features/<feature>/... -count=1` loads the repo-root `.env` itself and claims a free database slot through an advisory lock (`backend/internal/config/config.go`). Leave `make test` and `make test-fedora` for the end of a change — they start by removing every `org.testcontainers` container and recreating every slot database, which those slots also come from, so a fresh environment needs one full run first.
+
+When a failure makes no sense — a container that vanished, a database that emptied itself — a parallel run is worth suspecting in maybe one case in twenty. Re-run before hunting the bug.
+
 ---
 
 ## Language in code
 
 **English only in code, comments, identifiers, log messages, API strings, test assertions, and commit messages.** No other language inside `backend/` or `agent/` at all, and none inside `frontend/src/` outside the interface dictionaries named below — not even for user-facing fallback copy or error messages.
 
-Translated end-user content is allowed in four places and nowhere else: the website page copies (`website/app/[lang]/*/content/<locale>.tsx`), the README translations (`assets/readme/README.<locale>.md`), the six language-switcher labels in the root `README.md`, and the frontend interface dictionaries (`frontend/src/shared/i18n/locales/<locale>.ts`). Even there, file names (locale codes aside), identifiers, dictionary keys and commit messages stay English.
+Translated end-user content is allowed in five places and nowhere else: the website page copies (`website/app/[lang]/*/content/<locale>.tsx`), the README translations (`assets/readme/README.<locale>.md`), the six language-switcher labels in the root `README.md`, the frontend interface dictionaries (`frontend/src/shared/i18n/locales/<locale>.ts`), and the quoted example pairs in the [how-to-communicate skill](.agents/skills/humanizer/SKILL.md), which model conversation output rather than documentation prose. Even there, file names (locale codes aside), identifiers, dictionary keys and commit messages stay English.
 
 The dictionaries are the only target-language text anywhere under `frontend/`, `index.html` included. Every other file there stays English, fallback copy and error messages included: a component renders a translation by looking up a key, never by holding the translated string itself.
 

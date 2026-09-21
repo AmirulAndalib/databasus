@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"databasus-backend/internal/features/audit_logs"
 	users_dto "databasus-backend/internal/features/users/dto"
 	users_enums "databasus-backend/internal/features/users/enums"
 	users_middleware "databasus-backend/internal/features/users/middleware"
+	users_repositories "databasus-backend/internal/features/users/repositories"
 	users_services "databasus-backend/internal/features/users/services"
 	users_testing "databasus-backend/internal/features/users/testing"
 	workspaces_controllers "databasus-backend/internal/features/workspaces/controllers"
@@ -792,4 +794,122 @@ func createInviteWorkspaceTestRouter() *gin.Engine {
 	audit_logs.SetupDependencies()
 
 	return router
+}
+
+func Test_ManageAdmins_WhenBootstrapAdminHasChangedAddress_AllThreeActionsSucceed(t *testing.T) {
+	// The management router is built last: it installs the recorder on all three
+	// services, and the user router would otherwise leave the management service
+	// writing into an earlier one.
+	userRouter := createUserTestRouter()
+	router := createManagementTestRouter()
+	auditLogRecorder := users_testing.GetAuditLogRecorder()
+
+	rootAdmin := users_testing.RecreateInitAdminAndGetAccess(t.Context())
+
+	changedEmail := "moved" + uuid.New().String() + "@example.com"
+	test_utils.MakePutRequest(
+		t,
+		userRouter,
+		"/api/v1/users/me",
+		"Bearer "+rootAdmin.Token,
+		users_dto.UpdateUserInfoRequestDTO{Email: &changedEmail},
+		http.StatusOK,
+	)
+
+	targetUser := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleMember)
+
+	response := test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/"+targetUser.UserID.String()+"/role",
+		"Bearer "+rootAdmin.Token,
+		users_dto.ChangeUserRoleRequestDTO{Role: users_enums.UserRoleAdmin},
+		http.StatusOK,
+	)
+	assert.Contains(t, string(response.Body), "User role changed successfully")
+
+	response = test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/"+targetUser.UserID.String()+"/deactivate",
+		"Bearer "+rootAdmin.Token,
+		nil,
+		http.StatusOK,
+	)
+	assert.Contains(t, string(response.Body), "User deactivated successfully")
+
+	response = test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/"+targetUser.UserID.String()+"/activate",
+		"Bearer "+rootAdmin.Token,
+		nil,
+		http.StatusOK,
+	)
+	assert.Contains(t, string(response.Body), "User activated successfully")
+
+	assert.True(t, auditLogRecorder.HasEntryContaining("User role changed", targetUser.Email))
+	assert.True(t, auditLogRecorder.HasEntryContaining("User deactivated", targetUser.Email))
+}
+
+// The property here holds by composition of three separate rules and nothing in
+// the code states it, so an edit to any one of them could remove it silently.
+func Test_ManageAdmins_AgainstTheBootstrapAdmin_IsAlwaysRefused(t *testing.T) {
+	router := createManagementTestRouter()
+
+	rootAdmin := users_testing.RecreateInitAdminAndGetAccess(t.Context())
+
+	recordedRootAdmin, err := (&users_repositories.UserRepository{}).GetRootAdmin(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, recordedRootAdmin)
+	require.Equal(t, rootAdmin.UserID, recordedRootAdmin.ID)
+
+	ordinaryAdmin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	response := test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/"+rootAdmin.UserID.String()+"/role",
+		"Bearer "+ordinaryAdmin.Token,
+		users_dto.ChangeUserRoleRequestDTO{Role: users_enums.UserRoleMember},
+		http.StatusBadRequest,
+	)
+	assert.Contains(t, string(response.Body), "only the root admin user")
+
+	response = test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/"+rootAdmin.UserID.String()+"/deactivate",
+		"Bearer "+ordinaryAdmin.Token,
+		nil,
+		http.StatusBadRequest,
+	)
+	assert.Contains(t, string(response.Body), "only the root admin user")
+
+	response = test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/"+rootAdmin.UserID.String()+"/role",
+		"Bearer "+rootAdmin.Token,
+		users_dto.ChangeUserRoleRequestDTO{Role: users_enums.UserRoleMember},
+		http.StatusBadRequest,
+	)
+	assert.Contains(t, string(response.Body), "cannot change your own role")
+
+	response = test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/"+rootAdmin.UserID.String()+"/deactivate",
+		"Bearer "+rootAdmin.Token,
+		nil,
+		http.StatusBadRequest,
+	)
+	assert.Contains(t, string(response.Body), "cannot deactivate your own account")
+
+	unchangedRootAdmin, err := (&users_repositories.UserRepository{}).GetRootAdmin(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, unchangedRootAdmin)
+	assert.Equal(t, rootAdmin.UserID, unchangedRootAdmin.ID)
+	assert.Equal(t, users_enums.UserRoleAdmin, unchangedRootAdmin.Role)
+	assert.Equal(t, users_enums.UserStatusActive, unchangedRootAdmin.Status)
 }

@@ -30,6 +30,10 @@ type EmailSMTPSender struct {
 	isConfigured         bool
 }
 
+func (s *EmailSMTPSender) IsConfigured() bool {
+	return s.isConfigured
+}
+
 func (s *EmailSMTPSender) SendEmail(to, subject, body string) error {
 	if !s.isConfigured {
 		s.logger.Warn("Skipping email send, SMTP not initialized", "to", to, "subject", subject)

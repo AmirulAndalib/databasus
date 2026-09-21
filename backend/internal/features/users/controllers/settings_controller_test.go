@@ -1,13 +1,18 @@
 package users_controllers
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	users_dto "databasus-backend/internal/features/users/dto"
 	users_enums "databasus-backend/internal/features/users/enums"
-	users_models "databasus-backend/internal/features/users/models"
+	users_services "databasus-backend/internal/features/users/services"
 	users_testing "databasus-backend/internal/features/users/testing"
 	test_utils "databasus-backend/internal/util/testing"
 )
@@ -19,7 +24,7 @@ func Test_GetUserSettings_WhenUserIsAdmin_ReturnsSettings(t *testing.T) {
 	// Create admin user and get token
 	testUser := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
 
-	var response users_models.UsersSettings
+	var response users_dto.SettingsResponseDTO
 	test_utils.MakeGetRequestAndUnmarshal(
 		t,
 		router,
@@ -33,6 +38,10 @@ func Test_GetUserSettings_WhenUserIsAdmin_ReturnsSettings(t *testing.T) {
 	assert.True(t, response.IsAllowExternalRegistrations)
 	assert.True(t, response.IsAllowMemberInvitations)
 	assert.True(t, response.IsMemberAllowedToCreateWorkspaces)
+
+	// The second factor is the exception: an instance asks for one factor until
+	// an administrator says otherwise.
+	assert.False(t, response.IsTwoFactorAuthRequired)
 }
 
 func Test_GetUserSettings_WhenUserIsMember_ReturnsSettings(t *testing.T) {
@@ -66,13 +75,13 @@ func Test_UpdateUserSettings_WhenUserIsAdmin_SettingsUpdated(t *testing.T) {
 	testUser := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
 
 	// Update some settings
-	request := users_models.UsersSettings{
+	request := users_dto.UpdateSettingsRequestDTO{
 		IsAllowExternalRegistrations:      false,
 		IsAllowMemberInvitations:          true,
 		IsMemberAllowedToCreateWorkspaces: false,
 	}
 
-	var response users_models.UsersSettings
+	var response users_dto.SettingsResponseDTO
 	test_utils.MakePutRequestAndUnmarshal(
 		t,
 		router,
@@ -97,14 +106,14 @@ func Test_UpdateUserSettings_WithPartialData_SettingsUpdated(t *testing.T) {
 	testUser := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
 
 	// Update only one setting
-	request := users_models.UsersSettings{
+	request := users_dto.UpdateSettingsRequestDTO{
 		IsAllowExternalRegistrations: false,
 		// Other fields will use default values
 		IsAllowMemberInvitations:          true,
 		IsMemberAllowedToCreateWorkspaces: true,
 	}
 
-	var response users_models.UsersSettings
+	var response users_dto.SettingsResponseDTO
 	test_utils.MakePutRequestAndUnmarshal(
 		t,
 		router,
@@ -129,7 +138,7 @@ func Test_UpdateUserSettings_WhenUserIsMember_ReturnsForbidden(t *testing.T) {
 	// Create member user and get token
 	testUser := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleMember)
 
-	request := users_models.UsersSettings{
+	request := users_dto.UpdateSettingsRequestDTO{
 		IsAllowExternalRegistrations: false,
 	}
 
@@ -167,7 +176,7 @@ func Test_UpdateUserSettings_WithoutAuth_ReturnsUnauthorized(t *testing.T) {
 	users_testing.ResetSettingsToDefaults(t.Context())
 	router := createSettingsTestRouter()
 
-	request := users_models.UsersSettings{
+	request := users_dto.UpdateSettingsRequestDTO{
 		IsAllowExternalRegistrations: false,
 	}
 
@@ -179,4 +188,272 @@ func Test_UpdateUserSettings_WithoutAuth_ReturnsUnauthorized(t *testing.T) {
 		request,
 		http.StatusUnauthorized,
 	)
+}
+
+func Test_GetUserSettings_WhenMailServerIsConfigured_ReportsItConfigured(t *testing.T) {
+	users_testing.ResetSettingsToDefaults(t.Context())
+	router, _ := createSettingsTestRouterWithMailSender(t, false)
+
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	var response users_dto.SettingsResponseDTO
+	test_utils.MakeGetRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		http.StatusOK,
+		&response,
+	)
+
+	assert.True(t, response.IsEmailConfigured)
+}
+
+func Test_GetUserSettings_WhenMailServerIsMissing_ReportsItUnconfigured(t *testing.T) {
+	users_testing.ResetSettingsToDefaults(t.Context())
+	router, _ := createSettingsTestRouterWithMailSender(t, true)
+
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	var response users_dto.SettingsResponseDTO
+	test_utils.MakeGetRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		http.StatusOK,
+		&response,
+	)
+
+	assert.False(t, response.IsEmailConfigured)
+}
+
+func Test_UpdateUserSettings_WhenRequestCarriesTheDerivedField_StoredRowIsUntouched(t *testing.T) {
+	users_testing.ResetSettingsToDefaults(t.Context())
+	router, _ := createSettingsTestRouterWithMailSender(t, true)
+
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	response := test_utils.MakeRequest(t, router, test_utils.RequestOptions{
+		Method: "PUT",
+		URL:    "/api/v1/users/settings",
+		Body: map[string]any{
+			"isAllowExternalRegistrations":      true,
+			"isAllowMemberInvitations":          true,
+			"isMemberAllowedToCreateWorkspaces": true,
+			"isTwoFactorAuthRequired":           false,
+			"isEmailConfigured":                 true,
+		},
+		AuthToken:      "Bearer " + admin.Token,
+		ExpectedStatus: http.StatusOK,
+	})
+
+	var updateResponse users_dto.SettingsResponseDTO
+	require.NoError(t, json.Unmarshal(response.Body, &updateResponse))
+	assert.False(t, updateResponse.IsEmailConfigured)
+
+	storedSettings, err := users_services.GetSettingsService().GetSettings(t.Context())
+	require.NoError(t, err)
+	assert.False(t, storedSettings.IsTwoFactorAuthRequired)
+}
+
+func Test_UpdateUserSettings_TurningTwoFactorOn_ReadsBackTheNewValue(t *testing.T) {
+	users_testing.ResetSettingsToDefaults(t.Context())
+	router, _ := createSettingsTestRouterWithMailSender(t, false)
+	users_testing.DeleteAllUsers()
+
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	var beforeUpdate users_dto.SettingsResponseDTO
+	test_utils.MakeGetRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		http.StatusOK,
+		&beforeUpdate,
+	)
+	assert.False(t, beforeUpdate.IsTwoFactorAuthRequired)
+
+	var afterUpdate users_dto.SettingsResponseDTO
+	test_utils.MakePutRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		enableTwoFactorRequest(),
+		http.StatusOK,
+		&afterUpdate,
+	)
+	assert.True(t, afterUpdate.IsTwoFactorAuthRequired)
+
+	var readBack users_dto.SettingsResponseDTO
+	test_utils.MakeGetRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		http.StatusOK,
+		&readBack,
+	)
+	assert.True(t, readBack.IsTwoFactorAuthRequired)
+}
+
+func Test_UpdateUserSettings_WhenASwitchChanges_AuditLogCarriesItsOldAndNewValue(t *testing.T) {
+	users_testing.ResetSettingsToDefaults(t.Context())
+	router, _ := createSettingsTestRouterWithMailSender(t, false)
+	users_testing.DeleteAllUsers()
+
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+	recorder := users_testing.GetAuditLogRecorder()
+
+	test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		users_dto.UpdateSettingsRequestDTO{
+			IsAllowExternalRegistrations:      false,
+			IsAllowMemberInvitations:          false,
+			IsMemberAllowedToCreateWorkspaces: false,
+			IsTwoFactorAuthRequired:           true,
+		},
+		http.StatusOK,
+	)
+
+	expectedEntries := []string{
+		"isAllowExternalRegistrations: true -> false",
+		"isAllowMemberInvitations: true -> false",
+		"isMemberAllowedToCreateWorkspaces: true -> false",
+		"isTwoFactorAuthRequired: false -> true",
+	}
+
+	for _, expected := range expectedEntries {
+		assert.Equal(t, 1, countAuditEntries(recorder, expected), expected)
+	}
+}
+
+func Test_UpdateUserSettings_WhenNothingChanges_WritesNoAuditEntry(t *testing.T) {
+	users_testing.ResetSettingsToDefaults(t.Context())
+	router, _ := createSettingsTestRouterWithMailSender(t, false)
+
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+	recorder := users_testing.GetAuditLogRecorder()
+
+	test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		users_dto.UpdateSettingsRequestDTO{
+			IsAllowExternalRegistrations:      true,
+			IsAllowMemberInvitations:          true,
+			IsMemberAllowedToCreateWorkspaces: true,
+			IsTwoFactorAuthRequired:           false,
+		},
+		http.StatusOK,
+	)
+
+	assert.Equal(t, 0, countAuditEntries(recorder, "isTwoFactorAuthRequired"))
+	assert.Equal(t, 0, countAuditEntries(recorder, "isAllowExternalRegistrations"))
+}
+
+func Test_UpdateUserSettings_WhenMailServerIsMissing_RefusesToRequireTwoFactor(t *testing.T) {
+	users_testing.ResetSettingsToDefaults(t.Context())
+	router, _ := createSettingsTestRouterWithMailSender(t, true)
+	users_testing.DeleteAllUsers()
+
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	response := test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		enableTwoFactorRequest(),
+		http.StatusBadRequest,
+	)
+	assert.Contains(t, string(response.Body), "no mail server configured")
+
+	storedSettings, err := users_services.GetSettingsService().GetSettings(t.Context())
+	require.NoError(t, err)
+	assert.False(t, storedSettings.IsTwoFactorAuthRequired)
+}
+
+func Test_UpdateUserSettings_WhenAnAdminHasNoUsableAddress_RefusesAndNamesTheAccount(t *testing.T) {
+	users_testing.ResetSettingsToDefaults(t.Context())
+	router, _ := createSettingsTestRouterWithMailSender(t, false)
+	users_testing.DeleteAllUsers()
+
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+	unreachableAdmin := users_testing.CreateTestUserWithEmail(
+		t.Context(),
+		users_enums.UserRoleAdmin,
+		"admin",
+	)
+	t.Cleanup(func() { users_testing.DeleteTestUser(context.Background(), unreachableAdmin.UserID) })
+
+	response := test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		enableTwoFactorRequest(),
+		http.StatusBadRequest,
+	)
+	assert.Contains(t, string(response.Body), "admin")
+	assert.Contains(t, string(response.Body), "no valid email address")
+
+	storedSettings, err := users_services.GetSettingsService().GetSettings(t.Context())
+	require.NoError(t, err)
+	assert.False(t, storedSettings.IsTwoFactorAuthRequired)
+}
+
+func Test_UpdateUserSettings_WhenAnInactiveAdminHasNoUsableAddress_StillAccepts(t *testing.T) {
+	users_testing.ResetSettingsToDefaults(t.Context())
+	router, _ := createSettingsTestRouterWithMailSender(t, false)
+	users_testing.DeleteAllUsers()
+
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+	retiredAdmin := users_testing.CreateTestUserWithEmail(
+		t.Context(),
+		users_enums.UserRoleAdmin,
+		"retired-admin",
+	)
+	users_testing.DeactivateTestUser(t.Context(), retiredAdmin.UserID)
+	t.Cleanup(func() { users_testing.DeleteTestUser(context.Background(), retiredAdmin.UserID) })
+
+	var response users_dto.SettingsResponseDTO
+	test_utils.MakePutRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/settings",
+		"Bearer "+admin.Token,
+		enableTwoFactorRequest(),
+		http.StatusOK,
+		&response,
+	)
+
+	assert.True(t, response.IsTwoFactorAuthRequired)
+}
+
+func enableTwoFactorRequest() users_dto.UpdateSettingsRequestDTO {
+	return users_dto.UpdateSettingsRequestDTO{
+		IsAllowExternalRegistrations:      true,
+		IsAllowMemberInvitations:          true,
+		IsMemberAllowedToCreateWorkspaces: true,
+		IsTwoFactorAuthRequired:           true,
+	}
+}
+
+func countAuditEntries(recorder *users_testing.RecordingAuditLogWriter, fragment string) int {
+	count := 0
+
+	for _, entry := range recorder.GetEntries() {
+		if strings.Contains(entry.Message, fragment) {
+			count++
+		}
+	}
+
+	return count
 }

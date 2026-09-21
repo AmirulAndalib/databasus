@@ -6,6 +6,12 @@ export TMPDIR=/tmp
 readonly permissions_documentation_url="https://databasus.com/advanced-config/#docker-storage-permissions"
 readonly postgres_binary_directory="/usr/lib/postgresql/17/bin"
 
+# A process started with `docker exec` inherits the container's configured environment, not
+# PID 1's, so the generated credential reaches it through this file instead. The location is
+# memory-backed, so the value dies with the container rather than outliving the password
+# rotation of the next start. backend/internal/config/config.go reads the same path.
+readonly published_database_dsn_path="/dev/shm/databasus-database-dsn"
+
 runtime_uid=""
 runtime_gid=""
 postgres_pid=""
@@ -531,6 +537,10 @@ configure_application_database_dsn() {
     fi
 
     export DATABASE_DSN="host=localhost user=postgres password=${internal_postgres_password} dbname=databasus port=5437 sslmode=disable"
+
+    install -m 0600 -o databasus -g databasus /dev/null "${published_database_dsn_path}"
+    printf '%s\n' "${DATABASE_DSN}" \
+        | gosu databasus tee "${published_database_dsn_path}" >/dev/null
 }
 
 bootstrap_postgresql() {

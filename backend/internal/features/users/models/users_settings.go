@@ -10,6 +10,8 @@ type UsersSettings struct {
 	IsAllowMemberInvitations bool `json:"isAllowMemberInvitations" gorm:"column:is_allow_member_invitations"`
 	// means that any user with role MEMBER can create their own workspaces
 	IsMemberAllowedToCreateWorkspaces bool `json:"isMemberAllowedToCreateWorkspaces" gorm:"column:is_member_allowed_to_create_workspaces"`
+	// means that a password sign-in also has to present a code emailed to the account
+	IsTwoFactorAuthRequired bool `json:"isTwoFactorAuthRequired" gorm:"column:is_two_factor_auth_required"`
 }
 
 func (UsersSettings) TableName() string {

@@ -105,7 +105,7 @@ export const ru: typeof en = {
       placeholder: 'Вставьте строку подключения...',
     },
     auth: {
-      adminPasswordCheckFailed: 'Не удалось проверить, задан ли пароль администратора: {{error}}',
+      accountsCheckFailed: 'Не удалось проверить, есть ли на инстансе учетные записи: {{error}}',
     },
     oauthCallback: {
       failedTitle: 'Не удалось войти',
@@ -130,6 +130,15 @@ export const ru: typeof en = {
     unknown: 'Что-то пошло не так. Попробуйте еще раз.',
     networkUnreachable: 'Сервер Databasus недоступен. Проверьте подключение и попробуйте еще раз.',
     requestFailed: 'Сервер не смог выполнить запрос (HTTP {{status}}). Попробуйте позже.',
+    signInCodeIncorrect: 'Неверный код.',
+    pendingSignInNotUsable: 'Этот вход больше нельзя завершить. Войдите заново.',
+    signInCodeNotSent:
+      'Не удалось отправить код входа. Попробуйте позже или обратитесь к администратору.',
+    tooManySignInCodes:
+      'За последний час для этого аккаунта запросили слишком много кодов входа. Попробуйте позже.',
+    signInCodeResentTooSoon:
+      'Код отправлен меньше минуты назад. Подождите минуту, прежде чем запрашивать новый.',
+    rateLimitExceeded: 'Слишком много попыток. Подождите немного и попробуйте снова.',
   },
   status: {
     logicalBackup: {
@@ -235,6 +244,12 @@ export const ru: typeof en = {
       title: 'Участники могут создавать рабочие пространства',
       description:
         'Если включено, участники (не администраторы) могут создавать новые рабочие пространства. Если выключено — только администраторы.',
+    },
+    twoFactorAuth: {
+      title: 'Включить двухфакторный вход',
+      description:
+        'Если включено, после пароля нужно ввести шестизначный код, отправленный на почту аккаунта. На вход через Google и GitHub это не распространяется.',
+      mailServerRequired: 'Нужен почтовый сервер. Сначала <docsLink>настройте SMTP</docsLink>.',
     },
     saving: 'Сохраняем...',
     saveChanges: 'Сохранить изменения',
@@ -865,16 +880,23 @@ export const ru: typeof en = {
       noAccount: 'Нет аккаунта? <signUpLink>Зарегистрируйтесь</signUpLink>',
       forgotPassword: 'Забыли пароль?',
     },
+    signInCode: {
+      title: 'Введите код',
+      description:
+        'Мы отправили шестизначный код на {{email}}. Он перестает работать через 10 минут после отправки.',
+      code: 'Код входа',
+      submit: 'Войти',
+      resend: 'Отправить код еще раз',
+      backToSignIn: 'Вернуться ко входу',
+      invalidCode: 'Код состоит из 6 цифр',
+      codeResent: 'Новый код отправлен. Предыдущий больше не работает.',
+    },
     signUp: {
       title: 'Регистрация',
       namePlaceholder: 'Иван Иванов',
       submit: 'Зарегистрироваться',
+      administersInstance: 'Это первая учетная запись на инстансе — она будет им управлять.',
       hasAccount: 'Уже есть аккаунт? <signInLink>Войдите</signInLink>',
-    },
-    adminPassword: {
-      title: 'Регистрация администратора',
-      description: 'После этого вы сможете входить с логином «admin» и паролем, который зададите',
-      submit: 'Задать пароль',
     },
     requestPasswordReset: {
       title: 'Сброс пароля',
@@ -900,7 +922,6 @@ export const ru: typeof en = {
       userId: 'ID пользователя',
       namePlaceholder: 'Введите имя',
       emailPlaceholder: 'Введите email',
-      adminEmailReadOnly: 'Email администратора изменить нельзя',
       role: 'Роль',
       saveChanges: 'Сохранить изменения',
       noChanges: 'Изменений нет',

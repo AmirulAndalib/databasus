@@ -178,7 +178,7 @@ export default function Index() {
                 name: "Databasus 如何保证安全性？",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Databasus 从三个层面保障安全：（1）敏感数据加密——所有密码、令牌和凭据均使用 AES-256-GCM 加密，并与数据库分开存储；（2）备份加密——每个备份文件都使用由主密钥、备份 ID 和随机盐派生出的唯一密钥加密，即使有人获得了存储的访问权限，没有你的加密密钥备份也毫无用处；（3）只读数据库访问——Databasus 只需要 SELECT 权限，并会做全面检查确保不存在任何写权限，即使工具本身被攻破也不会破坏数据。在运行时之外，安全性和可靠性也被落实到每一次提交和 PR：CodeQL 静态分析、集成 gitleaks 和 semgrep 的 CodeRabbit、Dependabot CVE 监控、Trivy 镜像与 Dockerfile 扫描，以及 OpenAI 定期进行的 Codex Security 审计。集成测试针对真实的 PostgreSQL、MySQL、MariaDB 和 MongoDB 容器运行，并在每个 PR 上验证完整的备份加恢复流程。GitHub Actions 固定到提交 SHA，工作流遵循最小权限原则。所有操作都在你控制的容器和你拥有的服务器上运行，而且因为它是开源的，你的安全团队可以在部署前审计每一行代码。",
+                  text: "Databasus 从三个层面保障安全：（1）敏感数据加密——所有密码、令牌和凭据均使用 AES-256-GCM 加密，并与数据库分开存储；（2）备份加密——每个备份文件都使用由主密钥、备份 ID 和随机盐派生出的唯一密钥加密，即使有人获得了存储的访问权限，没有你的加密密钥备份也毫无用处；（3）只读数据库访问——Databasus 只需要 SELECT 权限，并会做全面检查确保不存在任何写权限，即使工具本身被攻破也不会破坏数据。登录本身也可以要求第二重验证：启用后，密码正确之后账号邮箱会收到六位验证码，而通过 Google 或 GitHub 登录仍然依赖这些服务商自己的验证。在运行时之外，安全性和可靠性也被落实到每一次提交和 PR：CodeQL 静态分析、集成 gitleaks 和 semgrep 的 CodeRabbit、Dependabot CVE 监控、Trivy 镜像与 Dockerfile 扫描，以及 OpenAI 定期进行的 Codex Security 审计。集成测试针对真实的 PostgreSQL、MySQL、MariaDB 和 MongoDB 容器运行，并在每个 PR 上验证完整的备份加恢复流程。GitHub Actions 固定到提交 SHA，工作流遵循最小权限原则。所有操作都在你控制的容器和你拥有的服务器上运行，而且因为它是开源的，你的安全团队可以在部署前审计每一行代码。",
                 },
               },
               {
@@ -219,6 +219,14 @@ export default function Index() {
                 acceptedAnswer: {
                   "@type": "Answer",
                   text: "Databasus 支持物理备份、全量备份、增量备份、WAL 备份和逻辑备份。物理备份是对整个数据库集群的文件级复制，对大数据集来说备份和恢复都比逻辑转储更快，并且构建在 PostgreSQL 17 的原生备份机制之上，我们依赖 PostgreSQL 自身久经考验的工具，而不是重新造轮子。全量备份是集群的完整、自包含副本，是每条备份链的起点。增量备份只存储自上次备份以来的变化，让备份保持小而快。WAL 流式复制持续捕获数据库的写入流，支持时间点恢复（PITR），用于灾难恢复并将数据丢失降到接近于零。逻辑备份是数据库引擎专用二进制格式的原生转储，压缩后直接流式写入存储，没有中间文件。如果你要求非公开连接，所有这些备份都可以通过 SSH 隧道运行，数据库永远无需公开暴露。SSH 隧道是内置功能。",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "我忘记了管理员邮箱或密码",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: '实例上创建的第一个账户就是它的管理员。如果你不记得那个地址，可以在运行 Databasus 的服务器上执行 docker exec -it databasus ./main --list-admins：它会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并且不会输出任何密码。要为该账户设置新密码，请执行 docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址 admin。如果实例还要求登录验证码，而邮件服务器已经无法送达，请执行 docker exec -it databasus ./main --disable-2fa，让实例不再要求验证码。这三条命令都记录在密码页面上。',
                 },
               },
             ],
@@ -1267,6 +1275,10 @@ export default function Index() {
                   权限，并会做全面检查确保不存在任何写权限，即使工具本身被攻破也不会破坏数据。
                   <br />
                   <br />
+                  登录本身也可以要求第二重验证：启用后，密码正确之后账号邮箱会收到六位验证码，而通过
+                  Google 或 GitHub 登录仍然依赖这些服务商自己的验证。
+                  <br />
+                  <br />
                   在运行时之外，安全性和可靠性也被落实到每一次提交和 PR：CodeQL
                   静态分析、集成 gitleaks 和 semgrep 的 CodeRabbit、Dependabot
                   CVE 监控、Trivy 镜像与 Dockerfile 扫描，以及 OpenAI 定期进行的
@@ -1564,6 +1576,30 @@ export default function Index() {
                   我们的目标是成为 PostgreSQL 17
                   及以上版本的标准备份工具。Databasus 是第一个构建在 PostgreSQL
                   原生、高效且如今已成为标准的备份协议之上的备份工具，而不是编写自己的实现。
+                </>
+              }
+            />
+            <FaqItem
+              number="15"
+              question="我忘记了管理员邮箱或密码"
+              answer={
+                <>
+                  实例上创建的第一个账户就是它的管理员。如果你不记得那个地址，可以在运行
+                  Databasus 的服务器上执行 docker exec -it databasus ./main
+                  --list-admins：它会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并且不会输出任何密码。要为该账户设置新密码，请执行
+                  docker exec -it databasus ./main
+                  --new-password=&quot;YourNewSecurePassword123&quot;
+                  --email=&quot;owner@example.com&quot;。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址
+                  admin。如果实例还要求登录验证码，而邮件服务器已经无法送达，请执行
+                  docker exec -it databasus ./main
+                  --disable-2fa，让实例不再要求验证码。这三条命令都记录在
+                  <a
+                    href="/zh/password"
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    密码页面
+                  </a>
+                  上。
                 </>
               }
             />

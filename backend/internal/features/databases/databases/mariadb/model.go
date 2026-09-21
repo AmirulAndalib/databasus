@@ -525,7 +525,9 @@ func (m *MariadbDatabase) buildDSN(password, database string) string {
 
 // detectMariadbVersion parses VERSION() output to detect MariaDB version
 // MariaDB returns strings like "10.11.6-MariaDB" or "11.4.2-MariaDB-1:11.4.2+maria~ubu2204"
-// Minor versions are mapped to the closest supported version (e.g., 12.1 → 12.0)
+// A version identity names a release line, so minors collapse onto it
+// (12.1 → 12.0, every 13.x → 13.0). A line no shipped client serves is
+// refused here rather than at backup time.
 func detectMariadbVersion(ctx context.Context, db *sql.DB) (tools.MariadbVersion, error) {
 	var versionStr string
 	err := db.QueryRowContext(ctx, "SELECT VERSION()").Scan(&versionStr)
@@ -533,6 +535,12 @@ func detectMariadbVersion(ctx context.Context, db *sql.DB) (tools.MariadbVersion
 		return "", fmt.Errorf("failed to query MariaDB version: %w", err)
 	}
 
+	return parseMariadbVersionString(versionStr)
+}
+
+// parseMariadbVersionString turns what a server answers VERSION() with into
+// the version identity that names its release line.
+func parseMariadbVersionString(versionStr string) (tools.MariadbVersion, error) {
 	if !strings.Contains(strings.ToLower(versionStr), "mariadb") {
 		return "", fmt.Errorf(
 			"not a MariaDB server (version: %s). Use MySQL database type instead",
@@ -540,17 +548,25 @@ func detectMariadbVersion(ctx context.Context, db *sql.DB) (tools.MariadbVersion
 		)
 	}
 
-	re := regexp.MustCompile(`^(\d+)\.(\d+)`)
-	matches := re.FindStringSubmatch(versionStr)
+	matches := mariadbVersionPattern.FindStringSubmatch(versionStr)
 	if len(matches) < 3 {
 		return "", fmt.Errorf("could not parse MariaDB version: %s", versionStr)
 	}
 
-	major := matches[1]
-	minor := matches[2]
+	version, err := mapMariadbVersion(matches[1], matches[2])
+	if err != nil {
+		return "", err
+	}
 
-	return mapMariadbVersion(major, minor)
+	// A line we map is still unsupported where its client was never built.
+	if err := tools.RequireMariadbBundle(version); err != nil {
+		return "", err
+	}
+
+	return version, nil
 }
+
+var mariadbVersionPattern = regexp.MustCompile(`^(\d+)\.(\d+)`)
 
 func mapMariadbVersion(major, minor string) (tools.MariadbVersion, error) {
 	switch major {
@@ -562,9 +578,13 @@ func mapMariadbVersion(major, minor string) (tools.MariadbVersion, error) {
 		return mapMariadb11xVersion(minor)
 	case "12":
 		return tools.MariadbVersion120, nil
+	// Every 13.x release belongs to one line, whatever its minor, and the
+	// 13.0 client serves all of them.
+	case "13":
+		return tools.MariadbVersion130, nil
 	default:
 		return "", fmt.Errorf(
-			"unsupported MariaDB major version: %s (supported: 5.x, 10.x, 11.x, 12.x)",
+			"unsupported MariaDB major version: %s (supported: 5.x, 10.x, 11.x, 12.x, 13.x)",
 			major,
 		)
 	}

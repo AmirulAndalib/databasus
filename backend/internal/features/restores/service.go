@@ -271,10 +271,14 @@ func (s *RestoreService) validateVersionCompatibility(
 		if requestDTO.MysqlDatabase == nil {
 			return errors.New("mysql database configuration is required for restore")
 		}
-		if tools.IsMysqlBackupVersionHigherThanRestoreVersion(
+		isMysqlDowngrade, err := tools.IsMysqlBackupVersionHigherThanRestoreVersion(
 			backupDatabase.Mysql.Version,
 			requestDTO.MysqlDatabase.Version,
-		) {
+		)
+		if err != nil {
+			return err
+		}
+		if isMysqlDowngrade {
 			return errors.New(`backup database version is higher than restore database version. ` +
 				`Should be restored to the same version as the backup database or higher. ` +
 				`For example, you can restore MySQL 8.0 backup to MySQL 8.0, 8.4 or higher. But cannot restore to 5.7`)
@@ -283,10 +287,14 @@ func (s *RestoreService) validateVersionCompatibility(
 		if requestDTO.MariadbDatabase == nil {
 			return errors.New("mariadb database configuration is required for restore")
 		}
-		if tools.IsMariadbBackupVersionHigherThanRestoreVersion(
+		isMariadbDowngrade, err := tools.IsMariadbBackupVersionHigherThanRestoreVersion(
 			backupDatabase.Mariadb.Version,
 			requestDTO.MariadbDatabase.Version,
-		) {
+		)
+		if err != nil {
+			return err
+		}
+		if isMariadbDowngrade {
 			return errors.New(`backup database version is higher than restore database version. ` +
 				`Should be restored to the same version as the backup database or higher. ` +
 				`For example, you can restore MariaDB 10.11 backup to MariaDB 10.11, 11.4 or higher. But cannot restore to 10.6`)

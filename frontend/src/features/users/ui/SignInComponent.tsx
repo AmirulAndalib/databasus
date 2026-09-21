@@ -11,7 +11,7 @@ import {
   GOOGLE_CLIENT_ID,
   IS_EMAIL_CONFIGURED,
 } from '../../../constants';
-import { userApi } from '../../../entity/users';
+import { type PendingSignIn, userApi } from '../../../entity/users';
 import { translateApiError } from '../../../shared/i18n';
 import { FormValidator } from '../../../shared/lib/FormValidator';
 import { CloudflareTurnstileWidget } from '../../../shared/ui/CloudflareTurnstileWidget';
@@ -21,11 +21,13 @@ import { GoogleOAuthComponent } from './oauth/GoogleOAuthComponent';
 interface SignInComponentProps {
   onSwitchToSignUp?: () => void;
   onSwitchToResetPassword?: () => void;
+  onCodeRequired?: (pendingSignIn: PendingSignIn) => void;
 }
 
 export function SignInComponent({
   onSwitchToSignUp,
   onSwitchToResetPassword,
+  onCodeRequired,
 }: SignInComponentProps): JSX.Element {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
@@ -47,6 +49,8 @@ export function SignInComponent({
       return false;
     }
 
+    // 'admin' is not an address, but an instance created before the first account
+    // administered it still signs in with that login until its owner replaces it.
     if (!FormValidator.isValidEmail(email) && email !== 'admin') {
       setEmailError(true);
       return false;
@@ -68,11 +72,15 @@ export function SignInComponent({
       setLoading(true);
 
       try {
-        await userApi.signIn({
+        const outcome = await userApi.signIn({
           email,
           password,
           cloudflareTurnstileToken: token,
         });
+
+        if (!outcome.isCompleted) {
+          onCodeRequired?.(outcome.pendingSignIn);
+        }
       } catch (e) {
         setSignInError(e);
         resetCloudflareTurnstile();

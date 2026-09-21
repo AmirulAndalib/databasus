@@ -13,7 +13,6 @@ import (
 	users_errors "databasus-backend/internal/features/users/errors"
 	user_middleware "databasus-backend/internal/features/users/middleware"
 	users_services "databasus-backend/internal/features/users/services"
-	cloudflare_turnstile "databasus-backend/internal/util/cloudflare_turnstile"
 	"databasus-backend/internal/util/ratelimiter"
 )
 
@@ -26,10 +25,10 @@ type UserController struct {
 func (c *UserController) RegisterRoutes(router *gin.RouterGroup) {
 	router.POST("/users/signup", c.SignUp)
 	router.POST("/users/signin", c.SignIn)
+	router.POST("/users/verify-signin-code", c.VerifySignInCode)
+	router.POST("/users/resend-signin-code", c.ResendSignInCode)
 
-	// Admin password setup (no auth required)
-	router.GET("/users/admin/has-password", c.IsAdminHasPassword)
-	router.POST("/users/admin/set-password", c.SetAdminPassword)
+	router.GET("/users/is-any-user-exist", c.HasAnyUser)
 
 	// Password reset (no auth required)
 	router.POST("/users/send-reset-password-code", c.SendResetPasswordCode)
@@ -64,26 +63,8 @@ func (c *UserController) SignUp(ctx *gin.Context) {
 		return
 	}
 
-	// Verify Cloudflare Turnstile if enabled
-	turnstileService := cloudflare_turnstile.GetCloudflareTurnstileService()
-	if turnstileService.IsEnabled() {
-		if request.CloudflareTurnstileToken == nil || *request.CloudflareTurnstileToken == "" {
-			ctx.JSON(
-				http.StatusBadRequest,
-				gin.H{"error": "Cloudflare Turnstile verification required"},
-			)
-			return
-		}
-
-		clientIP := ctx.ClientIP()
-		isValid, err := turnstileService.VerifyToken(*request.CloudflareTurnstileToken, clientIP)
-		if err != nil || !isValid {
-			ctx.JSON(
-				http.StatusBadRequest,
-				gin.H{"error": "Cloudflare Turnstile verification failed"},
-			)
-			return
-		}
+	if !verifyTurnstileOrRespond(ctx, request.CloudflareTurnstileToken) {
+		return
 	}
 
 	user, err := c.userService.SignUp(ctx.Request.Context(), &request)
@@ -105,12 +86,12 @@ func (c *UserController) SignUp(ctx *gin.Context) {
 
 // SignIn
 // @Summary Authenticate a user
-// @Description Authenticate a user with email and password
+// @Description Authenticate a user with email and password. With the second factor on, a correct password answers with a pending sign-in instead of a token, and the emailed code completes it through /users/verify-signin-code.
 // @Tags users
 // @Accept json
 // @Produce json
 // @Param request body users_dto.SignInRequestDTO true "User signin data"
-// @Success 200 {object} users_dto.SignInResponseDTO
+// @Success 200 {object} users_dto.SignInOutcomeResponseDTO "An access token when the instance asks for one factor, and a pending sign-in when it asks for an emailed code"
 // @Failure 400
 // @Failure 429 {object} map[string]string "Rate limit exceeded"
 // @Router /users/signin [post]
@@ -121,79 +102,49 @@ func (c *UserController) SignIn(ctx *gin.Context) {
 		return
 	}
 
-	// Verify Cloudflare Turnstile if enabled
-	turnstileService := cloudflare_turnstile.GetCloudflareTurnstileService()
-	if turnstileService.IsEnabled() {
-		if request.CloudflareTurnstileToken == nil || *request.CloudflareTurnstileToken == "" {
-			ctx.JSON(
-				http.StatusBadRequest,
-				gin.H{"error": "Cloudflare Turnstile verification required"},
-			)
-			return
-		}
-
-		clientIP := ctx.ClientIP()
-		isValid, err := turnstileService.VerifyToken(*request.CloudflareTurnstileToken, clientIP)
-		if err != nil || !isValid {
-			ctx.JSON(
-				http.StatusBadRequest,
-				gin.H{"error": "Cloudflare Turnstile verification failed"},
-			)
-			return
-		}
-	}
-
-	isAllowed, err := c.rateLimiter.RecordAttemptAndCheckIsAllowed(
-		ctx.Request.Context(),
-		ratelimiter.Attempt{Scope: "signin", Identifier: request.Email, Limit: 10, Window: time.Minute},
-	)
-	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "failed to evaluate sign-in rate limit", "error", err)
-	}
-	if err != nil || !isAllowed {
-		ctx.JSON(
-			http.StatusTooManyRequests,
-			gin.H{"error": "Rate limit exceeded. Please try again later."},
-		)
+	if !verifyTurnstileOrRespond(ctx, request.CloudflareTurnstileToken) {
 		return
 	}
 
-	response, err := c.userService.SignIn(ctx.Request.Context(), &request)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if !c.checkRateLimitOrRespond(ctx, ratelimiter.Attempt{
+		Scope:      "signin",
+		Identifier: request.Email,
+		Limit:      10,
+		Window:     time.Minute,
+	}) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	outcome, err := c.userService.SignIn(ctx.Request.Context(), &request)
+	if err != nil {
+		respondToSignInError(ctx, err)
+		return
+	}
+
+	if outcome.PendingSignIn != nil {
+		ctx.JSON(http.StatusOK, outcome.PendingSignIn)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, outcome.CompletedSignIn)
 }
 
-// Admin password endpoints
-func (c *UserController) IsAdminHasPassword(ctx *gin.Context) {
-	hasPassword, err := c.userService.IsRootAdminHasPassword(ctx.Request.Context())
+// HasAnyUser
+// @Summary Check whether the instance holds any account
+// @Description Tells the entry screen whether to offer signing in or the registration that claims the instance
+// @Tags users
+// @Produce json
+// @Success 200 {object} users_dto.HasAnyUserResponseDTO
+// @Failure 500
+// @Router /users/is-any-user-exist [get]
+func (c *UserController) HasAnyUser(ctx *gin.Context) {
+	hasAnyUser, err := c.userService.HasAnyUser()
 	if err != nil {
-		ctx.JSON(
-			http.StatusInternalServerError,
-			gin.H{"error": err.Error()},
-		)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user_dto.IsAdminHasPasswordResponseDTO{HasPassword: hasPassword})
-}
-
-func (c *UserController) SetAdminPassword(ctx *gin.Context) {
-	var request user_dto.SetAdminPasswordRequestDTO
-	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := c.userService.SetRootAdminPassword(ctx.Request.Context(), request.Password); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Admin password set successfully"})
+	ctx.JSON(http.StatusOK, user_dto.HasAnyUserResponseDTO{HasAnyUser: hasAnyUser})
 }
 
 // ChangePassword
@@ -424,49 +375,20 @@ func (c *UserController) SendResetPasswordCode(ctx *gin.Context) {
 		return
 	}
 
-	// Verify Cloudflare Turnstile if enabled
-	turnstileService := cloudflare_turnstile.GetCloudflareTurnstileService()
-	if turnstileService.IsEnabled() {
-		if request.CloudflareTurnstileToken == nil || *request.CloudflareTurnstileToken == "" {
-			ctx.JSON(
-				http.StatusBadRequest,
-				gin.H{"error": "Cloudflare Turnstile verification required"},
-			)
-			return
-		}
-
-		clientIP := ctx.ClientIP()
-		isValid, err := turnstileService.VerifyToken(*request.CloudflareTurnstileToken, clientIP)
-		if err != nil || !isValid {
-			ctx.JSON(
-				http.StatusBadRequest,
-				gin.H{"error": "Cloudflare Turnstile verification failed"},
-			)
-			return
-		}
-	}
-
-	isAllowed, err := c.rateLimiter.RecordAttemptAndCheckIsAllowed(
-		ctx.Request.Context(),
-		ratelimiter.Attempt{
-			Scope:      "reset-password",
-			Identifier: request.Email,
-			Limit:      3,
-			Window:     time.Hour,
-		},
-	)
-	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "failed to evaluate password reset rate limit", "error", err)
-	}
-	if err != nil || !isAllowed {
-		ctx.JSON(
-			http.StatusTooManyRequests,
-			gin.H{"error": "Rate limit exceeded. Please try again later."},
-		)
+	if !verifyTurnstileOrRespond(ctx, request.CloudflareTurnstileToken) {
 		return
 	}
 
-	err = c.userService.SendResetPasswordCode(ctx.Request.Context(), request.Email)
+	if !c.checkRateLimitOrRespond(ctx, ratelimiter.Attempt{
+		Scope:      "reset-password",
+		Identifier: request.Email,
+		Limit:      3,
+		Window:     time.Hour,
+	}) {
+		return
+	}
+
+	err := c.userService.SendResetPasswordCode(ctx.Request.Context(), request.Email)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -499,4 +421,47 @@ func (c *UserController) ResetPassword(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
+}
+
+func (c *UserController) checkRateLimitOrRespond(ctx *gin.Context, attempt ratelimiter.Attempt) bool {
+	isAllowed, err := c.rateLimiter.RecordAttemptAndCheckIsAllowed(ctx.Request.Context(), attempt)
+	if err != nil {
+		c.logger.ErrorContext(ctx.Request.Context(), "failed to evaluate a rate limit",
+			"scope", attempt.Scope, "error", err)
+	}
+
+	if err != nil || !isAllowed {
+		ctx.JSON(
+			http.StatusTooManyRequests,
+			gin.H{"error": "Rate limit exceeded. Please try again later.", "code": "rate_limit_exceeded"},
+		)
+
+		return false
+	}
+
+	return true
+}
+
+// Each refusal carries a code, because the status alone does not tell the
+// interface what happened: a wrong code and a failed challenge are both 400, and
+// a resend inside its minute and an exhausted hourly cap are both 429.
+func respondToSignInError(ctx *gin.Context, err error) {
+	switch {
+	case errors.Is(err, users_errors.ErrPendingSignInNotUsable):
+		respondWithCode(ctx, http.StatusGone, err, "pending_sign_in_not_usable")
+	case errors.Is(err, users_errors.ErrSignInCodeNotSent):
+		respondWithCode(ctx, http.StatusServiceUnavailable, err, "sign_in_code_not_sent")
+	case errors.Is(err, users_errors.ErrTooManySignInCodes):
+		respondWithCode(ctx, http.StatusTooManyRequests, err, "too_many_sign_in_codes")
+	case errors.Is(err, users_errors.ErrSignInCodeResentTooSoon):
+		respondWithCode(ctx, http.StatusTooManyRequests, err, "sign_in_code_resent_too_soon")
+	case errors.Is(err, users_errors.ErrSignInCodeIncorrect):
+		respondWithCode(ctx, http.StatusBadRequest, err, "sign_in_code_incorrect")
+	default:
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+}
+
+func respondWithCode(ctx *gin.Context, status int, err error, code string) {
+	ctx.JSON(status, gin.H{"error": err.Error(), "code": code})
 }

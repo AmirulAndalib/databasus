@@ -71,12 +71,17 @@ type mariadbVersion struct {
 	runsExcludeTests bool // exclude-tables/exclude-events run only on 10.11 and 11.4
 }
 
+// 5.5 and 10.1 are here because they are the only servers the legacy client
+// tier serves: without them nothing dumps through that tier.
 var mariadbVersions = []mariadbVersion{
+	{"MariaDB 5.5", tools.MariadbVersion55, "mariadb:5.5", false},
+	{"MariaDB 10.1", tools.MariadbVersion101, "mariadb:10.1", false},
 	{"MariaDB 10.6", tools.MariadbVersion106, "mariadb:10.6", false},
 	{"MariaDB 10.11", tools.MariadbVersion1011, "mariadb:10.11", true},
 	{"MariaDB 11.4", tools.MariadbVersion114, "mariadb:11.4", true},
 	{"MariaDB 11.8", tools.MariadbVersion118, "mariadb:11.8", false},
 	{"MariaDB 12.0", tools.MariadbVersion120, "mariadb:12.0", false},
+	{"MariaDB 13.0", tools.MariadbVersion130, "mariadb:13.0", true},
 }
 
 // Test_MariadbBackupRestore_AcrossSupportedVersions boots each MariaDB version once, runs every

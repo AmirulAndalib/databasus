@@ -94,6 +94,7 @@ Databasus 会真正执行一次恢复，确认备份可用，而不只是检查�
 - **零信任存储**：备份是加密的，落到攻击者手里也毫无用处，因此可以放心存在 S3 之类的共享存储中
 - **密钥与凭据加密**：任何敏感数据都会加密，绝不外泄，日志和错误信息里也看不到
 - **只读用户**：Databasus 默认使用只读用户来备份，不会保存任何能修改你数据的东西
+- **双因素验证**：密码登录可以额外要求发送到账号邮箱的六位验证码。通过 Google 或 GitHub 登录仍然依赖这些服务商自己的验证
 
 ### 👥 **适合团队** <a href="https://databasus.com/zh/access-management/">(文档)</a>
 
@@ -112,8 +113,8 @@ Databasus 会真正执行一次恢复，确认备份可用，而不只是检查�
 ### 💾 **支持的数据库**
 
 - **PostgreSQL**：14、15、16、17 和 18（物理和逻辑）
-- **MySQL**：5.7、8.0、8.4 和 9（仅逻辑）
-- **MariaDB**：10、11 和 12（仅逻辑）
+- **MySQL**：5.7（仅 x86-64）、8.0、8.4、9 和 26（仅逻辑）
+- **MariaDB**：5.5、10、11、12 和 13（仅逻辑）
 - **MongoDB**：4.2+、5、6、7 和 8（仅逻辑）
 
 ### 🐳 **自托管且安全**
@@ -249,7 +250,7 @@ helm install databasus oci://ghcr.io/databasus/charts/databasus \
 
 ## 🚀 使用
 
-1. **打开控制台**：访问 `http://localhost:4005`
+1. **创建第一个账户**：访问 `http://localhost:4005` 并注册。实例上创建的第一个账户就是它的管理员
 2. **添加第一个要备份的数据库**：点击 "New Database"，跟着向导走完
 3. **配置计划**：可选每小时、每天、每周、每月或 cron 周期
 4. **填写数据库连接**：输入数据库的凭据和连接信息
@@ -263,10 +264,26 @@ helm install databasus oci://ghcr.io/databasus/charts/databasus \
 如果需要重置密码，可以用内置的密码重置命令：
 
 ```bash
-docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"
+docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-把 `admin` 换成要重置密码的那个用户的邮箱地址。
+把 `owner@example.com` 换成要重置密码的那个账户的邮箱地址。在第一个账户成为管理员之前创建的实例，在其所有者替换之前仍使用占位地址 `admin`，此时请传入 `--email="admin"`。
+
+如果你不记得哪个地址是该实例的管理员，可以列出管理员账户：
+
+```bash
+docker exec -it databasus ./main --list-admins
+```
+
+输出会列出每个管理员账户的邮箱、显示名称、创建日期和活动状态，并标记实例所认可的管理员。不会输出任何密码或密码哈希。
+
+如果开启了双因素验证，而邮件服务器不再送达验证码，谁都无法用密码登录。请直接在服务器上关掉第二重验证：
+
+```bash
+docker exec -it databasus ./main --disable-2fa
+```
+
+命令会说明它改了什么，设置本来就关着时也会正常结束，并把这次改动写入审计日志。
 
 ### 💾 给 Databasus 自身做备份
 

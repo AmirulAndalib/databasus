@@ -94,6 +94,7 @@ O Databasus faz uma restauração de verdade para confirmar que os backups serve
 - **Armazenamento zero-trust**: os backups são criptografados e continuam inúteis para um atacante, então você pode guardá-los com segurança em armazenamentos compartilhados como S3, Azure Blob Storage, etc.
 - **Criptografia de segredos**: qualquer dado sensível é criptografado e nunca fica exposto, nem em logs nem em mensagens de erro
 - **Usuário somente leitura**: por padrão, o Databasus usa um usuário somente leitura para os backups e nunca guarda nada capaz de alterar os seus dados
+- **Autenticação de dois fatores**: o login por senha pode exigir um código de seis dígitos enviado ao e-mail da conta. Entrar pelo Google ou pelo GitHub continua contando com as verificações desses provedores
 
 ### 👥 **Adequado para equipes** <a href="https://databasus.com/pt/access-management/">(docs)</a>
 
@@ -112,8 +113,8 @@ O Databasus faz uma restauração de verdade para confirmar que os backups serve
 ### 💾 **Bases de dados suportadas**
 
 - **PostgreSQL**: 14, 15, 16, 17 e 18 (físico e lógico)
-- **MySQL**: 5.7, 8.0, 8.4 e 9 (apenas lógico)
-- **MariaDB**: 10, 11 e 12 (apenas lógico)
+- **MySQL**: 5.7 (apenas x86-64), 8.0, 8.4, 9 e 26 (apenas lógico)
+- **MariaDB**: 5.5, 10, 11, 12 e 13 (apenas lógico)
 - **MongoDB**: 4.2+, 5, 6, 7 e 8 (apenas lógico)
 
 ### 🐳 **Self-hosted e seguro**
@@ -249,7 +250,7 @@ Para mais opções (NodePort, TLS, HTTPRoute do Gateway API), veja o [README do 
 
 ## 🚀 Como usar
 
-1. **Abra o painel**: acesse `http://localhost:4005`
+1. **Crie a primeira conta**: acesse `http://localhost:4005` e cadastre-se. A primeira conta criada em uma instância é quem a administra
 2. **Adicione a sua primeira base de dados para backup**: clique em "New Database" e siga o assistente de configuração
 3. **Configure o agendamento**: escolha entre intervalos de hora em hora, diário, semanal, mensal ou cron
 4. **Informe a conexão com a base**: preencha as credenciais e os dados de conexão da sua base de dados
@@ -263,10 +264,26 @@ Para mais opções (NodePort, TLS, HTTPRoute do Gateway API), veja o [README do 
 Se precisar redefinir a senha, use o comando de redefinição já incluído:
 
 ```bash
-docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"
+docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Troque `admin` pelo e-mail do usuário cuja senha você quer redefinir.
+Troque `owner@example.com` pelo e-mail da conta cuja senha você quer redefinir. Uma instância criada antes de a primeira conta administrá-la ainda carrega o endereço provisório `admin` até que seu dono o substitua, então informe `--email="admin"` nesse caso.
+
+Se você não lembra qual endereço administra a instância, liste as contas de administrador:
+
+```bash
+docker exec -it databasus ./main --list-admins
+```
+
+A saída nomeia cada conta de administrador com seu e-mail, nome de exibição, data de criação e estado de atividade, e marca aquela que a instância reconhece como seu administrador. Nenhuma senha ou hash de senha é impresso.
+
+Se a autenticação de dois fatores estiver ligada e o servidor de e-mail parar de entregar os códigos, ninguém consegue entrar com senha. Desligue o segundo fator direto no servidor:
+
+```bash
+docker exec -it databasus ./main --disable-2fa
+```
+
+O comando informa o que mudou, termina sem reclamar quando a opção já está desligada e registra a mudança no log de auditoria.
 
 ### 💾 Fazer backup do próprio Databasus
 

@@ -178,7 +178,7 @@ export default function Index() {
                 name: "Como o Databasus garante a segurança?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "O Databasus aplica segurança em três níveis: (1) Criptografia de dados sensíveis — todas as senhas, tokens e credenciais são criptografados com AES-256-GCM e guardados separadamente da base de dados; (2) Criptografia de backups — cada arquivo de backup é criptografado com uma chave única derivada de uma chave mestra, do ID do backup e de um salt aleatório, tornando os backups inúteis sem a sua chave de criptografia mesmo que alguém obtenha acesso ao armazenamento; (3) Acesso somente leitura à base de dados — o Databasus exige apenas permissões SELECT e faz verificações completas para garantir que não existem privilégios de escrita, evitando corrupção de dados mesmo que a ferramenta seja comprometida. Além do tempo de execução, segurança e confiabilidade fazem parte de cada commit e PR: análise estática com CodeQL, CodeRabbit com gitleaks e semgrep, monitoramento de CVEs pelo Dependabot, varreduras de imagem e Dockerfile com Trivy e auditorias periódicas do Codex Security da OpenAI. Testes de integração rodam contra contêineres reais de PostgreSQL, MySQL, MariaDB e MongoDB e verificam ciclos completos de backup e restauração em cada PR. As GitHub Actions são fixadas em SHAs de commit e os workflows seguem permissões de privilégio mínimo. Todas as operações rodam em contêineres sob o seu controle, em servidores seus, e como o código é aberto, a sua equipe de segurança pode auditar cada linha antes da implantação.",
+                  text: "O Databasus aplica segurança em três níveis: (1) Criptografia de dados sensíveis — todas as senhas, tokens e credenciais são criptografados com AES-256-GCM e guardados separadamente da base de dados; (2) Criptografia de backups — cada arquivo de backup é criptografado com uma chave única derivada de uma chave mestra, do ID do backup e de um salt aleatório, tornando os backups inúteis sem a sua chave de criptografia mesmo que alguém obtenha acesso ao armazenamento; (3) Acesso somente leitura à base de dados — o Databasus exige apenas permissões SELECT e faz verificações completas para garantir que não existem privilégios de escrita, evitando corrupção de dados mesmo que a ferramenta seja comprometida. O próprio login pode exigir um segundo fator: com ele ativado, depois da senha correta chega um código de seis dígitos ao e-mail da conta, enquanto o login pelo Google ou pelo GitHub continua contando com as verificações desses provedores. Além do tempo de execução, segurança e confiabilidade fazem parte de cada commit e PR: análise estática com CodeQL, CodeRabbit com gitleaks e semgrep, monitoramento de CVEs pelo Dependabot, varreduras de imagem e Dockerfile com Trivy e auditorias periódicas do Codex Security da OpenAI. Testes de integração rodam contra contêineres reais de PostgreSQL, MySQL, MariaDB e MongoDB e verificam ciclos completos de backup e restauração em cada PR. As GitHub Actions são fixadas em SHAs de commit e os workflows seguem permissões de privilégio mínimo. Todas as operações rodam em contêineres sob o seu controle, em servidores seus, e como o código é aberto, a sua equipe de segurança pode auditar cada linha antes da implantação.",
                 },
               },
               {
@@ -219,6 +219,14 @@ export default function Index() {
                 acceptedAnswer: {
                   "@type": "Answer",
                   text: "O Databasus suporta backups físicos, completos, incrementais, de WAL e lógicos. Os backups físicos são uma cópia no nível de arquivos de todo o cluster da base de dados — mais rápidos de fazer e de restaurar para grandes volumes de dados do que dumps lógicos, e construídos sobre o mecanismo nativo de backup do PostgreSQL 17, então usamos as ferramentas testadas do próprio PostgreSQL em vez de reinventá-las. Os backups completos são uma cópia integral e autossuficiente do cluster, a base de onde parte toda cadeia de backups. Os backups incrementais guardam apenas o que mudou desde o backup anterior, mantendo os backups pequenos e rápidos. O streaming de WAL captura continuamente o fluxo de escrita da base, permitindo Point-in-Time Recovery (PITR) para recuperação de desastres e perda de dados próxima de zero. Os backups lógicos são um dump nativo da base no formato binário do próprio motor, comprimido e enviado diretamente ao armazenamento, sem arquivos intermediários. Todos esses backups podem passar por um túnel SSH se você precisar de conexões não públicas, então a base de dados nunca precisa ficar exposta publicamente. O túnel SSH já vem integrado.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Esqueci o email ou a senha do administrador",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: 'A primeira conta criada na instância é quem a administra. Se você não lembra qual é esse endereço, execute docker exec -it databasus ./main --list-admins no servidor onde o Databasus está em execução: ele nomeia cada conta de administrador com seu endereço de email, nome de exibição, data de criação e estado de atividade, e não imprime nenhuma senha. Para definir uma nova senha para essa conta, execute docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com". Uma instância criada antes de a primeira conta administrá-la ainda carrega o endereço provisório admin até que seu dono o substitua. Se a instância também exigir um código ao entrar e o servidor de e-mail tiver parado de entregá-lo, execute docker exec -it databasus ./main --disable-2fa para que ela pare de pedir o código. Os três comandos estão documentados na página de senha.',
                 },
               },
             ],
@@ -1323,6 +1331,12 @@ export default function Index() {
                   mesmo que a ferramenta seja comprometida.
                   <br />
                   <br />
+                  O próprio login pode exigir um segundo fator: com ele ativado,
+                  depois da senha correta chega um código de seis dígitos ao
+                  e-mail da conta, enquanto o login pelo Google ou pelo GitHub
+                  continua contando com as verificações desses provedores.
+                  <br />
+                  <br />
                   Além do tempo de execução, segurança e confiabilidade fazem
                   parte de cada commit e PR: análise estática com CodeQL,
                   CodeRabbit com gitleaks e semgrep, monitoramento de CVEs pelo
@@ -1672,6 +1686,37 @@ export default function Index() {
                   primeira ferramenta de backup construída sobre o protocolo de
                   backup nativo, eficiente e agora padrão do PostgreSQL, em vez
                   de escrever implementações próprias.
+                </>
+              }
+            />
+            <FaqItem
+              number="15"
+              question="Esqueci o email ou a senha do administrador"
+              answer={
+                <>
+                  A primeira conta criada na instância é quem a administra. Se
+                  você não lembra qual é esse endereço, execute docker exec -it
+                  databasus ./main --list-admins no servidor onde o Databasus
+                  está em execução: ele nomeia cada conta de administrador com
+                  seu endereço de email, nome de exibição, data de criação e
+                  estado de atividade, e não imprime nenhuma senha. Para definir
+                  uma nova senha para essa conta, execute docker exec -it
+                  databasus ./main
+                  --new-password=&quot;YourNewSecurePassword123&quot;
+                  --email=&quot;owner@example.com&quot;. Uma instância criada
+                  antes de a primeira conta administrá-la ainda carrega o
+                  endereço provisório admin até que seu dono o substitua. Se a
+                  instância também exigir um código ao entrar e o servidor de
+                  e-mail tiver parado de entregá-lo, execute docker exec -it
+                  databasus ./main --disable-2fa para que ela pare de pedir o
+                  código. Os três comandos estão documentados na
+                  <a
+                    href="/pt/password"
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    página de senha
+                  </a>
+                  .
                 </>
               }
             />

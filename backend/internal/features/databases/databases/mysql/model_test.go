@@ -30,6 +30,7 @@ var mysqlModelVersions = []mysqlModelVersion{
 	{"MySQL 8.0", tools.MysqlVersion80, "mysql:8.0", true},
 	{"MySQL 8.4", tools.MysqlVersion84, "mysql:8.4", true},
 	{"MySQL 9", tools.MysqlVersion9, "mysql:9", true},
+	{"MySQL 26", tools.MysqlVersion26, "mysql:26.7", true},
 }
 
 // Test_MysqlModel_AcrossSupportedVersions boots each MySQL version once and runs every matrix model

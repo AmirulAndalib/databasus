@@ -105,8 +105,7 @@ export const fr: typeof en = {
       placeholder: 'Collez votre chaîne de connexion ici...',
     },
     auth: {
-      adminPasswordCheckFailed:
-        'Impossible de vérifier si le mot de passe administrateur est défini : {{error}}',
+      accountsCheckFailed: "Impossible de vérifier si l'instance possède un compte : {{error}}",
     },
     oauthCallback: {
       failedTitle: "Échec de l'authentification",
@@ -134,6 +133,15 @@ export const fr: typeof en = {
       'Impossible de joindre le serveur Databasus. Vérifiez votre connexion et réessayez.',
     requestFailed:
       "Le serveur n'a pas pu traiter la requête (HTTP {{status}}). Réessayez plus tard.",
+    signInCodeIncorrect: 'Le code est incorrect.',
+    pendingSignInNotUsable: 'Cette connexion ne peut plus aboutir. Reconnectez-vous.',
+    signInCodeNotSent:
+      "L'instance n'a pas pu envoyer le code de connexion. Réessayez plus tard ou prévenez un administrateur.",
+    tooManySignInCodes:
+      'Trop de codes de connexion ont été demandés pour ce compte au cours de la dernière heure. Réessayez plus tard.',
+    signInCodeResentTooSoon:
+      "Un code a été envoyé il y a moins d'une minute. Attendez une minute avant d'en demander un autre.",
+    rateLimitExceeded: 'Trop de tentatives. Patientez un peu et réessayez.',
   },
   status: {
     logicalBackup: {
@@ -239,6 +247,13 @@ export const fr: typeof en = {
       title: 'Les membres peuvent créer des espaces de travail',
       description:
         "Si l'option est activée, les membres (utilisateurs non administrateurs) peuvent créer des espaces de travail. Sinon, seuls les administrateurs peuvent en créer.",
+    },
+    twoFactorAuth: {
+      title: 'Activer la connexion en deux étapes',
+      description:
+        "Une fois activé, la connexion par mot de passe demande aussi un code à six chiffres envoyé à l'adresse du compte. La connexion par Google ou GitHub n'est pas concernée.",
+      mailServerRequired:
+        "Il faut un serveur de messagerie. <docsLink>Configurez le SMTP</docsLink> d'abord.",
     },
     saving: 'Enregistrement...',
     saveChanges: 'Enregistrer les modifications',
@@ -889,17 +904,24 @@ export const fr: typeof en = {
       noAccount: 'Pas encore de compte ? <signUpLink>Inscrivez-vous</signUpLink>',
       forgotPassword: 'Mot de passe oublié ?',
     },
+    signInCode: {
+      title: 'Saisissez le code',
+      description:
+        'Nous avons envoyé un code à six chiffres à {{email}}. Il cesse de fonctionner 10 minutes après son envoi.',
+      code: 'Code de connexion',
+      submit: 'Se connecter',
+      resend: 'Envoyer un autre code',
+      backToSignIn: 'Retour à la connexion',
+      invalidCode: 'Le code comporte 6 chiffres',
+      codeResent: 'Un nouveau code est parti. Le précédent ne fonctionne plus.',
+    },
     signUp: {
       title: 'Inscription',
       namePlaceholder: 'Jean Dupont',
       submit: "S'inscrire",
+      administersInstance:
+        "Il s'agit du premier compte de cette instance : il en sera l'administrateur.",
       hasAccount: 'Vous avez déjà un compte ? <signInLink>Connectez-vous</signInLink>',
-    },
-    adminPassword: {
-      title: 'Créer le compte administrateur',
-      description:
-        "Vous pourrez ensuite vous connecter avec l'identifiant « admin » et le mot de passe choisi",
-      submit: 'Définir le mot de passe',
     },
     requestPasswordReset: {
       title: 'Réinitialiser le mot de passe',
@@ -928,7 +950,6 @@ export const fr: typeof en = {
       userId: 'ID utilisateur',
       namePlaceholder: 'Saisissez votre nom',
       emailPlaceholder: 'Saisissez votre e-mail',
-      adminEmailReadOnly: "L'e-mail de l'administrateur ne peut pas être modifié",
       role: 'Rôle',
       saveChanges: 'Enregistrer les modifications',
       noChanges: 'Aucune modification à enregistrer',

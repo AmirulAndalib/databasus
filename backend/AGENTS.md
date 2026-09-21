@@ -303,6 +303,8 @@ For migrations stub generation use Makefile and only then fill manually.
 
 **Always run tests after writing them and verify they pass.**
 
+Run the package you touched (`go test ./internal/features/<feature>/... -count=1`) and keep `make test` / `make test-fedora` for the end of a change — see [Several agents, one set of containers](../AGENTS.md#several-agents-one-set-of-containers).
+
 ### Naming
 
 - `Test_WhatWeDo_WhatWeExpect`

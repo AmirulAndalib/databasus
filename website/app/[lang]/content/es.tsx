@@ -178,7 +178,7 @@ export default function Index() {
                 name: "¿Cómo garantiza Databasus la seguridad?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Databasus aplica seguridad en tres niveles: (1) Cifrado de datos sensibles: todas las contraseñas, tokens y credenciales se cifran con AES-256-GCM y se guardan separados de la base de datos; (2) Cifrado de las copias de seguridad: cada archivo de respaldo se cifra con una clave única derivada de una clave maestra, el ID de la copia y una sal aleatoria, de modo que las copias resultan inútiles sin su clave de cifrado aunque alguien acceda al almacenamiento; (3) Acceso de solo lectura a la base de datos: Databasus solo requiere permisos SELECT y realiza comprobaciones exhaustivas para asegurar que no existen privilegios de escritura, lo que evita la corrupción de datos incluso si la herramienta se ve comprometida. Más allá del tiempo de ejecución, la seguridad y la fiabilidad se integran en cada commit y PR: análisis estático con CodeQL, CodeRabbit con gitleaks y semgrep, monitoreo de CVE con Dependabot, escaneo de imágenes y Dockerfiles con Trivy, y auditorías periódicas de Codex Security de OpenAI. Las pruebas de integración se ejecutan contra contenedores reales de PostgreSQL, MySQL, MariaDB y MongoDB y verifican ciclos completos de copia y restauración en cada PR. Las GitHub Actions están fijadas a SHA de commit y los flujos de trabajo siguen permisos de privilegio mínimo. Todas las operaciones se ejecutan en contenedores que usted controla, en servidores que le pertenecen, y al ser código abierto, su equipo de seguridad puede auditar cada línea de código antes del despliegue.",
+                  text: "Databasus aplica seguridad en tres niveles: (1) Cifrado de datos sensibles: todas las contraseñas, tokens y credenciales se cifran con AES-256-GCM y se guardan separados de la base de datos; (2) Cifrado de las copias de seguridad: cada archivo de respaldo se cifra con una clave única derivada de una clave maestra, el ID de la copia y una sal aleatoria, de modo que las copias resultan inútiles sin su clave de cifrado aunque alguien acceda al almacenamiento; (3) Acceso de solo lectura a la base de datos: Databasus solo requiere permisos SELECT y realiza comprobaciones exhaustivas para asegurar que no existen privilegios de escritura, lo que evita la corrupción de datos incluso si la herramienta se ve comprometida. El propio inicio de sesión puede exigir un segundo factor: con él activado, tras la contraseña correcta llega un código de seis dígitos al correo de la cuenta, mientras que el inicio de sesión con Google o GitHub sigue apoyándose en las comprobaciones de esos proveedores. Más allá del tiempo de ejecución, la seguridad y la fiabilidad se integran en cada commit y PR: análisis estático con CodeQL, CodeRabbit con gitleaks y semgrep, monitoreo de CVE con Dependabot, escaneo de imágenes y Dockerfiles con Trivy, y auditorías periódicas de Codex Security de OpenAI. Las pruebas de integración se ejecutan contra contenedores reales de PostgreSQL, MySQL, MariaDB y MongoDB y verifican ciclos completos de copia y restauración en cada PR. Las GitHub Actions están fijadas a SHA de commit y los flujos de trabajo siguen permisos de privilegio mínimo. Todas las operaciones se ejecutan en contenedores que usted controla, en servidores que le pertenecen, y al ser código abierto, su equipo de seguridad puede auditar cada línea de código antes del despliegue.",
                 },
               },
               {
@@ -219,6 +219,14 @@ export default function Index() {
                 acceptedAnswer: {
                   "@type": "Answer",
                   text: "Databasus admite copias físicas, completas, incrementales, de WAL y lógicas. Las copias físicas son una copia a nivel de archivos de todo el clúster de la base de datos: más rápidas de crear y restaurar en conjuntos de datos grandes que los volcados lógicos, y construidas sobre el mecanismo nativo de respaldo de PostgreSQL 17, así que nos apoyamos en las herramientas probadas de PostgreSQL en lugar de reinventarlas. Las copias completas son una copia íntegra y autocontenida del clúster, la base de la que parte cada cadena de respaldos. Las copias incrementales guardan solo lo que cambió desde la copia anterior, así que los respaldos se mantienen pequeños y rápidos. El streaming de WAL captura de forma continua el flujo de escritura de la base de datos, lo que habilita la recuperación a un punto en el tiempo (PITR) para recuperación ante desastres y una pérdida de datos casi nula. Las copias lógicas son un volcado nativo de la base de datos en su formato binario específico del motor, comprimido y transmitido directamente al almacenamiento sin archivos intermedios. Todas estas copias pueden ejecutarse por un túnel SSH si necesita conexiones no públicas, de modo que la base de datos nunca tiene que exponerse públicamente. El túnel SSH viene integrado.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Olvidé el correo o la contraseña del administrador",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: 'La primera cuenta creada en la instancia es la que la administra. Si no recuerda cuál es esa dirección, ejecute docker exec -it databasus ./main --list-admins en el servidor donde se ejecuta Databasus: nombra cada cuenta de administrador con su correo electrónico, nombre visible, fecha de creación y estado de actividad, y no imprime ninguna contraseña. Para establecer una nueva contraseña para esa cuenta, ejecute docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com". Una instancia creada antes de que la primera cuenta la administrara todavía lleva la dirección provisional admin hasta que su propietario la reemplace. Si además la instancia exige un código al iniciar sesión y el servidor de correo ha dejado de entregarlo, ejecute docker exec -it databasus ./main --disable-2fa para que deje de pedirlo. Los tres comandos están documentados en la página de contraseña.',
                 },
               },
             ],
@@ -1330,6 +1338,13 @@ export default function Index() {
                   de datos incluso si la herramienta se ve comprometida.
                   <br />
                   <br />
+                  El propio inicio de sesión puede exigir un segundo factor: con
+                  él activado, tras la contraseña correcta llega un código de
+                  seis dígitos al correo de la cuenta, mientras que el inicio de
+                  sesión con Google o GitHub sigue apoyándose en las
+                  comprobaciones de esos proveedores.
+                  <br />
+                  <br />
                   Más allá del tiempo de ejecución, la seguridad y la fiabilidad
                   se integran en cada commit y PR: análisis estático con CodeQL,
                   CodeRabbit con gitleaks y semgrep, monitoreo de CVE con
@@ -1685,6 +1700,37 @@ export default function Index() {
                   sobre el protocolo de respaldo nativo, eficiente y ya estándar
                   de PostgreSQL, en lugar de escribir sus propias
                   implementaciones.
+                </>
+              }
+            />
+            <FaqItem
+              number="15"
+              question="Olvidé el correo o la contraseña del administrador"
+              answer={
+                <>
+                  La primera cuenta creada en la instancia es la que la
+                  administra. Si no recuerda cuál es esa dirección, ejecute
+                  docker exec -it databasus ./main --list-admins en el servidor
+                  donde se ejecuta Databasus: nombra cada cuenta de
+                  administrador con su correo electrónico, nombre visible, fecha
+                  de creación y estado de actividad, y no imprime ninguna
+                  contraseña. Para establecer una nueva contraseña para esa
+                  cuenta, ejecute docker exec -it databasus ./main
+                  --new-password=&quot;YourNewSecurePassword123&quot;
+                  --email=&quot;owner@example.com&quot;. Una instancia creada
+                  antes de que la primera cuenta la administrara todavía lleva
+                  la dirección provisional admin hasta que su propietario la
+                  reemplace. Si además la instancia exige un código al iniciar
+                  sesión y el servidor de correo ha dejado de entregarlo,
+                  ejecute docker exec -it databasus ./main --disable-2fa para
+                  que deje de pedirlo. Los tres comandos están documentados en
+                  <a
+                    href="/es/password"
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    la página de contraseña
+                  </a>
+                  .
                 </>
               }
             />

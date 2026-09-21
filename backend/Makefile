@@ -20,13 +20,20 @@ LIBEDIT_SHIM_DIR ?= $(HOME)/.local/lib/databasus-compat
 # The bundled DB clients in assets/tools are Debian-built and link libedit.so.2,
 # a soname Debian patches in downstream; Fedora ships the upstream libedit.so.0.
 # The ABI is identical, so renaming via symlink is safe.
-test-fedora:
+libedit-shim:
 	@libedit=/usr/lib64/libedit.so.0; \
 	[ -e "$$libedit" ] || libedit=$$(ldconfig -p | awk '/libedit\.so\.0 / {print $$NF; exit}'); \
 	if [ -z "$$libedit" ]; then echo "libedit.so.0 not found — install it with: sudo dnf install libedit"; exit 1; fi; \
 	mkdir -p $(LIBEDIT_SHIM_DIR); \
 	ln -sf "$$libedit" $(LIBEDIT_SHIM_DIR)/libedit.so.2
+
+test-fedora: libedit-shim
 	@LD_LIBRARY_PATH="$(LIBEDIT_SHIM_DIR)$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" $(MAKE) test
+
+# The startup check starts every bundled client, so running the backend on
+# Fedora needs the same shim the tests do.
+run-fedora: libedit-shim
+	@LD_LIBRARY_PATH="$(LIBEDIT_SHIM_DIR)$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" $(MAKE) run
 
 clean-testcontainers:
 	@ids=$$(docker ps -aq --filter "label=org.testcontainers"); \

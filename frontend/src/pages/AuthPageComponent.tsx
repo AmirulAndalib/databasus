@@ -3,12 +3,12 @@ import { Spin } from 'antd';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { userApi } from '../entity/users';
+import { type PendingSignIn, userApi } from '../entity/users';
 import {
-  AdminPasswordComponent,
   AuthNavbarComponent,
   RequestResetPasswordComponent,
   ResetPasswordComponent,
+  SignInCodeComponent,
   SignInComponent,
   SignUpComponent,
 } from '../features/users';
@@ -17,30 +17,33 @@ import { translateApiError } from '../shared/i18n';
 
 export function AuthPageComponent() {
   const { t } = useTranslation();
-  const [isAdminHasPassword, setIsAdminHasPassword] = useState(false);
-  const [authMode, setAuthMode] = useState<'signIn' | 'signUp' | 'requestReset' | 'resetPassword'>(
-    'signUp',
-  );
+  const [isAnyUserExist, setIsAnyUserExist] = useState(true);
+  const [authMode, setAuthMode] = useState<
+    'signIn' | 'signUp' | 'requestReset' | 'resetPassword' | 'signInCode'
+  >('signUp');
   const [resetEmail, setResetEmail] = useState('');
+  const [pendingSignIn, setPendingSignIn] = useState<PendingSignIn | undefined>(undefined);
   const [isLoading, setLoading] = useState(true);
   const screenHeight = useScreenHeight();
 
-  const checkAdminPasswordStatus = () => {
-    setLoading(true);
-
-    userApi
-      .isAdminHasPassword()
-      .then((response) => {
-        setIsAdminHasPassword(response.hasPassword);
-        setLoading(false);
-      })
-      .catch((e) => {
-        alert(t('app.auth.adminPasswordCheckFailed', { error: translateApiError(e, t) }));
-      });
+  const returnToPasswordStep = () => {
+    setPendingSignIn(undefined);
+    setAuthMode('signIn');
   };
 
   useEffect(() => {
-    checkAdminPasswordStatus();
+    setLoading(true);
+
+    userApi
+      .isAnyUserExists()
+      .then((isExist) => {
+        setIsAnyUserExist(isExist);
+        setLoading(false);
+      })
+      .catch((e) => {
+        alert(t('app.auth.accountsCheckFailed', { error: translateApiError(e, t) }));
+        setLoading(false);
+      });
   }, []);
 
   return (
@@ -55,31 +58,41 @@ export function AuthPageComponent() {
             <AuthNavbarComponent />
 
             <div className="mt-10 flex justify-center sm:mt-[10vh]">
-              {isAdminHasPassword ? (
-                authMode === 'signUp' ? (
-                  <SignUpComponent onSwitchToSignIn={() => setAuthMode('signIn')} />
-                ) : authMode === 'signIn' ? (
-                  <SignInComponent
-                    onSwitchToSignUp={() => setAuthMode('signUp')}
-                    onSwitchToResetPassword={() => setAuthMode('requestReset')}
-                  />
-                ) : authMode === 'requestReset' ? (
-                  <RequestResetPasswordComponent
-                    onSwitchToSignIn={() => setAuthMode('signIn')}
-                    onSwitchToResetPassword={(email) => {
-                      setResetEmail(email);
-                      setAuthMode('resetPassword');
-                    }}
-                  />
-                ) : (
-                  <ResetPasswordComponent
-                    onSwitchToSignIn={() => setAuthMode('signIn')}
-                    onSwitchToRequestCode={() => setAuthMode('requestReset')}
-                    initialEmail={resetEmail}
-                  />
-                )
+              {authMode === 'signUp' ? (
+                <SignUpComponent
+                  onSwitchToSignIn={isAnyUserExist ? () => setAuthMode('signIn') : undefined}
+                  isClaimingInstance={!isAnyUserExist}
+                />
+              ) : authMode === 'signIn' ? (
+                <SignInComponent
+                  onSwitchToSignUp={() => setAuthMode('signUp')}
+                  onSwitchToResetPassword={() => setAuthMode('requestReset')}
+                  onCodeRequired={(newPendingSignIn) => {
+                    setPendingSignIn(newPendingSignIn);
+                    setAuthMode('signInCode');
+                  }}
+                />
+              ) : authMode === 'signInCode' && pendingSignIn ? (
+                <SignInCodeComponent
+                  pendingSignIn={pendingSignIn}
+                  onPendingSignInReplaced={setPendingSignIn}
+                  onPendingSignInLost={returnToPasswordStep}
+                  onSwitchToSignIn={returnToPasswordStep}
+                />
+              ) : authMode === 'requestReset' ? (
+                <RequestResetPasswordComponent
+                  onSwitchToSignIn={() => setAuthMode('signIn')}
+                  onSwitchToResetPassword={(email) => {
+                    setResetEmail(email);
+                    setAuthMode('resetPassword');
+                  }}
+                />
               ) : (
-                <AdminPasswordComponent onPasswordSet={checkAdminPasswordStatus} />
+                <ResetPasswordComponent
+                  onSwitchToSignIn={() => setAuthMode('signIn')}
+                  onSwitchToRequestCode={() => setAuthMode('requestReset')}
+                  initialEmail={resetEmail}
+                />
               )}
             </div>
           </div>

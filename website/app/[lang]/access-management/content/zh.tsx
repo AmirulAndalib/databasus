@@ -207,8 +207,7 @@ export default function AccessManagementPage() {
               </table>
 
               <p>
-                通常系统里只有一个 <code>admin</code> 用户，即你首次启动
-                Databasus 时创建的那个。
+                通常系统里只有一个管理员：实例上创建的第一个账户，它就是该实例的管理员。
               </p>
 
               <p>

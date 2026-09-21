@@ -3,8 +3,12 @@ package tools
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+// Every PostgreSQL client answers --version with "<tool> (PostgreSQL) 17.10".
+var postgresqlVersionPattern = regexp.MustCompile(`\(PostgreSQL\)\s+(\d[\d.]*)`)
 
 var postgresqlVersions = []PostgresqlVersion{
 	PostgresqlVersion12,
@@ -71,12 +75,31 @@ func checkPostgresql() []ToolCheckResult {
 			Db:      "postgresql",
 			Version: string(v),
 			BinDir:  binDir,
-			Errors:  checkBinDir(binDir, getPostgresqlRequiredForVersion(v)),
+			Errors: runBinDirChecks(
+				binDir,
+				getPostgresqlRequiredForVersion(v),
+				string(v),
+				parsePostgresqlClientVersion,
+			),
 			IsFatal: true,
 		})
 	}
 
 	return results
+}
+
+// parsePostgresqlClientVersion reads the release the client reports out of
+// its --version output.
+func parsePostgresqlClientVersion(output string) (string, error) {
+	match := postgresqlVersionPattern.FindStringSubmatch(output)
+	if match == nil {
+		return "", fmt.Errorf(
+			"could not read a PostgreSQL version out of %q",
+			strings.TrimSpace(output),
+		)
+	}
+
+	return match[1], nil
 }
 
 // EscapePgpassField escapes special characters for the .pgpass file format.

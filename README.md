@@ -94,6 +94,7 @@ Databasus performs a real restore to confirm backups are usable, not just intact
 - **Zero-trust storage**: Backups are encrypted and remain useless to attackers, so you can safely store them in shared storage like S3, Azure Blob Storage, etc.
 - **Encryption for secrets**: Any sensitive data is encrypted and never exposed, even in logs or error messages
 - **Read-only user**: Databasus uses a read-only user by default for backups and never stores anything that can modify your data
+- **Two-factor authentication**: Password sign-in can require a six-digit code emailed to the account. Sign-in through Google or GitHub keeps relying on the provider's own checks
 
 ### 👥 **Suitable for teams** <a href="https://databasus.com/access-management">(docs)</a>
 
@@ -112,8 +113,8 @@ Databasus performs a real restore to confirm backups are usable, not just intact
 ### 💾 **Supported databases**
 
 - **PostgreSQL**: 14, 15, 16, 17 and 18 (physical and logical)
-- **MySQL**: 5.7, 8.0, 8.4 and 9 (logical only)
-- **MariaDB**: 10, 11 and 12 (logical only)
+- **MySQL**: 5.7 (x86-64 only), 8.0, 8.4, 9 and 26 (logical only)
+- **MariaDB**: 5.5, 10, 11, 12 and 13 (logical only)
 - **MongoDB**: 4.2+, 5, 6, 7 and 8 (logical only)
 
 ### 🐳 **Self-hosted & secure**
@@ -249,7 +250,7 @@ For more options (NodePort, TLS, HTTPRoute for Gateway API), see the [Helm chart
 
 ## 🚀 Usage
 
-1. **Access the dashboard**: Navigate to `http://localhost:4005`
+1. **Create the first account**: Navigate to `http://localhost:4005` and sign up. The first account created on an instance administers it
 2. **Add your first database for backup**: Click "New Database" and follow the setup wizard
 3. **Configure schedule**: Choose from hourly, daily, weekly, monthly or cron intervals
 4. **Set database connection**: Enter your database credentials and connection details
@@ -263,10 +264,26 @@ For more options (NodePort, TLS, HTTPRoute for Gateway API), see the [Helm chart
 If you need to reset the password, you can use the built-in password reset command:
 
 ```bash
-docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"
+docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"
 ```
 
-Replace `admin` with the actual email address of the user whose password you want to reset.
+Replace `owner@example.com` with the actual email address of the account whose password you want to reset. An instance created before the first account administered it still carries the placeholder address `admin` until its owner replaces it, so pass `--email="admin"` there.
+
+If you do not remember which address administers the instance, list the administrator accounts:
+
+```bash
+docker exec -it databasus ./main --list-admins
+```
+
+The output names every administrator account with its email address, display name, creation date and active state, and marks the one the instance recognizes as its administrator. It prints no password material.
+
+If two-factor authentication is on and the mail server stops delivering the codes, nobody can sign in with a password. Switch the second factor off from the host:
+
+```bash
+docker exec -it databasus ./main --disable-2fa
+```
+
+The command reports what it changed, succeeds without complaint when the setting is already off, and records the change in the audit log.
 
 ### 💾 Backuping Databasus itself
 

@@ -39,7 +39,9 @@ export const metadata: Metadata = {
 };
 
 export default function PasswordResetPage() {
-  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="admin"`;
+  const resetPasswordCommand = `docker exec -it databasus ./main --new-password="YourNewSecurePassword123" --email="owner@example.com"`;
+  const listAdminsCommand = `docker exec -it databasus ./main --list-admins`;
+  const disableTwoFactorCommand = `docker exec -it databasus ./main --disable-2fa`;
 
   return (
     <>
@@ -143,12 +145,72 @@ export default function PasswordResetPage() {
                   lettres, de chiffres et de caractères spéciaux.
                 </li>
                 <li>
-                  <strong>--email</strong> : l&apos;adresse e-mail de
-                  l&apos;utilisateur dont vous voulez réinitialiser le mot de
-                  passe (par exemple <code>admin</code>,{" "}
-                  <code>user@example.com</code>).
+                  <strong>--email</strong> : l&apos;adresse e-mail du compte
+                  dont vous voulez réinitialiser le mot de passe (par exemple{" "}
+                  <code>owner@example.com</code>). Une instance créée avant que
+                  le premier compte ne l&apos;administre porte encore
+                  l&apos;adresse provisoire <code>admin</code> tant que son
+                  propriétaire ne l&apos;a pas remplacée : indiquez alors{" "}
+                  <code>admin</code>.
                 </li>
               </ul>
+
+              <h2 id="list-admins">Lister les comptes administrateurs</h2>
+
+              <p>
+                Si vous ne savez plus quelle adresse administre l&apos;instance,
+                listez les comptes administrateurs sur le serveur où Databasus
+                tourne :
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{listAdminsCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={listAdminsCommand} lang="fr" />
+                </div>
+              </div>
+
+              <p>
+                La sortie nomme chaque compte administrateur avec son adresse
+                e-mail, son nom affiché, sa date de création et son état
+                d&apos;activité, et marque celui que l&apos;instance reconnaît
+                comme son administrateur. Aucun mot de passe, empreinte de mot
+                de passe ni jeton n&apos;est affiché. Sur une instance où
+                personne n&apos;a encore créé de compte, elle indique que
+                l&apos;instance n&apos;a pas d&apos;administrateur.
+              </p>
+              <h2 id="disable-two-factor">
+                Cesser de demander un code à la connexion
+              </h2>
+
+              <p>
+                Une instance peut exiger, en plus du mot de passe, un code à six
+                chiffres envoyé par e-mail à la connexion. Si le serveur de
+                messagerie cesse de délivrer ces codes, plus personne
+                n&apos;entre avec un mot de passe, et réinitialiser le mot de
+                passe n&apos;y change rien. Désactivez le second facteur sur le
+                serveur où Databasus tourne :
+              </p>
+
+              <div className="relative my-6">
+                <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-gray-100">
+                  <code>{disableTwoFactorCommand}</code>
+                </pre>
+                <div className="absolute right-2 top-2">
+                  <CopyButton text={disableTwoFactorCommand} />
+                </div>
+              </div>
+
+              <p>
+                La commande indique si elle a changé quelque chose, se termine
+                sans se plaindre quand le second facteur est déjà désactivé, et
+                inscrit le changement au journal d&apos;audit. La prochaine
+                connexion par mot de passe se passe alors de code, et un
+                administrateur pourra réactiver le réglage dès que la messagerie
+                refonctionnera.
+              </p>
             </article>
           </div>
         </main>

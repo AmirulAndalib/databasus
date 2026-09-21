@@ -11,14 +11,18 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 
 	users_dto "databasus-backend/internal/features/users/dto"
 	users_enums "databasus-backend/internal/features/users/enums"
+	users_models "databasus-backend/internal/features/users/models"
+	users_repositories "databasus-backend/internal/features/users/repositories"
 	users_services "databasus-backend/internal/features/users/services"
 	users_testing "databasus-backend/internal/features/users/testing"
 	"databasus-backend/internal/util/ratelimiter"
@@ -28,6 +32,8 @@ import (
 type failingRateLimitCounter struct {
 	err error
 }
+
+const bootstrapAdminPassword = "ownerpassword123"
 
 func (c failingRateLimitCounter) RecordAttemptAndCheckIsAllowed(
 	context.Context,
@@ -273,103 +279,6 @@ func Test_SignInUser_WithInvalidJSON_ReturnsBadRequest(t *testing.T) {
 	})
 
 	assert.Contains(t, string(resp.Body), "Invalid request format")
-}
-
-func Test_CheckAdminHasPassword_WhenAdminHasNoPassword_ReturnsFalse(t *testing.T) {
-	router := createUserTestRouter()
-
-	users_testing.RecreateInitialAdmin(t.Context())
-
-	var response users_dto.IsAdminHasPasswordResponseDTO
-	test_utils.MakeGetRequestAndUnmarshal(
-		t,
-		router,
-		"/api/v1/users/admin/has-password",
-		"",
-		http.StatusOK,
-		&response,
-	)
-
-	assert.False(t, response.HasPassword)
-}
-
-func Test_SetAdminPassword_WithValidPassword_PasswordSet(t *testing.T) {
-	router := createUserTestRouter()
-
-	users_testing.RecreateInitialAdmin(t.Context())
-
-	request := users_dto.SetAdminPasswordRequestDTO{
-		Password: "adminpassword123",
-	}
-
-	test_utils.MakePostRequest(
-		t,
-		router,
-		"/api/v1/users/admin/set-password",
-		"",
-		request,
-		http.StatusOK,
-	)
-
-	// Now check that admin has password
-	var hasPasswordResponse users_dto.IsAdminHasPasswordResponseDTO
-	test_utils.MakeGetRequestAndUnmarshal(
-		t,
-		router,
-		"/api/v1/users/admin/has-password",
-		"",
-		http.StatusOK,
-		&hasPasswordResponse,
-	)
-
-	assert.True(t, hasPasswordResponse.HasPassword)
-}
-
-func Test_SetAdminPassword_WithInvalidPassword_ReturnsBadRequest(t *testing.T) {
-	router := createUserTestRouter()
-
-	testCases := []struct {
-		name     string
-		password string
-	}{
-		{
-			name:     "short password",
-			password: "short",
-		},
-		{
-			name:     "empty password",
-			password: "",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			request := users_dto.SetAdminPasswordRequestDTO{
-				Password: tc.password,
-			}
-
-			test_utils.MakePostRequest(
-				t,
-				router,
-				"/api/v1/users/admin/set-password",
-				"",
-				request,
-				http.StatusBadRequest,
-			)
-		})
-	}
-}
-
-func Test_SetAdminPassword_WithInvalidJSON_ReturnsBadRequest(t *testing.T) {
-	router := createUserTestRouter()
-
-	// Test with invalid JSON structure
-	test_utils.MakeRequest(t, router, test_utils.RequestOptions{
-		Method:         "POST",
-		URL:            "/api/v1/users/admin/set-password",
-		Body:           "invalid json",
-		ExpectedStatus: http.StatusBadRequest,
-	})
 }
 
 func Test_ChangeUserPassword_WithValidData_PasswordChanged(t *testing.T) {
@@ -756,27 +665,6 @@ func Test_UpdateUserInfo_WithTakenEmail_ReturnsBadRequest(t *testing.T) {
 	)
 
 	assert.Contains(t, string(resp.Body), "already taken")
-}
-
-func Test_UpdateUserInfo_WhenAdminTriesToChangeEmail_ReturnsBadRequest(t *testing.T) {
-	router := createUserTestRouter()
-	adminUser := users_testing.RecreateInitAdminAndGetAccess(t.Context())
-
-	newEmail := "newemail@example.com"
-	request := users_dto.UpdateUserInfoRequestDTO{
-		Email: &newEmail,
-	}
-
-	resp := test_utils.MakePutRequest(
-		t,
-		router,
-		"/api/v1/users/me",
-		"Bearer "+adminUser.Token,
-		request,
-		http.StatusBadRequest,
-	)
-
-	assert.Contains(t, string(resp.Body), "admin email cannot be changed")
 }
 
 func Test_GitHubOAuth_WithValidCode_ReturnsToken(t *testing.T) {
@@ -1256,4 +1144,621 @@ func Test_SignIn_WithExcessiveAttempts_RateLimitEnforced(t *testing.T) {
 		http.StatusTooManyRequests,
 	)
 	assert.Contains(t, string(resp.Body), "Rate limit exceeded")
+}
+
+func Test_SignUp_WhenInstanceHoldsNoAccount_AccountAdministersTheInstance(t *testing.T) {
+	router := createUserTestRouter()
+	auditLogRecorder := users_testing.GetAuditLogRecorder()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+
+	email := "first" + uuid.New().String() + "@example.com"
+	signUpResponse := signUpViaAPI(t, router, email)
+
+	profile := getOwnProfile(t, router, signUpResponse.Token)
+	assert.Equal(t, users_enums.UserRoleAdmin, profile.Role)
+
+	rootAdmin, err := (&users_repositories.UserRepository{}).GetRootAdmin(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, rootAdmin)
+	assert.Equal(t, signUpResponse.UserID, rootAdmin.ID)
+
+	assert.True(t, auditLogRecorder.HasEntryContaining("administers", email))
+}
+
+func Test_SignUp_WhenInstanceAlreadyHoldsAnAccount_AccountIsOrdinaryMember(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+
+	signUpViaAPI(t, router, "first"+uuid.New().String()+"@example.com")
+	secondResponse := signUpViaAPI(t, router, "second"+uuid.New().String()+"@example.com")
+
+	profile := getOwnProfile(t, router, secondResponse.Token)
+	assert.Equal(t, users_enums.UserRoleMember, profile.Role)
+
+	rootAdmin, err := (&users_repositories.UserRepository{}).GetRootAdmin(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, rootAdmin)
+	assert.NotEqual(t, secondResponse.UserID, rootAdmin.ID)
+}
+
+func Test_SignUp_WhenInstanceIsEmptyAndExternalRegistrationDisabled_AccountStillTakesTheInstance(t *testing.T) {
+	router := createUserTestRouter()
+	defer users_testing.ResetSettingsToDefaults(t.Context())
+
+	users_testing.DisableExternalRegistrations(t.Context())
+	users_testing.DeleteAllUsers()
+
+	signUpResponse := signUpViaAPI(t, router, "first"+uuid.New().String()+"@example.com")
+
+	profile := getOwnProfile(t, router, signUpResponse.Token)
+	assert.Equal(t, users_enums.UserRoleAdmin, profile.Role)
+}
+
+func Test_SignUp_WhenInstanceHoldsAnAccountAndExternalRegistrationDisabled_ReturnsBadRequest(t *testing.T) {
+	router := createUserTestRouter()
+	defer users_testing.ResetSettingsToDefaults(t.Context())
+
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.RecreateInitialAdmin(t.Context())
+	users_testing.DisableExternalRegistrations(t.Context())
+
+	response := test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/signup",
+		"",
+		users_dto.SignUpRequestDTO{
+			Email:    "refused" + uuid.New().String() + "@example.com",
+			Password: "userpassword123",
+			Name:     "Refused User",
+		},
+		http.StatusBadRequest,
+	)
+
+	assert.Contains(t, string(response.Body), "external registration is disabled")
+}
+
+func Test_SignUp_WhenBootstrapAdminAlreadyRecorded_RegistersAsMemberAndLeavesRecordAlone(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+
+	bootstrapAdmin := users_testing.RecreateInitialAdmin(t.Context())
+
+	signUpResponse := signUpViaAPI(t, router, "member"+uuid.New().String()+"@example.com")
+
+	profile := getOwnProfile(t, router, signUpResponse.Token)
+	assert.Equal(t, users_enums.UserRoleMember, profile.Role)
+
+	rootAdmin, err := (&users_repositories.UserRepository{}).GetRootAdmin(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, rootAdmin)
+	assert.Equal(t, bootstrapAdmin.ID, rootAdmin.ID)
+}
+
+func Test_SignUp_WhenEmailBelongsToAnotherAccount_ReturnsDuplicateRefusal(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.RecreateInitialAdmin(t.Context())
+
+	takenEmail := "taken" + uuid.New().String() + "@example.com"
+	signUpViaAPI(t, router, takenEmail)
+
+	response := test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/signup",
+		"",
+		users_dto.SignUpRequestDTO{
+			Email:    takenEmail,
+			Password: "userpassword123",
+			Name:     "Duplicate User",
+		},
+		http.StatusBadRequest,
+	)
+
+	assert.Contains(t, string(response.Body), "already exists")
+}
+
+func Test_SignUp_WhenEmailIsNotAnAddress_ReturnsBadRequestAndCreatesNoAccount(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+
+	test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/signup",
+		"",
+		users_dto.SignUpRequestDTO{
+			Email:    "admin",
+			Password: "userpassword123",
+			Name:     "Not An Address",
+		},
+		http.StatusBadRequest,
+	)
+
+	assert.False(t, hasAnyUserViaAPI(t, router))
+
+	signUpViaAPI(t, router, "valid"+uuid.New().String()+"@example.com")
+	assert.True(t, hasAnyUserViaAPI(t, router))
+}
+
+func Test_HasAnyUser_WhenInstanceHoldsNoAccount_AnswersFalse(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+
+	assert.False(t, hasAnyUserViaAPI(t, router))
+}
+
+func Test_HasAnyUser_WhenInstanceHoldsAnAccount_AnswersTrue(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+	users_testing.RecreateInitialAdmin(t.Context())
+
+	assert.True(t, hasAnyUserViaAPI(t, router))
+}
+
+// The spec refuses any way to set a password on an existing account without
+// authenticating as it or proving control of its address.
+func Test_SetPasswordOnExistingAccount_WhenCallerIsAnonymous_IsRefused(t *testing.T) {
+	router := createUserTestRouter()
+
+	test_utils.MakeRequest(t, router, test_utils.RequestOptions{
+		Method:         http.MethodGet,
+		URL:            "/api/v1/users/admin/has-password",
+		ExpectedStatus: http.StatusNotFound,
+	})
+
+	test_utils.MakeRequest(t, router, test_utils.RequestOptions{
+		Method:         http.MethodPost,
+		URL:            "/api/v1/users/admin/set-password",
+		Body:           `{"password":"adminpassword123"}`,
+		ExpectedStatus: http.StatusNotFound,
+	})
+}
+
+func Test_GitHubOAuth_WhenInstanceHoldsNoAccount_AccountAdministersTheInstance(t *testing.T) {
+	createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+
+	email := "github-first-" + uuid.New().String()[:8] + "@example.com"
+	mockServer := newGitHubOAuthMockServer(email, int64(uuid.New().ID()))
+	defer mockServer.Close()
+
+	response, err := users_services.GetUserService().HandleGitHubOAuthWithMockEndpoint(
+		t.Context(),
+		"test-code",
+		"http://localhost:3000/auth/callback",
+		gitHubOAuthEndpoint(mockServer.URL),
+		mockServer.URL+"/user",
+	)
+
+	require.NoError(t, err)
+	assertAccountAdministersTheInstance(t, response.UserID)
+}
+
+func Test_GoogleOAuth_WhenInstanceHoldsNoAccount_AccountAdministersTheInstance(t *testing.T) {
+	createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+
+	email := "google-first-" + uuid.New().String()[:8] + "@example.com"
+	mockServer := newGoogleOAuthMockServer(email, "google-"+uuid.New().String()[:8])
+	defer mockServer.Close()
+
+	response, err := users_services.GetUserService().HandleGoogleOAuthWithMockEndpoint(
+		t.Context(),
+		"test-code",
+		"http://localhost:3000/auth/callback",
+		googleOAuthEndpoint(mockServer.URL),
+		mockServer.URL+"/userinfo",
+	)
+
+	require.NoError(t, err)
+	assertAccountAdministersTheInstance(t, response.UserID)
+}
+
+func assertAccountAdministersTheInstance(t *testing.T, userID uuid.UUID) {
+	t.Helper()
+
+	repository := &users_repositories.UserRepository{}
+
+	user, err := repository.GetUserByID(t.Context(), userID)
+	require.NoError(t, err)
+	assert.Equal(t, users_enums.UserRoleAdmin, user.Role)
+
+	rootAdmin, err := repository.GetRootAdmin(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, rootAdmin)
+	assert.Equal(t, userID, rootAdmin.ID)
+}
+
+func signUpViaAPI(t *testing.T, router *gin.Engine, email string) users_dto.SignInResponseDTO {
+	t.Helper()
+
+	var response users_dto.SignInResponseDTO
+	test_utils.MakePostRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/signup",
+		"",
+		users_dto.SignUpRequestDTO{
+			Email:    email,
+			Password: "userpassword123",
+			Name:     "Test User",
+		},
+		http.StatusOK,
+		&response,
+	)
+
+	return response
+}
+
+func getOwnProfile(t *testing.T, router *gin.Engine, token string) users_dto.UserProfileResponseDTO {
+	t.Helper()
+
+	var profile users_dto.UserProfileResponseDTO
+	test_utils.MakeGetRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/me",
+		"Bearer "+token,
+		http.StatusOK,
+		&profile,
+	)
+
+	return profile
+}
+
+func hasAnyUserViaAPI(t *testing.T, router *gin.Engine) bool {
+	t.Helper()
+
+	var response users_dto.HasAnyUserResponseDTO
+	test_utils.MakeGetRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/is-any-user-exist",
+		"",
+		http.StatusOK,
+		&response,
+	)
+
+	return response.HasAnyUser
+}
+
+func gitHubOAuthEndpoint(serverURL string) oauth2.Endpoint {
+	return oauth2.Endpoint{
+		AuthURL:  serverURL + "/login/oauth/authorize",
+		TokenURL: serverURL + "/login/oauth/access_token",
+	}
+}
+
+func googleOAuthEndpoint(serverURL string) oauth2.Endpoint {
+	return oauth2.Endpoint{
+		AuthURL:  serverURL + "/auth",
+		TokenURL: serverURL + "/token",
+	}
+}
+
+func newGitHubOAuthMockServer(email string, oauthID int64) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/login/oauth/access_token":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"access_token": "mock-access-token",
+				"token_type":   "bearer",
+			})
+		case "/user":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":    oauthID,
+				"email": email,
+				"name":  "GitHub Test User",
+				"login": "githubtest",
+			})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+}
+
+func newGoogleOAuthMockServer(email, oauthID string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/token":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"access_token": "mock-access-token",
+				"token_type":   "Bearer",
+			})
+		case "/userinfo":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":    oauthID,
+				"email": email,
+				"name":  "Google Test User",
+			})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+}
+
+func Test_UpdateUserInfo_WhenBootstrapAdminChangesEmail_SignInMovesToTheNewAddress(t *testing.T) {
+	router := createUserTestRouter()
+	auditLogRecorder := users_testing.GetAuditLogRecorder()
+	owner, ownerEmail := claimInstanceViaAPI(t, router)
+
+	changedEmail := "changed" + uuid.New().String() + "@example.com"
+	test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/me",
+		"Bearer "+owner.Token,
+		users_dto.UpdateUserInfoRequestDTO{Email: &changedEmail},
+		http.StatusOK,
+	)
+
+	signInViaAPI(t, router, changedEmail, http.StatusOK)
+	signInViaAPI(t, router, ownerEmail, http.StatusBadRequest)
+
+	rootAdmin, err := (&users_repositories.UserRepository{}).GetRootAdmin(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, rootAdmin)
+	assert.Equal(t, owner.UserID, rootAdmin.ID)
+
+	assert.True(t, auditLogRecorder.HasEntryContaining("Email changed from", ownerEmail, changedEmail))
+
+	// The token carries the user id and the password creation time, never the
+	// address, so it survives the change.
+	profile := getOwnProfile(t, router, owner.Token)
+	assert.Equal(t, changedEmail, profile.Email)
+}
+
+func Test_UpdateUserInfo_WhenBootstrapAdminSubmitsUnusableEmail_ChangeIsRejected(t *testing.T) {
+	router := createUserTestRouter()
+	owner, ownerEmail := claimInstanceViaAPI(t, router)
+
+	otherEmail := "other" + uuid.New().String() + "@example.com"
+	signUpViaAPI(t, router, otherEmail)
+
+	notAnAddress := "admin"
+	test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/me",
+		"Bearer "+owner.Token,
+		users_dto.UpdateUserInfoRequestDTO{Email: &notAnAddress},
+		http.StatusBadRequest,
+	)
+
+	response := test_utils.MakePutRequest(
+		t,
+		router,
+		"/api/v1/users/me",
+		"Bearer "+owner.Token,
+		users_dto.UpdateUserInfoRequestDTO{Email: &otherEmail},
+		http.StatusBadRequest,
+	)
+	assert.Contains(t, string(response.Body), "already taken")
+
+	profile := getOwnProfile(t, router, owner.Token)
+	assert.Equal(t, ownerEmail, profile.Email)
+}
+
+func Test_ResetPassword_WhenRequestedByBootstrapAdmin_PasswordIsReplaced(t *testing.T) {
+	router := createUserTestRouter()
+	mockEmailSender := users_testing.NewMockEmailSender()
+	users_services.GetUserService().SetEmailSender(mockEmailSender)
+
+	_, ownerEmail := claimInstanceViaAPI(t, router)
+
+	test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/send-reset-password-code",
+		"",
+		users_dto.SendResetPasswordCodeRequestDTO{Email: ownerEmail},
+		http.StatusOK,
+	)
+
+	require.Len(t, mockEmailSender.SentEmails, 1)
+	assert.Equal(t, ownerEmail, mockEmailSender.SentEmails[0].To)
+
+	code := extractCodeFromEmail(mockEmailSender.SentEmails[0].Body)
+	require.Len(t, code, 6)
+
+	test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/reset-password",
+		"",
+		users_dto.ResetPasswordRequestDTO{
+			Email:       ownerEmail,
+			Code:        code,
+			NewPassword: "resetpassword123",
+		},
+		http.StatusOK,
+	)
+
+	test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/signin",
+		"",
+		users_dto.SignInRequestDTO{Email: ownerEmail, Password: "resetpassword123"},
+		http.StatusOK,
+	)
+}
+
+func Test_SignIn_WithUnknownAddressOnSingleUserInstance_DisclosesNothingAboutTheInstance(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+	claimInstanceViaAPI(t, router)
+
+	response := signInViaAPI(
+		t,
+		router,
+		"unknown"+uuid.New().String()+"@example.com",
+		http.StatusBadRequest,
+	)
+
+	assert.NotContains(t, string(response.Body), "admin")
+	assert.NotContains(t, string(response.Body), "1")
+}
+
+func Test_SignIn_WhenAccountHasNoPassword_IsRefusedLikeAWrongPassword(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.RecreateInitialAdmin(t.Context())
+
+	email := "oauth-only-" + uuid.New().String()[:8] + "@example.com"
+	mockServer := newGitHubOAuthMockServer(email, int64(uuid.New().ID()))
+	defer mockServer.Close()
+
+	_, err := users_services.GetUserService().HandleGitHubOAuthWithMockEndpoint(
+		t.Context(),
+		"test-code",
+		"http://localhost:3000/auth/callback",
+		gitHubOAuthEndpoint(mockServer.URL),
+		mockServer.URL+"/user",
+	)
+	require.NoError(t, err)
+
+	response := signInViaAPI(t, router, email, http.StatusBadRequest)
+	assert.Contains(t, string(response.Body), "password is incorrect")
+}
+
+func Test_SignIn_WhenAccountHasNotCompletedSignUp_IsRefused(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+
+	inviter := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+	invitedEmail := "invited" + uuid.New().String() + "@example.com"
+
+	test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/invite",
+		"Bearer "+inviter.Token,
+		users_dto.InviteUserRequestDTO{Email: invitedEmail},
+		http.StatusOK,
+	)
+
+	response := signInViaAPI(t, router, invitedEmail, http.StatusBadRequest)
+	assert.Contains(t, string(response.Body), "not passed sign up yet")
+}
+
+func Test_SignIn_WhenAccountIsDeactivated_IsRefused(t *testing.T) {
+	managementRouter := createManagementTestRouter()
+	userRouter := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+
+	rootAdmin := users_testing.RecreateInitAdminAndGetAccess(t.Context())
+	memberEmail := "deactivated" + uuid.New().String() + "@example.com"
+	member := signUpViaAPI(t, userRouter, memberEmail)
+
+	test_utils.MakePostRequest(
+		t,
+		managementRouter,
+		"/api/v1/users/"+member.UserID.String()+"/deactivate",
+		"Bearer "+rootAdmin.Token,
+		nil,
+		http.StatusOK,
+	)
+
+	response := signInViaAPI(t, userRouter, memberEmail, http.StatusBadRequest)
+	assert.Contains(t, string(response.Body), "deactivated")
+}
+
+// Test_SignIn_WhenUpgradedInstanceStillUsesThePlaceholderAddress_Succeeds pins the
+// half of the upgrade scenario a test can reach. SignInRequestDTO.Email binds
+// `required` alone on purpose: adding `email` beside it, for symmetry with the
+// registration DTO, would lock out every upgraded instance that has not yet moved
+// off the placeholder. This test is what makes that edit fail.
+func Test_SignIn_WhenUpgradedInstanceStillUsesThePlaceholderAddress_Succeeds(t *testing.T) {
+	router := createUserTestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+
+	repository := &users_repositories.UserRepository{}
+	placeholderAdmin := &users_models.User{
+		ID:                   uuid.New(),
+		Email:                "admin",
+		Name:                 "Admin",
+		PasswordCreationTime: time.Now().UTC(),
+		CreatedAt:            time.Now().UTC(),
+		Role:                 users_enums.UserRoleAdmin,
+		Status:               users_enums.UserStatusActive,
+		IsRootAdmin:          true,
+	}
+	require.NoError(t, repository.CreateUser(placeholderAdmin))
+
+	require.NoError(t, users_services.GetUserService().ChangeUserPasswordByEmail(
+		t.Context(),
+		"admin",
+		bootstrapAdminPassword,
+	))
+
+	test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/signin",
+		"",
+		users_dto.SignInRequestDTO{Email: "admin", Password: bootstrapAdminPassword},
+		http.StatusOK,
+	)
+}
+
+// claimInstanceViaAPI empties the instance and registers the account that takes
+// it, returning a token for the bootstrap administrator and its address.
+func claimInstanceViaAPI(t *testing.T, router *gin.Engine) (users_dto.SignInResponseDTO, string) {
+	t.Helper()
+
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
+
+	email := "owner" + uuid.New().String() + "@example.com"
+
+	var response users_dto.SignInResponseDTO
+	test_utils.MakePostRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/signup",
+		"",
+		users_dto.SignUpRequestDTO{
+			Email:    email,
+			Password: bootstrapAdminPassword,
+			Name:     "Owner",
+		},
+		http.StatusOK,
+		&response,
+	)
+
+	return response, email
+}
+
+func signInViaAPI(
+	t *testing.T,
+	router *gin.Engine,
+	email string,
+	expectedStatus int,
+) *test_utils.TestResponse {
+	t.Helper()
+
+	return test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/signin",
+		"",
+		users_dto.SignInRequestDTO{Email: email, Password: bootstrapAdminPassword},
+		expectedStatus,
+	)
 }

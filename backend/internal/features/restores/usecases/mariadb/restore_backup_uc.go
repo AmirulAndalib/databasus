@@ -95,10 +95,15 @@ func (uc *RestoreMariadbBackupUsecase) Execute(
 		args = append(args, *mdb.Database)
 	}
 
+	mariadbBin, err := tools.GetMariadbExecutable(mdb.Version, tools.MariadbExecutableMariadb)
+	if err != nil {
+		return err
+	}
+
 	return uc.restoreFromStorage(
 		parentCtx,
 		originalDB,
-		tools.GetMariadbExecutable(mdb.Version, tools.MariadbExecutableMariadb),
+		mariadbBin,
 		args,
 		mdb.Password,
 		backup,

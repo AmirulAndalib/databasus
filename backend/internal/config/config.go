@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +26,16 @@ const (
 	AppModeWeb        = "web"
 	AppModeBackground = "background"
 )
+
+const databaseDsnEnvVariable = "DATABASE_DSN"
+
+const StorageProbeFlagName = "test-storage"
+
+// A process started with `docker exec` does not inherit PID 1's environment, so this file
+// is the only way it learns the internal password, which is rotated on every container
+// start. The location is memory-backed, so the value dies with the container instead of
+// going stale against the next rotation.
+const publishedDatabaseDsnPath = "/dev/shm/databasus-database-dsn"
 
 const (
 	// defaultTestParallelWorkers must equal the `go test -p` value so every running package can
@@ -125,6 +136,8 @@ func loadEnvVariables() {
 
 	envPath := filepath.Join(filepath.Dir(backendRoot), ".env")
 
+	adoptPublishedDatabaseDsnIfUnset(publishedDatabaseDsnPath)
+
 	log.Info("trying to load .env", "path", envPath)
 	if err := godotenv.Load(envPath); err != nil {
 		log.Error("error loading .env file from repo root", "path", envPath, "error", err)
@@ -174,7 +187,7 @@ func loadEnvVariables() {
 		}
 	}
 
-	if env.DatabaseDsn == "" {
+	if !isStorageProbeProcess(os.Args) && env.DatabaseDsn == "" {
 		log.Error("DATABASE_DSN is empty")
 		logger.ExitAfterFlush(1)
 	}
@@ -222,6 +235,39 @@ func loadEnvVariables() {
 	log.Info("environment variables loaded successfully")
 }
 
+// An operator-supplied connection string wins, then the one startup published, then
+// whatever the baked defaults still carry.
+func adoptPublishedDatabaseDsnIfUnset(publishedDsnPath string) {
+	if _, isSet := os.LookupEnv(databaseDsnEnvVariable); isSet {
+		return
+	}
+
+	publishedDsn, err := os.ReadFile(publishedDsnPath)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			log.Warn(
+				"could not read the published database connection string",
+				"path", publishedDsnPath,
+				"error", err,
+			)
+		}
+
+		return
+	}
+
+	dsn := strings.TrimSpace(string(publishedDsn))
+	if dsn == "" {
+		return
+	}
+
+	if err := os.Setenv(databaseDsnEnvVariable, dsn); err != nil {
+		log.Error("could not apply the published database connection string", "error", err)
+		logger.ExitAfterFlush(1)
+	}
+
+	log.Info("using the database connection string published by container startup")
+}
+
 func unsetEmptyEnvVars() {
 	for _, kv := range os.Environ() {
 		key, value, ok := strings.Cut(kv, "=")
@@ -233,6 +279,29 @@ func unsetEmptyEnvVars() {
 			_ = os.Unsetenv(key)
 		}
 	}
+}
+
+// The storage probe never opens the metadata database, and container startup runs it
+// before the embedded database exists, so demanding a connection string there would
+// refuse a healthy container. The flag is read here rather than passed in because
+// package-level dependency wiring loads the configuration before main runs.
+func isStorageProbeProcess(arguments []string) bool {
+	if len(arguments) == 0 {
+		return false
+	}
+
+	for _, argument := range arguments[1:] {
+		if !strings.HasPrefix(argument, "-") {
+			continue
+		}
+
+		flagName, _, _ := strings.Cut(strings.TrimLeft(argument, "-"), "=")
+		if flagName == StorageProbeFlagName {
+			return true
+		}
+	}
+
+	return false
 }
 
 func isTestProcess(arguments []string) bool {

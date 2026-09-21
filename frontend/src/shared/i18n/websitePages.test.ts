@@ -51,6 +51,15 @@ describe('getWebsitePageUrl', () => {
     );
   });
 
+  it('links the SMTP section of the configuration page', () => {
+    expect(getWebsitePageUrl('advancedConfigEmailSmtp', 'en')).toBe(
+      'https://databasus.com/advanced-config/#email-smtp',
+    );
+    expect(getWebsitePageUrl('advancedConfigEmailSmtp', 'fr')).toBe(
+      'https://databasus.com/fr/advanced-config/#email-smtp',
+    );
+  });
+
   it('links the home page with and without a language', () => {
     expect(getWebsitePageUrl('home', 'en')).toBe('https://databasus.com/');
     expect(getWebsitePageUrl('home', 'ru')).toBe('https://databasus.com/ru/');

@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	audit_logs_models "databasus-backend/internal/features/audit_logs/models"
+	"databasus-backend/internal/features/email"
 	users_dto "databasus-backend/internal/features/users/dto"
 	users_enums "databasus-backend/internal/features/users/enums"
 	users_middleware "databasus-backend/internal/features/users/middleware"
+	users_repositories "databasus-backend/internal/features/users/repositories"
 	users_services "databasus-backend/internal/features/users/services"
 	users_testing "databasus-backend/internal/features/users/testing"
 	test_utils "databasus-backend/internal/util/testing"
@@ -20,106 +22,96 @@ import (
 
 func Test_AdminLifecycleE2E_CompletesSuccessfully(t *testing.T) {
 	router := createE2ETestRouter()
+	users_testing.ResetSettingsToDefaults(t.Context())
+	users_testing.DeleteAllUsers()
 
-	users_testing.RecreateInitialAdmin(t.Context())
-
-	// 1. Set initial admin password
-	adminPasswordRequest := users_dto.SetAdminPasswordRequestDTO{
-		Password: "adminpassword123",
+	ownerEmail := "owner" + uuid.New().String() + "@example.com"
+	signUpRequest := users_dto.SignUpRequestDTO{
+		Email:    ownerEmail,
+		Password: "ownerpassword123",
+		Name:     "Owner",
 	}
 
-	test_utils.MakePostRequest(
-		t,
-		router,
-		"/api/v1/users/admin/set-password",
-		"",
-		adminPasswordRequest,
-		http.StatusOK,
-	)
-
-	// 2. Admin signs in
-	adminSigninRequest := users_dto.SignInRequestDTO{
-		Email:    "admin",
-		Password: "adminpassword123",
-	}
-
-	var adminSigninResponse users_dto.SignInResponseDTO
+	var signUpResponse users_dto.SignInResponseDTO
 	test_utils.MakePostRequestAndUnmarshal(
-		t,
-		router,
-		"/api/v1/users/signin",
-		"",
-		adminSigninRequest,
-		http.StatusOK,
-		&adminSigninResponse,
-	)
-
-	// 3. Admin invites a user
-	workspaceID := uuid.New()
-	workspaceRole := users_enums.WorkspaceRoleMember
-	invitedUserEmail := "invited" + uuid.New().String() + "@example.com"
-	inviteRequest := users_dto.InviteUserRequestDTO{
-		Email:                 invitedUserEmail,
-		IntendedWorkspaceID:   &workspaceID,
-		IntendedWorkspaceRole: &workspaceRole,
-	}
-	test_utils.MakePostRequest(
-		t,
-		router,
-		"/api/v1/users/invite",
-		"Bearer "+adminSigninResponse.Token,
-		inviteRequest,
-		http.StatusOK,
-	)
-
-	// 4. Invited user signs up
-	userSignupRequest := users_dto.SignUpRequestDTO{
-		Email:    invitedUserEmail,
-		Password: "userpassword123",
-		Name:     "Invited User",
-	}
-	test_utils.MakePostRequest(
 		t,
 		router,
 		"/api/v1/users/signup",
 		"",
-		userSignupRequest,
+		signUpRequest,
 		http.StatusOK,
+		&signUpResponse,
 	)
 
-	// 5. User signs in
-	userSigninRequest := users_dto.SignInRequestDTO{
-		Email:    invitedUserEmail,
-		Password: "userpassword123",
-	}
+	var profileResponse users_dto.UserProfileResponseDTO
+	test_utils.MakeGetRequestAndUnmarshal(
+		t,
+		router,
+		"/api/v1/users/me",
+		"Bearer "+signUpResponse.Token,
+		http.StatusOK,
+		&profileResponse,
+	)
+	assert.Equal(t, users_enums.UserRoleAdmin, profileResponse.Role)
 
-	var userSigninResponse users_dto.SignInResponseDTO
+	rootAdmin, err := (&users_repositories.UserRepository{}).GetRootAdmin(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, rootAdmin)
+	assert.Equal(t, signUpResponse.UserID, rootAdmin.ID)
+
+	var signInResponse users_dto.SignInResponseDTO
 	test_utils.MakePostRequestAndUnmarshal(
 		t,
 		router,
 		"/api/v1/users/signin",
 		"",
-		userSigninRequest,
+		users_dto.SignInRequestDTO{Email: ownerEmail, Password: "ownerpassword123"},
 		http.StatusOK,
-		&userSigninResponse,
+		&signInResponse,
 	)
 
-	// 6. Admin lists users and sees new user
-	var listUsersResponse users_dto.ListUsersResponseDTO
-	test_utils.MakeGetRequestAndUnmarshal(
+	changedEmail := "changed" + uuid.New().String() + "@example.com"
+	test_utils.MakePutRequest(
 		t,
 		router,
-		"/api/v1/users",
-		"Bearer "+adminSigninResponse.Token,
+		"/api/v1/users/me",
+		"Bearer "+signInResponse.Token,
+		users_dto.UpdateUserInfoRequestDTO{Email: &changedEmail},
 		http.StatusOK,
-		&listUsersResponse,
 	)
-	assert.GreaterOrEqual(t, len(listUsersResponse.Users), 2) // Admin + new user
+
+	test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/signin",
+		"",
+		users_dto.SignInRequestDTO{Email: changedEmail, Password: "ownerpassword123"},
+		http.StatusOK,
+	)
+
+	test_utils.MakePostRequest(
+		t,
+		router,
+		"/api/v1/users/signin",
+		"",
+		users_dto.SignInRequestDTO{Email: ownerEmail, Password: "ownerpassword123"},
+		http.StatusBadRequest,
+	)
+
+	rootAdminAfterChange, err := (&users_repositories.UserRepository{}).GetRootAdmin(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, rootAdminAfterChange)
+	assert.Equal(t, signUpResponse.UserID, rootAdminAfterChange.ID)
+	assert.Equal(t, changedEmail, rootAdminAfterChange.Email)
 }
 
 func Test_UserLifecycleE2E_CompletesSuccessfully(t *testing.T) {
 	router := createE2ETestRouter()
 	users_testing.ResetSettingsToDefaults(t.Context())
+
+	// An account has to exist first: the registration below is an ordinary one
+	// only because the instance has already been claimed.
+	users_testing.RecreateInitialAdmin(t.Context())
 
 	// 1. User registers
 	userEmail := "testuser" + uuid.New().String() + "@example.com"
@@ -188,7 +180,8 @@ func createUserTestRouter() *gin.Engine {
 	GetUserController().RegisterProtectedRoutes(protected.(*gin.RouterGroup))
 
 	// Setup audit log service
-	users_services.GetUserService().SetAuditLogWriter(&AuditLogWriterStub{})
+	auditLogRecorder := users_testing.InstallAuditLogRecorder()
+	users_services.GetUserService().SetAuditLogWriter(auditLogRecorder)
 
 	return router
 }
@@ -204,11 +197,35 @@ func createSettingsTestRouter() *gin.Engine {
 	GetSettingsController().RegisterRoutes(protected.(*gin.RouterGroup))
 
 	// Setup audit log service
-	users_services.GetUserService().SetAuditLogWriter(&AuditLogWriterStub{})
-	users_services.GetSettingsService().SetAuditLogWriter(&AuditLogWriterStub{})
-	users_services.GetManagementService().SetAuditLogWriter(&AuditLogWriterStub{})
+	auditLogRecorder := users_testing.InstallAuditLogRecorder()
+	users_services.GetUserService().SetAuditLogWriter(auditLogRecorder)
+	users_services.GetSettingsService().SetAuditLogWriter(auditLogRecorder)
+	users_services.GetManagementService().SetAuditLogWriter(auditLogRecorder)
 
 	return router
+}
+
+// A settings test that reads the mail-server answer has to own the sender the
+// answer comes from, because the wired one reports whatever the environment
+// running the suite happens to configure.
+func createSettingsTestRouterWithMailSender(
+	t *testing.T,
+	isMailServerMissing bool,
+) (*gin.Engine, *users_testing.MockEmailSender) {
+	router := createSettingsTestRouter()
+
+	mockEmailSender := users_testing.NewMockEmailSender()
+	mockEmailSender.IsMailServerMissing = isMailServerMissing
+	users_services.GetSettingsService().SetEmailSender(mockEmailSender)
+
+	// The services are process-global, so a mock left installed would decide
+	// what every later test in the package believes about the mail server.
+	t.Cleanup(func() {
+		users_services.GetSettingsService().SetEmailSender(email.GetEmailSMTPSender())
+		users_testing.ResetSettingsToDefaults(context.Background())
+	})
+
+	return router, mockEmailSender
 }
 
 func createManagementTestRouter() *gin.Engine {
@@ -222,9 +239,10 @@ func createManagementTestRouter() *gin.Engine {
 	GetManagementController().RegisterRoutes(protected.(*gin.RouterGroup))
 
 	// Setup audit log service
-	users_services.GetUserService().SetAuditLogWriter(&AuditLogWriterStub{})
-	users_services.GetSettingsService().SetAuditLogWriter(&AuditLogWriterStub{})
-	users_services.GetManagementService().SetAuditLogWriter(&AuditLogWriterStub{})
+	auditLogRecorder := users_testing.InstallAuditLogRecorder()
+	users_services.GetUserService().SetAuditLogWriter(auditLogRecorder)
+	users_services.GetSettingsService().SetAuditLogWriter(auditLogRecorder)
+	users_services.GetManagementService().SetAuditLogWriter(auditLogRecorder)
 
 	return router
 }
@@ -245,14 +263,10 @@ func createE2ETestRouter() *gin.Engine {
 	GetManagementController().RegisterRoutes(protected.(*gin.RouterGroup))
 
 	// Setup audit log service
-	users_services.GetUserService().SetAuditLogWriter(&AuditLogWriterStub{})
-	users_services.GetSettingsService().SetAuditLogWriter(&AuditLogWriterStub{})
-	users_services.GetManagementService().SetAuditLogWriter(&AuditLogWriterStub{})
+	auditLogRecorder := users_testing.InstallAuditLogRecorder()
+	users_services.GetUserService().SetAuditLogWriter(auditLogRecorder)
+	users_services.GetSettingsService().SetAuditLogWriter(auditLogRecorder)
+	users_services.GetManagementService().SetAuditLogWriter(auditLogRecorder)
 
 	return router
-}
-
-type AuditLogWriterStub struct{}
-
-func (a *AuditLogWriterStub) WriteAuditLog(context.Context, audit_logs_models.AuditEntry) {
 }
