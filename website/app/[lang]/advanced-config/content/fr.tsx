@@ -245,17 +245,34 @@ export default function AdvancedConfigPage() {
               <h2 id="email-smtp">E-mail (SMTP)</h2>
 
               <p>
-                Connectez un serveur SMTP pour que Databasus puisse envoyer des
-                e-mails transactionnels, comme les liens de réinitialisation de
-                mot de passe et les invitations aux espaces de travail.
-                L&apos;e-mail est considéré comme configuré{" "}
-                <strong>
-                  uniquement quand <code>SMTP_HOST</code> et{" "}
-                  <code>DATABASUS_URL</code> sont tous deux définis
-                </strong>{" "}
-                ; jusque-là, les fonctionnalités e-mail restent masquées dans
-                l&apos;interface.
+                Connectez un serveur de messagerie pour que Databasus puisse envoyer les invitations aux espaces de travail, les codes de réinitialisation du mot de passe et les codes de connexion. Le serveur de messagerie est considéré comme configuré <strong>dès que <code>SMTP_HOST</code> est défini</strong>. Sans lui, l&apos;écran des paramètres indique que le serveur de messagerie n&apos;est pas configuré, et l&apos;écran de connexion masque le lien de réinitialisation du mot de passe.
               </p>
+
+              <p>
+                Il s&apos;agit du serveur de messagerie de l&apos;instance. Les canaux de notification par e-mail, qui signalent les sauvegardes, ont leurs propres paramètres SMTP dans le formulaire de chaque canal : un canal de notification qui délivre ses e-mails ne dit donc rien de ce serveur. Pour vérifier le serveur de messagerie de l&apos;instance, ouvrez <strong>Databasus settings → Mail server</strong> et cliquez sur <strong>Send test email</strong>. Le message part vers votre propre adresse et, si la livraison échoue, vous voyez la réponse du serveur de messagerie.
+              </p>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    <strong>Si votre relais ne propose pas STARTTLS, définissez <code>SMTP_SECURITY=none</code> avant la mise à jour.</strong> Sur tout port autre que 465, le mode par défaut est <code>starttls</code>, qui refuse de continuer sans chiffrement : un tel relais ne reçoit donc rien tant que la variable n&apos;est pas définie. Si l&apos;instance exige le code de connexion envoyé par e-mail, personne ne peut se connecter par mot de passe tant que les e-mails ne partent pas. Pour retrouver l&apos;accès, désactivez le second facteur avec <code>docker exec -it databasus ./main --disable-2fa</code> (voir <a href="/fr/password/#disable-two-factor" className="text-blue-400 hover:text-blue-300">Cesser de demander un code à la connexion</a>).
+                  </p>
+                </div>
+              </div>
 
               <table>
                 <thead>
@@ -270,9 +287,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_HOST</code>
                     </td>
                     <td data-label="Description">
-                      Nom d&apos;hôte du serveur SMTP (par ex.{" "}
-                      <code>smtp.gmail.com</code>). Active l&apos;e-mail avec{" "}
-                      <code>DATABASUS_URL</code>.
+                      Nom d&apos;hôte du serveur de messagerie (par ex. <code>smtp.gmail.com</code>). Le définir active l&apos;e-mail de l&apos;instance.
                     </td>
                   </tr>
                   <tr>
@@ -280,8 +295,15 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_PORT</code>
                     </td>
                     <td data-label="Description">
-                      Port du serveur SMTP (par ex. <code>587</code>). Doit être
-                      un entier positif quand <code>SMTP_HOST</code> est défini.
+                      Port du serveur de messagerie (par ex. <code>587</code>). Doit être un entier positif quand <code>SMTP_HOST</code> est défini.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_SECURITY</code>
+                    </td>
+                    <td data-label="Description">
+                      Sécurité de la connexion : <code>tls</code>, <code>starttls</code> ou <code>none</code>, décrits plus bas. Vaut <code>tls</code> par défaut sur le port 465 et <code>starttls</code> sur tous les autres. Avec toute autre valeur, l&apos;instance refuse de démarrer.
                     </td>
                   </tr>
                   <tr>
@@ -297,9 +319,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_PASSWORD</code>
                     </td>
                     <td data-label="Description">
-                      Mot de passe pour l&apos;authentification SMTP. Pour
-                      Gmail, utilisez un App Password, pas le mot de passe de
-                      votre compte.
+                      Mot de passe pour l&apos;authentification SMTP. Pour Gmail, utilisez un App Password, pas le mot de passe de votre compte.
                     </td>
                   </tr>
                   <tr>
@@ -307,7 +327,15 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_FROM</code>
                     </td>
                     <td data-label="Description">
-                      L&apos;adresse &quot;From&quot; des e-mails sortants.
+                      Adresse de l&apos;expéditeur, seule (<code>noreply@example.com</code>) ou avec un nom (<code>Acme Backups &lt;noreply@example.com&gt;</code>). Sans nom, les destinataires voient <code>Databasus</code>. Si elle n&apos;est pas définie, <code>SMTP_USER</code> est utilisé s&apos;il s&apos;agit d&apos;une adresse e-mail, sinon <code>noreply@</code> suivi de <code>SMTP_HOST</code> : un nom d&apos;utilisateur comme <code>apikey</code> ne devient donc jamais l&apos;expéditeur. Si la valeur ne peut pas être lue comme une adresse, l&apos;instance refuse de démarrer.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_HELO_NAME</code>
+                    </td>
+                    <td data-label="Description">
+                      Le nom sous lequel l&apos;instance se présente au serveur de messagerie. Par défaut, l&apos;hôte de <code>DATABASUS_URL</code>, ou à défaut le nom de la machine. Doit être un nom d&apos;hôte ou un littéral d&apos;adresse comme <code>[192.0.2.1]</code> ou <code>[IPv6:2001:db8::1]</code>, sinon l&apos;instance refuse de démarrer.
                     </td>
                   </tr>
                   <tr>
@@ -315,12 +343,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_INSECURE_SKIP_VERIFY</code>
                     </td>
                     <td data-label="Description">
-                      Mettez <code>true</code> pour ignorer la vérification du
-                      certificat TLS lors de la connexion au serveur SMTP. Vaut{" "}
-                      <code>false</code> par défaut. À réserver aux serveurs
-                      avec un certificat auto-signé sur un réseau de confiance :
-                      cette option désactive la protection contre les attaques
-                      de l&apos;homme du milieu.
+                      Mettez <code>true</code> pour ignorer la vérification du certificat TLS dans les modes <code>tls</code> et <code>starttls</code>. Vaut <code>false</code> par défaut. À réserver aux serveurs avec un certificat auto-signé sur un réseau de confiance : cette option désactive la protection contre les attaques de l&apos;homme du milieu.
                     </td>
                   </tr>
                   <tr>
@@ -328,14 +351,72 @@ export default function AdvancedConfigPage() {
                       <code>DATABASUS_URL</code>
                     </td>
                     <td data-label="Description">
-                      URL de base publique de votre instance (par ex.{" "}
-                      <code>https://backup.example.com</code>). Sert à
-                      construire les liens dans les e-mails. Requis avec{" "}
-                      <code>SMTP_HOST</code>.
+                      URL de base publique de votre instance (par ex. <code>https://backup.example.com</code>). Facultative : elle ajoute un lien aux e-mails d&apos;invitation et fournit le nom annoncé par défaut. L&apos;e-mail fonctionne sans elle.
                     </td>
                   </tr>
                 </tbody>
               </table>
+
+              <p>
+                <code>SMTP_SECURITY</code> choisit l&apos;un des trois modes. Les canaux de notification par e-mail proposent le même choix dans <strong>Advanced settings</strong>.
+              </p>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mode</th>
+                    <th>Comportement</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <code>tls</code>
+                    </td>
+                    <td data-label="Comportement">
+                      La connexion est chiffrée dès le premier octet. Habituel sur le port 465.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>starttls</code>
+                    </td>
+                    <td data-label="Comportement">
+                      La connexion démarre en clair puis passe en chiffré avant l&apos;envoi du mot de passe ou de tout message. Si le serveur ne le propose pas, la livraison échoue au lieu de continuer sans chiffrement. Habituel sur le port 587.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>none</code>
+                    </td>
+                    <td data-label="Comportement">
+                      La connexion n&apos;est jamais chiffrée. À utiliser pour un relais qui ne propose pas STARTTLS, comme un Postfix local sur le port 25.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    <code>none</code> envoie le mot de passe SMTP et chaque message en clair, et toute personne placée entre Databasus et le relais peut les lire. Ne l&apos;utilisez qu&apos;avec un relais sur le même hôte ou sur un réseau privé de confiance.
+                  </p>
+                </div>
+              </div>
 
               <h2 id="signup-captcha">
                 Captcha à l&apos;inscription (Cloudflare Turnstile)

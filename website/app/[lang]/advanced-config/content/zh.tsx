@@ -234,13 +234,34 @@ export default function AdvancedConfigPage() {
               <h2 id="email-smtp">邮件 (SMTP)</h2>
 
               <p>
-                连接一个 SMTP 服务器，Databasus
-                就能发送事务性邮件，例如密码重置链接和工作区邀请。只有{" "}
-                <strong>
-                  <code>SMTP_HOST</code> 和 <code>DATABASUS_URL</code> 都设置了
-                </strong>
-                ，邮件才视为已配置；在那之前，邮件相关功能在界面中保持隐藏。
+                连接邮件服务器后，Databasus 就能发送工作区邀请、密码重置码和登录验证码。<strong>只要设置了 <code>SMTP_HOST</code></strong>，邮件服务器就算已配置。没有它时，设置页面会显示邮件服务器未配置，登录页面也不会显示重置密码的链接。
               </p>
+
+              <p>
+                这是实例的邮件服务器。邮件通知渠道用来报告备份情况，它们在各自的表单里有自己的 SMTP 设置，所以某个通知渠道能收发邮件，并不能说明这台服务器可用。要检查实例的邮件服务器，请打开 <strong>Databasus settings → Mail server</strong> 并点击 <strong>Send test email</strong>。测试邮件会发到你自己的地址，发送失败时会显示邮件服务器的回复。
+              </p>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    <strong>如果你的中继不支持 STARTTLS，请在升级前设置 <code>SMTP_SECURITY=none</code>。</strong> 除 465 以外的端口默认使用 <code>starttls</code> 模式，它不会在没有加密的情况下继续，因此在设置这个变量之前，这样的中继收不到任何邮件。如果实例要求通过邮件发送登录验证码，在邮件无法送达期间，任何人都无法用密码登录。要恢复访问，请用 <code>docker exec -it databasus ./main --disable-2fa</code> 关闭第二因素（见<a href="/zh/password/#disable-two-factor" className="text-blue-400 hover:text-blue-300">不再要求登录验证码</a>）。
+                  </p>
+                </div>
+              </div>
 
               <table>
                 <thead>
@@ -255,8 +276,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_HOST</code>
                     </td>
                     <td data-label="Description">
-                      SMTP 服务器主机名（例如 <code>smtp.gmail.com</code>
-                      ）。与 <code>DATABASUS_URL</code> 一起设置即启用邮件。
+                      邮件服务器主机名（例如 <code>smtp.gmail.com</code>）。设置后即启用实例邮件。
                     </td>
                   </tr>
                   <tr>
@@ -264,15 +284,24 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_PORT</code>
                     </td>
                     <td data-label="Description">
-                      SMTP 服务器端口（例如 <code>587</code>）。设置了{" "}
-                      <code>SMTP_HOST</code> 时必须是正整数。
+                      邮件服务器端口（例如 <code>587</code>）。设置了 <code>SMTP_HOST</code> 时必须是正整数。
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_SECURITY</code>
+                    </td>
+                    <td data-label="Description">
+                      连接安全：<code>tls</code>、<code>starttls</code> 或 <code>none</code>，说明见下文。465 端口默认 <code>tls</code>，其他端口默认 <code>starttls</code>。取其他值时实例拒绝启动。
                     </td>
                   </tr>
                   <tr>
                     <td>
                       <code>SMTP_USER</code>
                     </td>
-                    <td data-label="Description">SMTP 认证用户名。</td>
+                    <td data-label="Description">
+                      SMTP 认证用户名。
+                    </td>
                   </tr>
                   <tr>
                     <td>
@@ -287,7 +316,15 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_FROM</code>
                     </td>
                     <td data-label="Description">
-                      发出邮件的&quot;From&quot;地址。
+                      发件人地址，可以只写地址（<code>noreply@example.com</code>），也可以带名称（<code>Acme Backups &lt;noreply@example.com&gt;</code>）。不带名称时，收件人看到的是 <code>Databasus</code>。未设置时，如果 <code>SMTP_USER</code> 是邮箱地址就使用它，否则使用 <code>noreply@</code> 加 <code>SMTP_HOST</code>，因此 <code>apikey</code> 这样的用户名不会成为发件人。值无法解析为地址时，实例拒绝启动。
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_HELO_NAME</code>
+                    </td>
+                    <td data-label="Description">
+                      实例向邮件服务器问候时使用的名称。默认取 <code>DATABASUS_URL</code> 中的主机，没有时取本机主机名。必须是主机名，或 <code>[192.0.2.1]</code>、<code>[IPv6:2001:db8::1]</code> 这样的地址字面量，否则实例拒绝启动。
                     </td>
                   </tr>
                   <tr>
@@ -295,9 +332,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_INSECURE_SKIP_VERIFY</code>
                     </td>
                     <td data-label="Description">
-                      设为 <code>true</code> 时连接 SMTP 服务器跳过 TLS
-                      证书校验。默认 <code>false</code>
-                      。只在可信网络内的自签名证书服务器上使用：它会关闭对中间人攻击的防护。
+                      设为 <code>true</code> 时，在 <code>tls</code> 和 <code>starttls</code> 模式下跳过 TLS 证书校验。默认 <code>false</code>。只在可信网络内的自签名证书服务器上使用：它会关闭对中间人攻击的防护。
                     </td>
                   </tr>
                   <tr>
@@ -305,16 +340,72 @@ export default function AdvancedConfigPage() {
                       <code>DATABASUS_URL</code>
                     </td>
                     <td data-label="Description">
-                      你的实例的公开基础 URL（例如{" "}
-                      <code>https://backup.example.com</code>
-                      ）。用于生成邮件内的链接。必须与 <code>
-                        SMTP_HOST
-                      </code>{" "}
-                      一起设置。
+                      实例的公开基础 URL（例如 <code>https://backup.example.com</code>）。可选：它会在邀请邮件里加上链接，并提供默认的问候名称。没有它邮件也能正常发送。
                     </td>
                   </tr>
                 </tbody>
               </table>
+
+              <p>
+                <code>SMTP_SECURITY</code> 从三种模式中选一种。邮件通知渠道在 <strong>Advanced settings</strong> 里提供同样的选择。
+              </p>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>模式</th>
+                    <th>行为</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <code>tls</code>
+                    </td>
+                    <td data-label="Description">
+                      从第一个字节开始加密连接。通常用于 465 端口。
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>starttls</code>
+                    </td>
+                    <td data-label="Description">
+                      连接先以明文建立，在发送密码或任何邮件之前升级为加密连接。服务器不支持时发送失败，而不是继续以明文发送。通常用于 587 端口。
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>none</code>
+                    </td>
+                    <td data-label="Description">
+                      连接始终不加密。适用于不支持 STARTTLS 的中继，例如 25 端口上的本地 Postfix。
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    <code>none</code> 会以明文发送 SMTP 密码和所有邮件，Databasus 与中继之间的任何人都能读取。只应在同一主机或可信私有网络中的中继上使用。
+                  </p>
+                </div>
+              </div>
 
               <h2 id="signup-captcha">注册验证码（Cloudflare Turnstile）</h2>
 

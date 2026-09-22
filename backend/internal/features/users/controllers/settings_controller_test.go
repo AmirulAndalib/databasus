@@ -457,3 +457,96 @@ func countAuditEntries(recorder *users_testing.RecordingAuditLogWriter, fragment
 
 	return count
 }
+
+func Test_SendTestEmail_WhenAdminHasAddress_SendsToAdminAndAuditsDelivery(t *testing.T) {
+	router, mockEmailSender := createSettingsTestRouterWithMailSender(t, false)
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	var response users_dto.SendTestEmailResponseDTO
+	test_utils.MakePostRequestAndUnmarshal(
+		t, router, "/api/v1/users/settings/test-email", "Bearer "+admin.Token, nil, http.StatusOK, &response,
+	)
+
+	assert.Equal(t, admin.Email, response.RecipientEmail)
+	require.Len(t, mockEmailSender.SentEmails, 1)
+	assert.Equal(t, admin.Email, mockEmailSender.SentEmails[0].To)
+	assert.True(t, users_testing.GetAuditLogRecorder().HasEntryContaining("Test email sent to", admin.Email))
+}
+
+func Test_SendTestEmail_WhenUserIsMember_ReturnsForbiddenAndSendsNothing(t *testing.T) {
+	router, mockEmailSender := createSettingsTestRouterWithMailSender(t, false)
+	member := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleMember)
+
+	test_utils.MakePostRequest(
+		t, router, "/api/v1/users/settings/test-email", "Bearer "+member.Token, nil, http.StatusForbidden,
+	)
+
+	assert.Empty(t, mockEmailSender.SentEmails)
+}
+
+func Test_SendTestEmail_WhenMailServerIsMissing_RefusesWithCodeAndSendsNothing(t *testing.T) {
+	router, mockEmailSender := createSettingsTestRouterWithMailSender(t, true)
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	response := test_utils.MakePostRequest(
+		t, router, "/api/v1/users/settings/test-email", "Bearer "+admin.Token, nil, http.StatusBadRequest,
+	)
+
+	assert.Equal(t, "email_not_configured", readErrorCode(t, response))
+	assert.Empty(t, mockEmailSender.SentEmails)
+}
+
+func Test_SendTestEmail_WhenAdminHasBootstrapLogin_RefusesWithCodeAndSendsNothing(t *testing.T) {
+	router, mockEmailSender := createSettingsTestRouterWithMailSender(t, false)
+	bootstrapAdmin := users_testing.CreateTestUserWithEmail(t.Context(), users_enums.UserRoleAdmin, "admin")
+	t.Cleanup(func() { users_testing.DeleteTestUser(context.Background(), bootstrapAdmin.UserID) })
+
+	response := test_utils.MakePostRequest(
+		t, router, "/api/v1/users/settings/test-email", "Bearer "+bootstrapAdmin.Token, nil, http.StatusBadRequest,
+	)
+
+	assert.Equal(t, "admin_email_missing", readErrorCode(t, response))
+	assert.Empty(t, mockEmailSender.SentEmails)
+}
+
+func Test_SendTestEmail_SixthRequestWithinWindow_ReturnsTooManyRequests(t *testing.T) {
+	router, mockEmailSender := createSettingsTestRouterWithMailSender(t, false)
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	for range 5 {
+		test_utils.MakePostRequest(
+			t, router, "/api/v1/users/settings/test-email", "Bearer "+admin.Token, nil, http.StatusOK,
+		)
+	}
+
+	test_utils.MakePostRequest(
+		t, router, "/api/v1/users/settings/test-email", "Bearer "+admin.Token, nil, http.StatusTooManyRequests,
+	)
+
+	assert.Len(t, mockEmailSender.SentEmails, 5)
+}
+
+func Test_SendTestEmail_WhenDeliveryFails_ReturnsSenderErrorAndAuditsFailure(t *testing.T) {
+	router, mockEmailSender := createSettingsTestRouterWithMailSender(t, false)
+	mockEmailSender.ShouldFail = true
+	admin := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleAdmin)
+
+	response := test_utils.MakePostRequest(
+		t, router, "/api/v1/users/settings/test-email", "Bearer "+admin.Token, nil, http.StatusBadRequest,
+	)
+
+	assert.Contains(t, string(response.Body), "mock email send failure")
+	assert.Empty(t, readErrorCode(t, response))
+	assert.True(t, users_testing.GetAuditLogRecorder().HasEntryContaining("Test email to", admin.Email, "failed"))
+}
+
+func readErrorCode(t *testing.T, response *test_utils.TestResponse) string {
+	t.Helper()
+
+	var errorResponse struct {
+		Code string `json:"code"`
+	}
+	require.NoError(t, json.Unmarshal(response.Body, &errorResponse))
+
+	return errorResponse.Code
+}

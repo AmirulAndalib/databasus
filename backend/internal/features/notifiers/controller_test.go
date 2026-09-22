@@ -23,7 +23,9 @@ import (
 	users_testing "databasus-backend/internal/features/users/testing"
 	workspaces_controllers "databasus-backend/internal/features/workspaces/controllers"
 	workspaces_testing "databasus-backend/internal/features/workspaces/testing"
+	"databasus-backend/internal/util/smtp_transport"
 	test_utils "databasus-backend/internal/util/testing"
+	"databasus-backend/internal/util/testing/containers"
 )
 
 func Test_SaveNewNotifier_NotifierReturnedViaGet(t *testing.T) {
@@ -1465,4 +1467,161 @@ func decryptField(t *testing.T, encryptedValue string) string {
 	decrypted, err := encryptor.Decrypt(encryptedValue)
 	assert.NoError(t, err)
 	return decrypted
+}
+
+func Test_SaveEmailNotifier_WithUnusableSettings_Refused(t *testing.T) {
+	owner := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleMember)
+	router := createRouter()
+	workspace := workspaces_testing.CreateTestWorkspace(t.Context(), "Test Workspace", owner, router)
+	defer workspaces_testing.RemoveTestWorkspace(t.Context(), workspace, router)
+
+	testCases := []struct {
+		name                 string
+		applyUnusableSetting func(emailNotifier *email_notifier.EmailNotifier)
+		expectedError        string
+	}{
+		{
+			name:                 "sender without an address",
+			applyUnusableSetting: func(emailNotifier *email_notifier.EmailNotifier) { emailNotifier.From = "ops at example" },
+			expectedError:        smtp_transport.ErrInvalidSender.Error(),
+		},
+		{
+			name:                 "unknown security mode",
+			applyUnusableSetting: func(emailNotifier *email_notifier.EmailNotifier) { emailNotifier.Security = "ssl" },
+			expectedError:        smtp_transport.ErrUnknownSecurity.Error(),
+		},
+		{
+			name: "recipient without an address",
+			applyUnusableSetting: func(emailNotifier *email_notifier.EmailNotifier) {
+				emailNotifier.TargetEmail = "ops at example"
+			},
+			expectedError: smtp_transport.ErrInvalidRecipient.Error(),
+		},
+		{
+			name:                 "greeting name with a space",
+			applyUnusableSetting: func(emailNotifier *email_notifier.EmailNotifier) { emailNotifier.HeloName = "my relay" },
+			expectedError:        smtp_transport.ErrInvalidHeloName.Error(),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			notifier := createEmailNotifier(workspace.ID)
+			testCase.applyUnusableSetting(notifier.EmailNotifier)
+
+			response := test_utils.MakePostRequest(
+				t, router, "/api/v1/notifiers", "Bearer "+owner.Token, *notifier, http.StatusBadRequest,
+			)
+
+			assert.Contains(t, string(response.Body), testCase.expectedError)
+		})
+	}
+}
+
+func Test_SaveEmailNotifier_WithDisplayNameSenderAndConnectionOptions_ReturnedAsSaved(t *testing.T) {
+	owner := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleMember)
+	router := createRouter()
+	workspace := workspaces_testing.CreateTestWorkspace(t.Context(), "Test Workspace", owner, router)
+
+	notifier := createEmailNotifier(workspace.ID)
+	notifier.EmailNotifier.From = "Acme Backups <noreply@example.com>"
+	notifier.EmailNotifier.Security = smtp_transport.SecurityNone
+	notifier.EmailNotifier.HeloName = "mail.example.com"
+
+	var savedNotifier Notifier
+	test_utils.MakePostRequestAndUnmarshal(
+		t, router, "/api/v1/notifiers", "Bearer "+owner.Token, *notifier, http.StatusOK, &savedNotifier,
+	)
+
+	var retrievedNotifier Notifier
+	test_utils.MakeGetRequestAndUnmarshal(
+		t,
+		router,
+		fmt.Sprintf("/api/v1/notifiers/%s", savedNotifier.ID.String()),
+		"Bearer "+owner.Token,
+		http.StatusOK,
+		&retrievedNotifier,
+	)
+
+	assert.Equal(t, "Acme Backups <noreply@example.com>", retrievedNotifier.EmailNotifier.From)
+	assert.Equal(t, smtp_transport.SecurityNone, retrievedNotifier.EmailNotifier.Security)
+	assert.Equal(t, "mail.example.com", retrievedNotifier.EmailNotifier.HeloName)
+
+	deleteNotifier(t, router, savedNotifier.ID, workspace.ID, owner.Token)
+	workspaces_testing.RemoveTestWorkspace(t.Context(), workspace, router)
+}
+
+func Test_SaveEmailNotifier_WithoutSecurity_CreatesWithPortDefaultAndUpdateKeepsStoredMode(t *testing.T) {
+	owner := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleMember)
+	router := createRouter()
+	workspace := workspaces_testing.CreateTestWorkspace(t.Context(), "Test Workspace", owner, router)
+
+	notifier := createEmailNotifier(workspace.ID)
+
+	var createdNotifier Notifier
+	test_utils.MakePostRequestAndUnmarshal(
+		t, router, "/api/v1/notifiers", "Bearer "+owner.Token, *notifier, http.StatusOK, &createdNotifier,
+	)
+	assert.Equal(t, smtp_transport.SecurityStartTLS, createdNotifier.EmailNotifier.Security)
+
+	createdNotifier.EmailNotifier.Security = smtp_transport.SecurityNone
+	var notifierSwitchedToNone Notifier
+	test_utils.MakePostRequestAndUnmarshal(
+		t, router, "/api/v1/notifiers", "Bearer "+owner.Token, createdNotifier, http.StatusOK, &notifierSwitchedToNone,
+	)
+
+	notifierSwitchedToNone.EmailNotifier.Security = ""
+	notifierSwitchedToNone.EmailNotifier.SMTPPort = 465
+	test_utils.MakePostRequest(
+		t, router, "/api/v1/notifiers", "Bearer "+owner.Token, notifierSwitchedToNone, http.StatusOK,
+	)
+
+	var retrievedNotifier Notifier
+	test_utils.MakeGetRequestAndUnmarshal(
+		t,
+		router,
+		fmt.Sprintf("/api/v1/notifiers/%s", createdNotifier.ID.String()),
+		"Bearer "+owner.Token,
+		http.StatusOK,
+		&retrievedNotifier,
+	)
+
+	assert.Equal(t, 465, retrievedNotifier.EmailNotifier.SMTPPort)
+	assert.Equal(t, smtp_transport.SecurityNone, retrievedNotifier.EmailNotifier.Security)
+
+	deleteNotifier(t, router, createdNotifier.ID, workspace.ID, owner.Token)
+	workspaces_testing.RemoveTestWorkspace(t.Context(), workspace, router)
+}
+
+func Test_SendTestNotificationDirect_EmailWithoutSecurity_SendsWithPortDefault(t *testing.T) {
+	owner := users_testing.CreateTestUser(t.Context(), users_enums.UserRoleMember)
+	router := createRouter()
+	workspace := workspaces_testing.CreateTestWorkspace(t.Context(), "Test Workspace", owner, router)
+
+	mailpitEndpoint := containers.StartMailpit(t)
+
+	notifier := createEmailNotifier(workspace.ID)
+	notifier.EmailNotifier.SMTPHost = mailpitEndpoint.SMTP.Host
+	notifier.EmailNotifier.SMTPPort = mailpitEndpoint.SMTP.Port
+
+	response := test_utils.MakePostRequest(
+		t, router, "/api/v1/notifiers/direct-test", "Bearer "+owner.Token, *notifier, http.StatusBadRequest,
+	)
+
+	assert.Contains(t, string(response.Body), smtp_transport.ErrStartTLSNotOffered.Error())
+
+	workspaces_testing.RemoveTestWorkspace(t.Context(), workspace, router)
+}
+
+func createEmailNotifier(workspaceID uuid.UUID) *Notifier {
+	return &Notifier{
+		WorkspaceID:  workspaceID,
+		Name:         "Test Email Notifier " + uuid.New().String(),
+		NotifierType: NotifierTypeEmail,
+		EmailNotifier: &email_notifier.EmailNotifier{
+			TargetEmail: "ops@example.com",
+			SMTPHost:    "smtp.example.com",
+			SMTPPort:    587,
+		},
+	}
 }

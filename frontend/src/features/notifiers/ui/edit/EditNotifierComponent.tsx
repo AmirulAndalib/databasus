@@ -8,6 +8,7 @@ import {
   type Notifier,
   NotifierType,
   WebhookMethod,
+  getDefaultEmailNotifierSecurity,
   notifierApi,
   validateDiscordNotifier,
   validateEmailNotifier,
@@ -124,14 +125,18 @@ export function EditNotifierComponent({
     }
 
     if (type === NotifierType.EMAIL) {
+      const defaultSmtpPort = 0;
+
       notifier.emailNotifier = {
         targetEmail: '',
         smtpHost: '',
-        smtpPort: 0,
+        smtpPort: defaultSmtpPort,
         smtpUser: '',
         smtpPassword: '',
         from: '',
         isInsecureSkipVerify: false,
+        security: getDefaultEmailNotifierSecurity(defaultSmtpPort),
+        heloName: '',
       };
     }
 

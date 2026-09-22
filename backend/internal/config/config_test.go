@@ -160,3 +160,70 @@ func Test_IsStorageProbeProcess_RecognisesOnlyTheStorageProbeFlag(t *testing.T) 
 		})
 	}
 }
+
+func Test_ValidateSMTPSettings_RejectsUnusableValuesAndNamesTheVariable(t *testing.T) {
+	testCases := []struct {
+		name             string
+		env              EnvVariables
+		expectedVariable string
+	}{
+		{
+			name:             "host without a port",
+			env:              EnvVariables{SMTPHost: "smtp.example.com"},
+			expectedVariable: "SMTP_PORT",
+		},
+		{
+			name:             "unknown security mode",
+			env:              EnvVariables{SMTPHost: "smtp.example.com", SMTPPort: 587, SMTPSecurity: "ssl"},
+			expectedVariable: "SMTP_SECURITY",
+		},
+		{
+			name:             "greeting name with a space",
+			env:              EnvVariables{SMTPHost: "smtp.example.com", SMTPPort: 587, SMTPHeloName: "my relay"},
+			expectedVariable: "SMTP_HELO_NAME",
+		},
+		{
+			name: "unreadable sender",
+			env: EnvVariables{
+				SMTPHost: "smtp.example.com",
+				SMTPPort: 587,
+				SMTPFrom: "noreply at example.com",
+			},
+			expectedVariable: "SMTP_FROM",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := validateSMTPSettings(&testCase.env)
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), testCase.expectedVariable)
+		})
+	}
+}
+
+func Test_ValidateSMTPSettings_AcceptsUsableValues(t *testing.T) {
+	testCases := []struct {
+		name string
+		env  EnvVariables
+	}{
+		{name: "no mail server", env: EnvVariables{}},
+		{
+			name: "sender with a display name",
+			env: EnvVariables{
+				SMTPHost:     "smtp.example.com",
+				SMTPPort:     587,
+				SMTPFrom:     "Acme Backups <noreply@example.com>",
+				SMTPSecurity: "none",
+				SMTPHeloName: "[IPv6:2001:db8::1]",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			assert.NoError(t, validateSMTPSettings(&testCase.env))
+		})
+	}
+}

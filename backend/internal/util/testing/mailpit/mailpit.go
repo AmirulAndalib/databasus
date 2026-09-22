@@ -12,11 +12,12 @@ import (
 const requestTimeout = 5 * time.Second
 
 type Message struct {
-	ID      string    `json:"ID"`
-	From    Address   `json:"From"`
-	To      []Address `json:"To"`
-	Subject string    `json:"Subject"`
-	Snippet string    `json:"Snippet"`
+	ID        string    `json:"ID"`
+	From      Address   `json:"From"`
+	To        []Address `json:"To"`
+	Subject   string    `json:"Subject"`
+	MessageID string    `json:"MessageID"`
+	Snippet   string    `json:"Snippet"`
 }
 
 type Address struct {

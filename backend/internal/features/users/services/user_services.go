@@ -591,7 +591,7 @@ func (s *UserService) SendResetPasswordCode(ctx context.Context, email string) e
 </html>
 `, code)
 
-		if err := s.emailSender.SendEmail(user.Email, subject, body); err != nil {
+		if err := s.emailSender.SendEmail(ctx, user.Email, subject, body); err != nil {
 			return fmt.Errorf("failed to send email: %w", err)
 		}
 	}

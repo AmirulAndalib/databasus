@@ -14,6 +14,8 @@ var userController = &UserController{
 
 var settingsController = &SettingsController{
 	users_services.GetSettingsService(),
+	ratelimiter.GetCounter(),
+	logger.GetLogger(),
 }
 
 var managementController = &ManagementController{

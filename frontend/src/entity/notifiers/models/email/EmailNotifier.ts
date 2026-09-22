@@ -1,3 +1,5 @@
+import type { EmailNotifierSecurity } from './EmailNotifierSecurity';
+
 export interface EmailNotifier {
   targetEmail: string;
   smtpHost: string;
@@ -6,4 +8,6 @@ export interface EmailNotifier {
   smtpPassword: string;
   from: string;
   isInsecureSkipVerify: boolean;
+  security: EmailNotifierSecurity;
+  heloName: string;
 }

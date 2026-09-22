@@ -243,7 +243,7 @@ func (s *UserService) issueTwoFactorCode(
 		}
 	}
 
-	if err := s.emailSender.SendEmail(user.Email, twoFactorCodeSubject, twoFactorCodeBody(code)); err != nil {
+	if err := s.emailSender.SendEmail(ctx, user.Email, twoFactorCodeSubject, twoFactorCodeBody(code)); err != nil {
 		s.logger.ErrorContext(ctx, "failed to send the sign-in code", "user_id", user.ID, "error", err)
 
 		if markErr := s.twoFactorRepository.MarkCodeAsUsed(ctx, pendingCode.ID); markErr != nil {

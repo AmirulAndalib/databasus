@@ -106,7 +106,7 @@ func (c *UserController) SignIn(ctx *gin.Context) {
 		return
 	}
 
-	if !c.checkRateLimitOrRespond(ctx, ratelimiter.Attempt{
+	if !checkRateLimitOrRespond(ctx, c.rateLimiter, c.logger, ratelimiter.Attempt{
 		Scope:      "signin",
 		Identifier: request.Email,
 		Limit:      10,
@@ -379,7 +379,7 @@ func (c *UserController) SendResetPasswordCode(ctx *gin.Context) {
 		return
 	}
 
-	if !c.checkRateLimitOrRespond(ctx, ratelimiter.Attempt{
+	if !checkRateLimitOrRespond(ctx, c.rateLimiter, c.logger, ratelimiter.Attempt{
 		Scope:      "reset-password",
 		Identifier: request.Email,
 		Limit:      3,
@@ -421,25 +421,6 @@ func (c *UserController) ResetPassword(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
-}
-
-func (c *UserController) checkRateLimitOrRespond(ctx *gin.Context, attempt ratelimiter.Attempt) bool {
-	isAllowed, err := c.rateLimiter.RecordAttemptAndCheckIsAllowed(ctx.Request.Context(), attempt)
-	if err != nil {
-		c.logger.ErrorContext(ctx.Request.Context(), "failed to evaluate a rate limit",
-			"scope", attempt.Scope, "error", err)
-	}
-
-	if err != nil || !isAllowed {
-		ctx.JSON(
-			http.StatusTooManyRequests,
-			gin.H{"error": "Rate limit exceeded. Please try again later.", "code": "rate_limit_exceeded"},
-		)
-
-		return false
-	}
-
-	return true
 }
 
 // Each refusal carries a code, because the status alone does not tell the

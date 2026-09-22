@@ -1,43 +1,32 @@
 package email
 
 import (
-	"bufio"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"fmt"
-	"math/big"
-	"net"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"databasus-backend/internal/util/logger"
+	"databasus-backend/internal/config"
 	"databasus-backend/internal/util/testing/containers"
 	"databasus-backend/internal/util/testing/mailpit"
 )
 
-func Test_EmailSMTPSenderSendEmail_WhenSmtpServerAccepts_DeliversMessageToRecipient(t *testing.T) {
+func Test_SendEmail_WhenSmtpServerAccepts_DeliversMessageWithSenderNameAndMessageID(t *testing.T) {
 	mailpitEndpoint := containers.StartMailpit(t)
 	mailpitClient := mailpit.NewClient(
 		fmt.Sprintf("%s:%d", mailpitEndpoint.HTTP.Host, mailpitEndpoint.HTTP.Port),
 	)
 
-	sender := &EmailSMTPSender{
-		logger:       logger.GetLogger(),
-		smtpHost:     mailpitEndpoint.SMTP.Host,
-		smtpPort:     mailpitEndpoint.SMTP.Port,
-		smtpFrom:     "sender@databasus.local",
-		isConfigured: true,
-	}
+	sender := newEmailSMTPSenderFromEnv(&config.EnvVariables{
+		SMTPHost:     mailpitEndpoint.SMTP.Host,
+		SMTPPort:     mailpitEndpoint.SMTP.Port,
+		SMTPFrom:     "sender@databasus.local",
+		SMTPSecurity: "none",
+	})
 
-	err := sender.SendEmail("recipient@databasus.local", "Password Reset Code", "<b>123456</b>")
+	err := sender.SendEmail(t.Context(), "recipient@databasus.local", "Password Reset Code", "<b>123456</b>")
 	require.NoError(t, err)
 
 	var delivered []mailpit.Message
@@ -53,109 +42,25 @@ func Test_EmailSMTPSenderSendEmail_WhenSmtpServerAccepts_DeliversMessageToRecipi
 	}, 5*time.Second, 100*time.Millisecond, "Mailpit should receive exactly one message")
 
 	assert.Equal(t, "Password Reset Code", delivered[0].Subject)
+	assert.Equal(t, "Databasus", delivered[0].From.Name)
+	assert.Equal(t, "sender@databasus.local", delivered[0].From.Address)
+	assert.NotEmpty(t, delivered[0].MessageID)
 	require.Len(t, delivered[0].To, 1)
 	assert.Equal(t, "recipient@databasus.local", delivered[0].To[0].Address)
 }
 
-func Test_EmailSMTPSenderImplicitTLS_WithUntrustedCert_FailsUnlessSkipVerify(t *testing.T) {
-	host, port := startImplicitTLSGreetingServer(t, newSelfSignedTLSConfig(t))
+func Test_SendEmail_WhenSmtpHostIsUnset_SkipsWithoutError(t *testing.T) {
+	sender := newEmailSMTPSenderFromEnv(&config.EnvVariables{})
 
-	t.Run("verification on rejects the untrusted certificate", func(t *testing.T) {
-		sender := &EmailSMTPSender{logger: logger.GetLogger(), smtpHost: host, smtpPort: port}
-
-		_, _, dialErr := sender.createImplicitTLSClient()
-
-		require.Error(t, dialErr)
-		assert.Contains(t, dialErr.Error(), "certificate")
-	})
-
-	t.Run("skip verify accepts the untrusted certificate", func(t *testing.T) {
-		sender := &EmailSMTPSender{
-			logger:               logger.GetLogger(),
-			smtpHost:             host,
-			smtpPort:             port,
-			isInsecureSkipVerify: true,
-		}
-
-		client, cleanup, dialErr := sender.createImplicitTLSClient()
-		require.NoError(t, dialErr)
-		defer cleanup()
-
-		require.NotNil(t, client)
-	})
+	assert.False(t, sender.IsConfigured())
+	assert.NoError(t, sender.SendEmail(t.Context(), "recipient@databasus.local", "Subject", "<p>body</p>"))
 }
 
-// newSelfSignedTLSConfig builds a TLS config whose certificate is not signed by any trusted
-// root, so a verifying client rejects it and a skip-verify client accepts it.
-func newSelfSignedTLSConfig(t *testing.T) *tls.Config {
-	t.Helper()
+func Test_NewEmailSMTPSenderFromEnv_WithoutSecurity_UsesPortDefault(t *testing.T) {
+	implicitTLSSender := newEmailSMTPSenderFromEnv(&config.EnvVariables{SMTPHost: "smtp.example.com", SMTPPort: 465})
+	upgradeSender := newEmailSMTPSenderFromEnv(&config.EnvVariables{SMTPHost: "smtp.example.com", SMTPPort: 587})
 
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(t, err)
-
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "127.0.0.1"},
-		NotBefore:    time.Now().UTC().Add(-time.Hour),
-		NotAfter:     time.Now().UTC().Add(time.Hour),
-		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1"), net.IPv6loopback},
-		IsCA:         true,
-	}
-
-	der, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
-	require.NoError(t, err)
-
-	return &tls.Config{
-		Certificates: []tls.Certificate{{Certificate: [][]byte{der}, PrivateKey: key}},
-	}
-}
-
-// startImplicitTLSGreetingServer accepts implicit-TLS connections and speaks just enough SMTP
-// (greeting, EHLO, QUIT) for createImplicitTLSClient to connect and disconnect cleanly.
-func startImplicitTLSGreetingServer(t *testing.T, tlsConfig *tls.Config) (host string, port int) {
-	t.Helper()
-
-	listener, err := tls.Listen("tcp", "127.0.0.1:0", tlsConfig)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = listener.Close() })
-
-	go func() {
-		for {
-			conn, acceptErr := listener.Accept()
-			if acceptErr != nil {
-				return
-			}
-
-			go serveMinimalSMTP(conn)
-		}
-	}()
-
-	addr := listener.Addr().(*net.TCPAddr)
-
-	return addr.IP.String(), addr.Port
-}
-
-func serveMinimalSMTP(conn net.Conn) {
-	defer func() { _ = conn.Close() }()
-
-	if _, err := conn.Write([]byte("220 test ESMTP\r\n")); err != nil {
-		return
-	}
-
-	reader := bufio.NewReader(conn)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			return
-		}
-
-		if strings.HasPrefix(strings.ToUpper(line), "QUIT") {
-			_, _ = conn.Write([]byte("221 Bye\r\n"))
-			return
-		}
-
-		_, _ = conn.Write([]byte("250 OK\r\n"))
-	}
+	assert.True(t, implicitTLSSender.IsConfigured())
+	assert.Equal(t, "tls", string(implicitTLSSender.connection.Security))
+	assert.Equal(t, "starttls", string(upgradeSender.connection.Security))
 }

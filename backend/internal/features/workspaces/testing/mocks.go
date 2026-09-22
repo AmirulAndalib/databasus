@@ -1,6 +1,9 @@
 package workspaces_testing
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type MockEmailSender struct {
 	SendEmailCalls []EmailCall
@@ -20,7 +23,7 @@ func NewMockEmailSender() *MockEmailSender {
 	}
 }
 
-func (m *MockEmailSender) SendEmail(to, subject, body string) error {
+func (m *MockEmailSender) SendEmail(_ context.Context, to, subject, body string) error {
 	m.SendEmailCalls = append(m.SendEmailCalls, EmailCall{
 		To:      to,
 		Subject: subject,

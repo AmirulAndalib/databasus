@@ -21,6 +21,7 @@ export type { ListUsersResponse } from './model/ListUsersResponse';
 export type { ChangeUserRoleRequest } from './model/ChangeUserRoleRequest';
 export type { UsersSettings } from './model/UsersSettings';
 export type { UsersSettingsResponse } from './model/UsersSettingsResponse';
+export type { SendTestEmailResponse } from './model/SendTestEmailResponse';
 export type { SendResetPasswordCodeRequest } from './model/SendResetPasswordCodeRequest';
 export type { ResetPasswordRequest } from './model/ResetPasswordRequest';
 export { UserRole } from './model/UserRole';

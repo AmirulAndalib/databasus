@@ -1,0 +1,57 @@
+## Why
+
+An operator configures SMTP for a backup-notification channel, sees those emails arrive, and still gets no workspace invitations. Invitations, password reset codes and sign-in codes go through a second, instance-wide mail server that is configured only through environment variables (`backend/internal/config/config.go:95-101`). When it is missing, a send is skipped with a warning and reported as a success (`backend/internal/features/email/email.go:38-41`). When it is present but broken, the invitation still succeeds and the failure reaches only the server log (`backend/internal/features/workspaces/services/membership_service.go:110-112`). Nothing in the interface tells an administrator which of the two cases they are in.
+
+Both senders also carry their own copy of the SMTP code (`email/email.go:82-258`, `notifiers/models/email_notifier/model.go:182-337`), and both copies share a flaw. STARTTLS is used only when the server advertises it. Without that advertisement the session stays unencrypted, the standard PLAIN authentication refuses to run, and the fallback LOGIN authentication sends the username and password in cleartext (`email/email.go:158-167`, `:172-205`). An attacker positioned between the instance and the mail server can strip the advertisement and read the credentials.
+
+## Governing docs
+
+This change answers to [`AGENTS.md`](../../../AGENTS.md) at the repo root, [`backend/AGENTS.md`](../../../backend/AGENTS.md), [`frontend/AGENTS.md`](../../../frontend/AGENTS.md) and [`website/AGENTS.md`](../../../website/AGENTS.md). The verification agent and the readme translations are untouched, so [`agent/verification/AGENTS.md`](../../../agent/verification/AGENTS.md) and [`assets/readme/AGENTS.md`](../../../assets/readme/AGENTS.md) do not apply.
+
+## What Changes
+
+- Move SMTP sending into one shared package under `backend/internal/util/`. The instance mail server and the email notification channel both call it. The notification channel keeps only its own concerns: validation, password encryption, and the text of its messages. The instance sender keeps only reading its configuration from the environment and answering whether it is configured.
+- Add an explicit connection security mode with three values: `tls` (encrypted from the first byte), `starttls` (upgrade required, the session is dropped if the server does not offer it) and `none` (no encryption, chosen deliberately). It replaces the rule that port 465 means TLS and every other port means optional STARTTLS.
+- **BREAKING** for any mail server on a port other than 465 that does not offer STARTTLS. Such servers used to receive mail in cleartext and now refuse the connection until the operator selects `none`: through `SMTP_SECURITY=none` for the instance, or in the channel's advanced settings for a notification channel. Existing notification channels are migrated to `tls` on port 465 and to `starttls` everywhere else. The optional-STARTTLS behavior is deleted, not kept as a fourth mode. A channel broken by this shows the failure through its existing last-send error. An instance that requires the emailed second factor at sign-in and sends through such a server admits nobody through password sign-in after the upgrade, because sign-in fails closed when the code cannot be sent. The documentation tells operators to set `SMTP_SECURITY` before upgrading and names the console command that switches the second factor off.
+- Add two instance variables: `SMTP_SECURITY` and `SMTP_HELO_NAME`, the name the instance greets the server with. By default that name is the host of `DATABASUS_URL`. The instance refuses to start when `SMTP_SECURITY` holds an unknown value or `SMTP_HELO_NAME` is neither a host name nor an address literal.
+- Let the sender address carry a display name in the usual form, `Acme Backups <noreply@example.com>`, in `SMTP_FROM` and in a channel's sender field. Today such a value goes into the envelope sender whole and the mail server rejects every message, so no working setup changes. A sender without a display name is shown as `Databasus`. When no sender is set, the username stands in for it only if it is an address. A username such as `apikey` or an access key ID falls through to `noreply@` and the host, where today it goes into the envelope sender and the message is rejected.
+- **BREAKING** for an `SMTP_FROM` that cannot be read as an address at all: the instance now refuses to start and names the variable, as it already does for a host without a port. A channel whose sender cannot be read as an address is refused when it is next saved.
+- Give the email notification channel the same two options in its existing "Advanced settings" section: connection security and greeting name. Two columns are added to `email_notifiers`. A request that omits the security mode keeps working: a new channel gets the mode its port implies, and an update keeps the stored mode. A channel's recipient and greeting name are checked when it is saved, as its sender already is.
+- Put a time limit on the whole SMTP session, not only on opening the connection. Today a server that accepts the connection and then goes quiet holds the invitation request open indefinitely.
+- Build every message the same way: `Message-ID` on instance mail as well, a well-formed `MIME-Version` header, a body encoded so long HTML lines survive transport, the display name kept out of the envelope sender, and header values that cannot add further headers.
+- Make "the instance mail server is configured" mean one thing everywhere: `SMTP_HOST` is set, since the instance already refuses to start with a host and no port (`config.go:158-161`). The container entrypoint currently also requires `DATABASUS_URL` before it shows the forgot-password link (`docker/start.sh:147`), and the configuration page documents that stricter rule. Both are aligned to the backend. `DATABASUS_URL` stays optional: it only adds a link to invitation messages (`membership_service.go:371-376`) and supplies the default greeting name.
+- Add a "Mail server" block to the settings screen, directly above the audit logs. It shows whether the instance mail server is configured and links to the SMTP section of the configuration documentation. It also says that notification channels have SMTP settings of their own, which is the confusion that started this work.
+- Add a "Send test email" button to that block, drawn as an outlined button. It sends a message to the signed-in administrator's own address and shows the mail server's actual error when delivery fails. It is disabled while the mail server is not configured. The backend endpoint behind it is available to administrators only, is rate-limited, refuses outright when nothing is configured, and records each attempt in the audit log.
+- Rewrite the SMTP section of the configuration documentation in English and in the five translated copies: the new variables, the corrected configured rule, the security modes, and the difference between the instance mail server and a notification channel.
+- Add `SMTP_SECURITY=none` to `.env.example`. Its SMTP block names a host, `test-mailpit`, that no compose file provides, so nothing depends on it today. A developer who points it at a local Mailpit, which offers no STARTTLS, would otherwise hit the stricter default.
+
+### Out of scope
+
+- Reporting an unsent invitation to the person who sent it. Invitations keep logging the failure and nothing more. Telling the inviter would mean storing the delivery outcome, and this change adds no table for that.
+- The password reset audit entry that says a code was sent when the send was skipped (`backend/internal/features/users/services/user_services.go:557-599`).
+- Hiding a failed password reset delivery. The reset request keeps answering 400 with the delivery error (`backend/internal/features/users/controllers/user_controller.go:391-394`), while an unknown address answers 200 (`user_services.go:511-514`). The person asking is almost always the account owner, and telling them the mail server is broken helps more than a code that silently never arrives. The difference it reveals about registered addresses shows only while the mail server is broken, and the request is already limited to three per address per hour (`user_controller.go:382-389`).
+- Access to `GET /users/settings`. Its description says "admin only", but every signed-in user needs it: the main screen loads it for everyone (`frontend/src/widgets/main/MainScreenComponent.tsx:61-66`), and the create-workspace dialog reads a member's permission from it. Only the incorrect description is fixed.
+- A configurable session timeout, a manual choice of authentication mechanism, and OAuth2 (XOAUTH2) authentication for mail providers.
+- Sending test messages to an arbitrary address. The test goes to the administrator's own address only.
+- Showing the host, port or any other part of the mail server configuration on the settings screen. The block reports configured or not configured, nothing more.
+- Other notification channels and other sections of the configuration documentation.
+
+## Capabilities
+
+### New Capabilities
+
+- `outgoing-email`: how the instance and email notification channels deliver mail. It covers connection security and credential protection, sender identity, message format, the session time limit, instance configuration and the single configured rule, the settings-screen status with its test message, and the published documentation.
+
+### Modified Capabilities
+
+None. `two-factor-authentication` already requires the settings screen to ask the instance whether its mail server is configured and to link to the SMTP documentation. The new block reuses the same answer and the same link, so that requirement holds unchanged. Sign-in codes travel through the reworked sender and gain its security guarantees without any change to the second-factor flow.
+
+## Impact
+
+- **Backend**: a new shared SMTP package under `internal/util/`; the instance sender in `internal/features/email/`, which gains a context-aware send; the email notification channel model; environment parsing and startup validation in `internal/config/config.go`; the settings controller and service, which gain the test-message endpoint and its audit entry; and the three callers of the instance sender (invitations, password reset, sign-in codes), which now pass their request context.
+- **Database**: one migration that adds two columns to `email_notifiers` and backfills the security mode from the stored port.
+- **API**: `POST /users/settings/test-email`, for administrators only. The email notification channel gains `security` and `heloName` in its request and response bodies; both are optional in a request. Its `from` field accepts a display name, and a `targetEmail` that is not a single address is refused on save. The generated API documentation changes with them.
+- **Frontend**: the settings screen gains the mail server block; the email notification channel form gains two advanced fields; the notifier type gains two fields, a security mode enum and its label table; the settings API client gains the test call; six interface dictionaries gain the new copy.
+- **Container**: `docker/start.sh` derives the forgot-password link flag from `SMTP_HOST` alone.
+- **Docs**: the SMTP section of `website/app/(en)/advanced-config/page.tsx` and its five translated copies.
+- **Config**: `.env.example` gains `SMTP_SECURITY=none`.
