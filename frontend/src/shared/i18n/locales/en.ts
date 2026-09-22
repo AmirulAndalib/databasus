@@ -260,8 +260,8 @@ export const en = {
     readMore: 'Read more about settings you can <docsLink>here</docsLink>',
     mailServer: {
       title: 'Mail server',
-      configured: 'The mail server is configured.',
-      notConfigured: 'The mail server is not configured.',
+      configured: 'The mail server is <status>configured</status>.',
+      notConfigured: 'The mail server is <status>not configured</status>.',
       description:
         'It sends invitations, password reset codes and sign-in codes. Email notifiers have SMTP settings of their own.',
       docs: 'See <docsLink>the SMTP documentation</docsLink> for how to connect a mail server.',

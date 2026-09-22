@@ -266,8 +266,8 @@ export const fr: typeof en = {
       'Pour en savoir plus sur ces paramètres, <docsLink>consultez la documentation</docsLink>',
     mailServer: {
       title: 'Serveur de messagerie',
-      configured: 'Le serveur de messagerie est configuré.',
-      notConfigured: "Le serveur de messagerie n'est pas configuré.",
+      configured: 'Le serveur de messagerie <status>est configuré</status>.',
+      notConfigured: "Le serveur de messagerie <status>n'est pas configuré</status>.",
       description:
         'Il envoie les invitations, les codes de réinitialisation du mot de passe et les codes de connexion. Les canaux de notification par e-mail ont leurs propres paramètres SMTP.',
       docs: 'La <docsLink>documentation SMTP</docsLink> explique comment connecter un serveur de messagerie.',

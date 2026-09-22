@@ -261,8 +261,8 @@ export const ru: typeof en = {
     readMore: 'Подробнее о настройках — <docsLink>в документации</docsLink>',
     mailServer: {
       title: 'Почтовый сервер',
-      configured: 'Почтовый сервер настроен.',
-      notConfigured: 'Почтовый сервер не настроен.',
+      configured: 'Почтовый сервер <status>настроен</status>.',
+      notConfigured: 'Почтовый сервер <status>не настроен</status>.',
       description:
         'Через него уходят приглашения, коды сброса пароля и коды входа. У каналов уведомлений по email свои настройки SMTP.',
       docs: 'Как подключить почтовый сервер, описано <docsLink>в документации по SMTP</docsLink>.',

@@ -253,8 +253,8 @@ export const zh: typeof en = {
     readMore: '关于这些设置的详细说明，请<docsLink>查看文档</docsLink>',
     mailServer: {
       title: '邮件服务器',
-      configured: '邮件服务器已配置。',
-      notConfigured: '邮件服务器未配置。',
+      configured: '邮件服务器<status>已配置</status>。',
+      notConfigured: '邮件服务器<status>未配置</status>。',
       description: '它负责发送邀请、密码重置码和登录验证码。邮件通知渠道有自己的 SMTP 设置。',
       docs: '连接邮件服务器的方法见 <docsLink>SMTP 文档</docsLink>。',
       sendTestEmail: '发送测试邮件',

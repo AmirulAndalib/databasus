@@ -34,10 +34,22 @@ export function MailServerComponent({ isEmailConfigured }: Props) {
     <section className="my-8 max-w-2xl text-sm">
       <h2 className="mb-3 text-xl font-bold dark:text-white">{t('settings.mailServer.title')}</h2>
 
-      <div className="font-medium text-gray-900 dark:text-white">
-        {isEmailConfigured
-          ? t('settings.mailServer.configured')
-          : t('settings.mailServer.notConfigured')}
+      <div className="text-gray-900 dark:text-white">
+        {isEmailConfigured ? (
+          <Trans
+            i18nKey="settings.mailServer.configured"
+            components={{
+              status: <span className="font-semibold text-green-600 dark:text-green-400" />,
+            }}
+          />
+        ) : (
+          <Trans
+            i18nKey="settings.mailServer.notConfigured"
+            components={{
+              status: <span className="font-semibold text-amber-500 dark:text-amber-400" />,
+            }}
+          />
+        )}
       </div>
 
       <div className="mt-1 text-gray-500 dark:text-gray-400">

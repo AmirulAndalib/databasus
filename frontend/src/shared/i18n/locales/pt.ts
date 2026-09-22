@@ -266,8 +266,8 @@ export const pt: typeof en = {
     readMore: 'Saiba mais sobre as configurações <docsLink>na documentação</docsLink>',
     mailServer: {
       title: 'Servidor de e-mail',
-      configured: 'O servidor de e-mail está configurado.',
-      notConfigured: 'O servidor de e-mail não está configurado.',
+      configured: 'O servidor de e-mail <status>está configurado</status>.',
+      notConfigured: 'O servidor de e-mail <status>não está configurado</status>.',
       description:
         'Ele envia os convites, os códigos de redefinição de senha e os códigos de acesso. Os canais de notificação por e-mail têm configurações SMTP próprias.',
       docs: 'Veja como conectar um servidor de e-mail na <docsLink>documentação de SMTP</docsLink>.',
