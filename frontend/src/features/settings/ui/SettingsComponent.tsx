@@ -9,6 +9,7 @@ import { getWebsitePageUrl, translateApiError, useLocale } from '../../../shared
 import { ClipboardHelper } from '../../../shared/lib/ClipboardHelper';
 import { VerificationAgentsComponent } from '../../verification/agents';
 import { AuditLogsComponent } from './AuditLogsComponent';
+import { MailServerComponent } from './MailServerComponent';
 
 interface Props {
   contentHeight: number;
@@ -325,6 +326,8 @@ export function SettingsComponent({ contentHeight }: Props) {
           </div>
 
           <VerificationAgentsComponent />
+
+          {settings && <MailServerComponent isEmailConfigured={settings.isEmailConfigured} />}
 
           <AuditLogsComponent scrollContainerRef={scrollContainerRef} />
         </div>

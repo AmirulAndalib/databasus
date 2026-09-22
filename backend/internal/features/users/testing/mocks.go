@@ -1,6 +1,7 @@
 package users_testing
 
 import (
+	"context"
 	"errors"
 	"sync"
 )
@@ -31,7 +32,7 @@ func (m *MockEmailSender) IsConfigured() bool {
 	return !m.IsMailServerMissing
 }
 
-func (m *MockEmailSender) SendEmail(to, subject, body string) error {
+func (m *MockEmailSender) SendEmail(_ context.Context, to, subject, body string) error {
 	m.sentEmailsMutex.Lock()
 	defer m.sentEmailsMutex.Unlock()
 

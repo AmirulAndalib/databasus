@@ -107,7 +107,7 @@ func (s *MembershipService) AddMember(
 		subject := fmt.Sprintf("You've been invited to %s workspace", workspace.Name)
 		body := s.buildInvitationEmailHTML(workspace.Name, addedBy.Name, string(request.Role))
 
-		if err := s.emailSender.SendEmail(request.Email, subject, body); err != nil {
+		if err := s.emailSender.SendEmail(ctx, request.Email, subject, body); err != nil {
 			s.logger.ErrorContext(ctx, "failed to send invitation email", "email", request.Email, "error", err)
 		}
 

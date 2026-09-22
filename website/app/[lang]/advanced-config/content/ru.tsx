@@ -239,15 +239,34 @@ export default function AdvancedConfigPage() {
               <h2 id="email-smtp">Почта (SMTP)</h2>
 
               <p>
-                Подключите SMTP-сервер, чтобы Databasus мог отправлять служебные
-                письма: ссылки для сброса пароля и приглашения в рабочие
-                пространства. Почта считается настроенной,{" "}
-                <strong>
-                  только когда заданы и <code>SMTP_HOST</code>, и{" "}
-                  <code>DATABASUS_URL</code>
-                </strong>{" "}
-                — до этого почтовые функции скрыты в интерфейсе.
+                Подключите почтовый сервер, чтобы Databasus мог отправлять приглашения в рабочие пространства, коды сброса пароля и коды входа. Почтовый сервер считается настроенным, <strong>как только задан <code>SMTP_HOST</code></strong>. Без него экран настроек показывает, что почтовый сервер не настроен, а на экране входа нет ссылки для сброса пароля.
               </p>
+
+              <p>
+                Это почтовый сервер инстанса. У каналов уведомлений по email, которые сообщают о бекапах, свои настройки SMTP в форме каждого канала. Поэтому если письма от канала уведомлений доходят, это ничего не говорит о почтовом сервере инстанса. Чтобы проверить его, откройте <strong>Databasus settings → Mail server</strong> и нажмите <strong>Send test email</strong>. Письмо придет на ваш адрес, а если доставка не удалась, вы увидите ответ почтового сервера.
+              </p>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    <strong>Если ваш релей не поддерживает STARTTLS, задайте <code>SMTP_SECURITY=none</code> до обновления.</strong> На любом порту, кроме 465, по умолчанию действует режим <code>starttls</code>, а он не продолжает работу без шифрования, так что такой релей не получит ни одного письма, пока переменная не задана. Если инстанс требует код входа по почте, то пока письма не доходят, по паролю не войдет никто. Чтобы вернуть доступ, выключите второй фактор командой <code>docker exec -it databasus ./main --disable-2fa</code> (подробнее — в разделе <a href="/ru/password/#disable-two-factor" className="text-blue-400 hover:text-blue-300">Перестать запрашивать код при входе</a>).
+                  </p>
+                </div>
+              </div>
 
               <table>
                 <thead>
@@ -262,8 +281,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_HOST</code>
                     </td>
                     <td data-label="Описание">
-                      Хост SMTP-сервера (например <code>smtp.gmail.com</code>).
-                      Вместе с <code>DATABASUS_URL</code> включает почту.
+                      Хост почтового сервера (например, <code>smtp.gmail.com</code>). Если переменная задана, почта инстанса включена.
                     </td>
                   </tr>
                   <tr>
@@ -271,9 +289,15 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_PORT</code>
                     </td>
                     <td data-label="Описание">
-                      Порт SMTP-сервера (например <code>587</code>). Должен быть
-                      положительным целым числом, если задан{" "}
-                      <code>SMTP_HOST</code>.
+                      Порт почтового сервера (например, <code>587</code>). Должен быть положительным целым числом, если задан <code>SMTP_HOST</code>.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_SECURITY</code>
+                    </td>
+                    <td data-label="Описание">
+                      Защита соединения: <code>tls</code>, <code>starttls</code> или <code>none</code>, подробнее — ниже. По умолчанию <code>tls</code> на порту 465 и <code>starttls</code> на всех остальных. С любым другим значением инстанс не запустится.
                     </td>
                   </tr>
                   <tr>
@@ -289,8 +313,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_PASSWORD</code>
                     </td>
                     <td data-label="Описание">
-                      Пароль для аутентификации на SMTP. Для Gmail используйте
-                      App Password, а не пароль аккаунта.
+                      Пароль для аутентификации на SMTP. Для Gmail используйте App Password, а не пароль аккаунта.
                     </td>
                   </tr>
                   <tr>
@@ -298,7 +321,15 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_FROM</code>
                     </td>
                     <td data-label="Описание">
-                      Адрес отправителя (&quot;From&quot;) в исходящих письмах.
+                      Адрес отправителя: просто адрес (<code>noreply@example.com</code>) или адрес с именем (<code>Acme Backups &lt;noreply@example.com&gt;</code>). Если имени нет, получатели видят <code>Databasus</code>. Если переменная не задана, используется <code>SMTP_USER</code>, когда это адрес почты, а иначе <code>noreply@</code> и <code>SMTP_HOST</code>, так что логин вроде <code>apikey</code> никогда не станет отправителем. Если значение нельзя разобрать как адрес, инстанс не запустится.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_HELO_NAME</code>
+                    </td>
+                    <td data-label="Описание">
+                      Имя, которым инстанс представляется почтовому серверу. По умолчанию берется хост из <code>DATABASUS_URL</code>, а если его нет — имя машины. Должно быть именем хоста или адресным литералом вроде <code>[192.0.2.1]</code> или <code>[IPv6:2001:db8::1]</code>, иначе инстанс не запустится.
                     </td>
                   </tr>
                   <tr>
@@ -306,12 +337,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_INSECURE_SKIP_VERIFY</code>
                     </td>
                     <td data-label="Описание">
-                      Установите <code>true</code>, чтобы пропускать проверку
-                      TLS-сертификата при подключении к SMTP-серверу. По
-                      умолчанию <code>false</code>. Используйте только для
-                      серверов с самоподписанным сертификатом в доверенной сети
-                      — эта настройка отключает защиту от атак «человек
-                      посередине».
+                      Установите <code>true</code>, чтобы пропускать проверку TLS-сертификата в режимах <code>tls</code> и <code>starttls</code>. По умолчанию <code>false</code>. Используйте только для серверов с самоподписанным сертификатом в доверенной сети: эта настройка отключает защиту от атак «человек посередине».
                     </td>
                   </tr>
                   <tr>
@@ -319,14 +345,72 @@ export default function AdvancedConfigPage() {
                       <code>DATABASUS_URL</code>
                     </td>
                     <td data-label="Описание">
-                      Публичный базовый URL вашего инстанса (например{" "}
-                      <code>https://backup.example.com</code>). Используется для
-                      сборки ссылок в письмах. Нужен вместе с{" "}
-                      <code>SMTP_HOST</code>.
+                      Публичный базовый URL инстанса (например, <code>https://backup.example.com</code>). Необязателен: добавляет ссылку в письма-приглашения и задает имя в приветствии по умолчанию. Почта работает и без него.
                     </td>
                   </tr>
                 </tbody>
               </table>
+
+              <p>
+                <code>SMTP_SECURITY</code> выбирает один из трех режимов. У каналов уведомлений по email такой же выбор есть в разделе <strong>Advanced settings</strong>.
+              </p>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Режим</th>
+                    <th>Что происходит</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <code>tls</code>
+                    </td>
+                    <td data-label="Что происходит">
+                      Соединение зашифровано с первого байта. Обычно порт 465.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>starttls</code>
+                    </td>
+                    <td data-label="Что происходит">
+                      Соединение начинается без шифрования и переводится в зашифрованное до отправки пароля и писем. Если сервер этого не поддерживает, доставка завершается ошибкой, а не продолжается без шифрования. Обычно порт 587.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>none</code>
+                    </td>
+                    <td data-label="Что происходит">
+                      Соединение никогда не шифруется. Подходит для релея без STARTTLS, например локального Postfix на порту 25.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    В режиме <code>none</code> пароль SMTP и все письма передаются без шифрования, и их может прочитать любой, кто находится между Databasus и релеем. Выбирайте его только для релея на том же хосте или в доверенной частной сети.
+                  </p>
+                </div>
+              </div>
 
               <h2 id="signup-captcha">
                 Капча при регистрации (Cloudflare Turnstile)

@@ -5,6 +5,10 @@ export { NotificationType } from './models/NotificationType';
 
 export type { EmailNotifier } from './models/email/EmailNotifier';
 export { validateEmailNotifier } from './models/email/validateEmailNotifier';
+export { EmailNotifierSecurity } from './models/email/EmailNotifierSecurity';
+export { EMAIL_NOTIFIER_SECURITY_LABEL_KEYS } from './models/email/EmailNotifierSecurityLabelKeys';
+export { getDefaultEmailNotifierSecurity } from './models/email/getDefaultEmailNotifierSecurity';
+export { getSecurityAfterPortChange } from './models/email/getSecurityAfterPortChange';
 
 export type { TelegramNotifier } from './models/telegram/TelegramNotifier';
 export { validateTelegramNotifier } from './models/telegram/validateTelegramNotifier';

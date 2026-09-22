@@ -143,6 +143,9 @@ export const es: typeof en = {
     signInCodeResentTooSoon:
       'Se envió un código hace menos de un minuto. Espere un minuto antes de pedir otro.',
     rateLimitExceeded: 'Demasiados intentos. Espere un poco e inténtelo de nuevo.',
+    emailNotConfigured: 'La instancia no tiene un servidor de correo configurado.',
+    adminEmailMissing:
+      'Su cuenta no tiene una dirección de correo válida a la que enviar un correo de prueba.',
   },
   status: {
     logicalBackup: {
@@ -261,6 +264,16 @@ export const es: typeof en = {
     reset: 'Restablecer',
     updated: 'Ajustes guardados',
     readMore: 'Más información sobre los ajustes <docsLink>en la documentación</docsLink>',
+    mailServer: {
+      title: 'Servidor de correo',
+      configured: 'El servidor de correo <status>está configurado</status>.',
+      notConfigured: 'El servidor de correo <status>no está configurado</status>.',
+      description:
+        'Envía las invitaciones, los códigos para restablecer la contraseña y los códigos de acceso. Los canales de notificación por correo tienen su propia configuración SMTP.',
+      docs: 'La <docsLink>documentación de SMTP</docsLink> explica cómo conectar un servidor de correo.',
+      sendTestEmail: 'Enviar correo de prueba',
+      testEmailSent: 'Correo de prueba enviado a {{email}}',
+    },
     healthcheck: {
       title: 'Comprobación de disponibilidad',
       openInNewTab: 'Abrir en una pestaña nueva',
@@ -1223,11 +1236,23 @@ export const es: typeof en = {
       smtpPasswordPlaceholder: 'contraseña',
       from: 'Remitente',
       fromTooltip:
-        'Opcional. Dirección de correo electrónico del remitente. Si se deja vacía, se usa el usuario SMTP o una dirección generada a partir del host',
+        'Opcional. Dirección del remitente, con o sin nombre: Acme Backups <noreply@example.com>. Si se deja vacía, se usa el usuario SMTP cuando es una dirección de correo y, si no, noreply@ con el host SMTP',
       fromAuto: '(automático)',
       advancedSettings: 'Ajustes avanzados',
       skipTlsTooltip:
         'No verifica el certificado TLS. Active esta opción si su servidor SMTP usa un certificado autofirmado. Advertencia: esto reduce la seguridad.',
+      security: 'Seguridad de la conexión',
+      securityTooltip:
+        'TLS cifra la conexión desde el principio y suele usarse en el puerto 465. STARTTLS cifra la conexión después de abrirla y falla si el servidor no lo admite. «Sin cifrado» envía la contraseña y los mensajes sin cifrar: úselo solo con un relé de confianza que no admita STARTTLS.',
+      securityModes: {
+        tls: 'TLS',
+        starttls: 'STARTTLS',
+        none: 'Sin cifrado',
+      },
+      heloName: 'Nombre de saludo',
+      heloNamePlaceholder: 'Automático',
+      heloNameTooltip:
+        'El nombre con el que Databasus se presenta al servidor de correo (EHLO). Si se deja vacío, se usa el host de DATABASUS_URL o el nombre del equipo.',
     },
     telegram: {
       botTokenHelpLink: '¿Cómo obtener el token de API del bot de Telegram?',

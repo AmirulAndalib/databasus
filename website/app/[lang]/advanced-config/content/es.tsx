@@ -244,17 +244,34 @@ export default function AdvancedConfigPage() {
               <h2 id="email-smtp">Correo electrónico (SMTP)</h2>
 
               <p>
-                Conecte un servidor SMTP para que Databasus pueda enviar correo
-                transaccional, como enlaces de restablecimiento de contraseña e
-                invitaciones a espacios de trabajo. El correo se considera
-                configurado{" "}
-                <strong>
-                  solo cuando están definidos tanto <code>SMTP_HOST</code> como{" "}
-                  <code>DATABASUS_URL</code>
-                </strong>
-                ; hasta entonces, las funciones de correo permanecen ocultas en
-                la interfaz.
+                Conecte un servidor de correo para que Databasus pueda enviar invitaciones a espacios de trabajo, códigos para restablecer la contraseña y códigos de acceso. El servidor de correo se considera configurado <strong>en cuanto se define <code>SMTP_HOST</code></strong>. Sin él, la pantalla de ajustes indica que el servidor de correo no está configurado y la pantalla de inicio de sesión oculta el enlace para restablecer la contraseña.
               </p>
+
+              <p>
+                Este es el servidor de correo de la instancia. Los canales de notificación por correo, que informan sobre las copias de seguridad, tienen su propia configuración SMTP en el formulario de cada canal. Por eso, que un canal de notificación entregue correo no dice nada de este servidor. Para comprobar el servidor de correo de la instancia, abra <strong>Databasus settings → Mail server</strong> y pulse <strong>Send test email</strong>. El mensaje llega a su propia dirección y, si la entrega falla, verá la respuesta del servidor de correo.
+              </p>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    <strong>Si su relé no admite STARTTLS, defina <code>SMTP_SECURITY=none</code> antes de actualizar.</strong> En cualquier puerto distinto del 465 el modo predeterminado es <code>starttls</code>, que no continúa sin cifrado, así que ese relé no recibirá nada hasta que defina la variable. Si la instancia exige el código de acceso por correo, nadie podrá entrar con contraseña mientras el correo no se entregue. Para recuperar el acceso, desactive el segundo factor con <code>docker exec -it databasus ./main --disable-2fa</code> (consulte <a href="/es/password/#disable-two-factor" className="text-blue-400 hover:text-blue-300">Dejar de pedir un código al iniciar sesión</a>).
+                  </p>
+                </div>
+              </div>
 
               <table>
                 <thead>
@@ -269,9 +286,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_HOST</code>
                     </td>
                     <td data-label="Description">
-                      Nombre de host del servidor SMTP (p. ej.{" "}
-                      <code>smtp.gmail.com</code>). Activa el correo junto con{" "}
-                      <code>DATABASUS_URL</code>.
+                      Nombre de host del servidor de correo (por ejemplo, <code>smtp.gmail.com</code>). Al definirla se activa el correo de la instancia.
                     </td>
                   </tr>
                   <tr>
@@ -279,9 +294,15 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_PORT</code>
                     </td>
                     <td data-label="Description">
-                      Puerto del servidor SMTP (p. ej. <code>587</code>). Debe
-                      ser un entero positivo cuando <code>SMTP_HOST</code> está
-                      definido.
+                      Puerto del servidor de correo (por ejemplo, <code>587</code>). Debe ser un entero positivo cuando <code>SMTP_HOST</code> está definido.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_SECURITY</code>
+                    </td>
+                    <td data-label="Description">
+                      Seguridad de la conexión: <code>tls</code>, <code>starttls</code> o <code>none</code>, descritos más abajo. Por defecto es <code>tls</code> en el puerto 465 y <code>starttls</code> en cualquier otro. Con otro valor, la instancia no arranca.
                     </td>
                   </tr>
                   <tr>
@@ -297,8 +318,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_PASSWORD</code>
                     </td>
                     <td data-label="Description">
-                      Contraseña para la autenticación SMTP. Para Gmail, use una
-                      App Password, no la contraseña de su cuenta.
+                      Contraseña para la autenticación SMTP. Para Gmail, use una App Password, no la contraseña de su cuenta.
                     </td>
                   </tr>
                   <tr>
@@ -306,7 +326,15 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_FROM</code>
                     </td>
                     <td data-label="Description">
-                      La dirección &quot;From&quot; del correo saliente.
+                      Dirección del remitente, sola (<code>noreply@example.com</code>) o con un nombre (<code>Acme Backups &lt;noreply@example.com&gt;</code>). Sin nombre, los destinatarios ven <code>Databasus</code>. Si no está definida, se usa <code>SMTP_USER</code> cuando es una dirección de correo y, si no, <code>noreply@</code> seguido de <code>SMTP_HOST</code>, de modo que un usuario como <code>apikey</code> nunca pasa a ser el remitente. Si el valor no se puede leer como dirección, la instancia no arranca.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_HELO_NAME</code>
+                    </td>
+                    <td data-label="Description">
+                      El nombre con el que la instancia saluda al servidor de correo. Por defecto es el host de <code>DATABASUS_URL</code> y, si no existe, el nombre del equipo. Debe ser un nombre de host o un literal de dirección como <code>[192.0.2.1]</code> o <code>[IPv6:2001:db8::1]</code>; de lo contrario, la instancia no arranca.
                     </td>
                   </tr>
                   <tr>
@@ -314,12 +342,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_INSECURE_SKIP_VERIFY</code>
                     </td>
                     <td data-label="Description">
-                      Póngalo en <code>true</code> para omitir la verificación
-                      del certificado TLS al conectar con el servidor SMTP. Por
-                      defecto es <code>false</code>. Úselo solo con servidores
-                      con certificado autofirmado en una red de confianza:
-                      desactiva la protección contra ataques de intermediario
-                      (man-in-the-middle).
+                      Póngalo en <code>true</code> para omitir la verificación del certificado TLS en los modos <code>tls</code> y <code>starttls</code>. Por defecto es <code>false</code>. Úselo solo con servidores con certificado autofirmado en una red de confianza: desactiva la protección contra ataques de intermediario (man-in-the-middle).
                     </td>
                   </tr>
                   <tr>
@@ -327,14 +350,72 @@ export default function AdvancedConfigPage() {
                       <code>DATABASUS_URL</code>
                     </td>
                     <td data-label="Description">
-                      URL base pública de su instancia (p. ej.{" "}
-                      <code>https://backup.example.com</code>). Se usa para
-                      construir los enlaces dentro de los correos. Requerida
-                      junto con <code>SMTP_HOST</code>.
+                      URL base pública de su instancia (por ejemplo, <code>https://backup.example.com</code>). Opcional: añade un enlace a los correos de invitación y aporta el nombre de saludo predeterminado. El correo funciona sin ella.
                     </td>
                   </tr>
                 </tbody>
               </table>
+
+              <p>
+                <code>SMTP_SECURITY</code> elige uno de tres modos. Los canales de notificación por correo ofrecen la misma elección en <strong>Advanced settings</strong>.
+              </p>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Modo</th>
+                    <th>Comportamiento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <code>tls</code>
+                    </td>
+                    <td data-label="Comportamiento">
+                      La conexión va cifrada desde el primer byte. Lo habitual en el puerto 465.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>starttls</code>
+                    </td>
+                    <td data-label="Comportamiento">
+                      La conexión empieza sin cifrar y se cifra antes de enviar la contraseña o cualquier mensaje. Si el servidor no lo admite, la entrega falla en lugar de continuar sin cifrado. Lo habitual en el puerto 587.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>none</code>
+                    </td>
+                    <td data-label="Comportamiento">
+                      La conexión nunca se cifra. Úselo para un relé que no admite STARTTLS, como un Postfix local en el puerto 25.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    <code>none</code> envía la contraseña SMTP y todos los mensajes sin cifrar, y cualquiera que esté entre Databasus y el relé puede leerlos. Úselo solo con un relé en el mismo host o en una red privada de confianza.
+                  </p>
+                </div>
+              </div>
 
               <h2 id="signup-captcha">
                 Captcha de registro (Cloudflare Turnstile)

@@ -5,6 +5,11 @@ import "errors"
 var ErrInsufficientPermissionsToInviteUsers = errors.New("insufficient permissions to invite users")
 
 var (
+	ErrEmailNotConfigured = errors.New("the instance has no mail server configured")
+	ErrAdminEmailMissing  = errors.New("your account has no valid email address to send a test email to")
+)
+
+var (
 	// The instance could not deliver the code, so it admits nobody through
 	// password sign-in while the second factor is on.
 	ErrSignInCodeNotSent = errors.New(

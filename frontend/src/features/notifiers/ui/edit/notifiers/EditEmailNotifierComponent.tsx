@@ -1,9 +1,15 @@
 import { DownOutlined, InfoCircleOutlined, UpOutlined } from '@ant-design/icons';
-import { Checkbox, Input, Tooltip } from 'antd';
-import { useState } from 'react';
+import { Checkbox, Input, Select, Tooltip } from 'antd';
+import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { Notifier } from '../../../../../entity/notifiers';
+import {
+  EMAIL_NOTIFIER_SECURITY_LABEL_KEYS,
+  EmailNotifierSecurity,
+  type Notifier,
+  getDefaultEmailNotifierSecurity,
+  getSecurityAfterPortChange,
+} from '../../../../../entity/notifiers';
 
 interface Props {
   notifier: Notifier;
@@ -13,7 +19,12 @@ interface Props {
 
 export function EditEmailNotifierComponent({ notifier, setNotifier, setUnsaved }: Props) {
   const { t } = useTranslation();
-  const hasAdvancedValues = !!notifier?.emailNotifier?.isInsecureSkipVerify;
+  const emailNotifier = notifier?.emailNotifier;
+  const hasAdvancedValues =
+    !!emailNotifier?.isInsecureSkipVerify ||
+    !!emailNotifier?.heloName ||
+    (!!emailNotifier &&
+      emailNotifier.security !== getDefaultEmailNotifierSecurity(emailNotifier.smtpPort));
   const [showAdvanced, setShowAdvanced] = useState(hasAdvancedValues);
 
   return (
@@ -77,11 +88,18 @@ export function EditEmailNotifierComponent({ notifier, setNotifier, setUnsaved }
           onChange={(e) => {
             if (!notifier?.emailNotifier) return;
 
+            const nextPort = Number(e.target.value);
+
             setNotifier({
               ...notifier,
               emailNotifier: {
                 ...notifier.emailNotifier,
-                smtpPort: Number(e.target.value),
+                smtpPort: nextPort,
+                security: getSecurityAfterPortChange(
+                  notifier.emailNotifier.security,
+                  notifier.emailNotifier.smtpPort,
+                  nextPort,
+                ),
               },
             });
             setUnsaved();
@@ -183,11 +201,56 @@ export function EditEmailNotifierComponent({ notifier, setNotifier, setUnsaved }
       </div>
 
       {showAdvanced && (
-        <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
-          <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">
-            {t('notifiers.fields.skipTlsVerify')}
-          </div>
-          <div className="flex items-center">
+        <>
+          <AdvancedFieldRowComponent
+            label={t('notifiers.email.security')}
+            tooltip={t('notifiers.email.securityTooltip')}
+          >
+            <Select
+              value={notifier?.emailNotifier?.security}
+              onChange={(security: EmailNotifierSecurity) => {
+                if (!notifier?.emailNotifier) return;
+
+                setNotifier({
+                  ...notifier,
+                  emailNotifier: { ...notifier.emailNotifier, security },
+                });
+                setUnsaved();
+              }}
+              size="small"
+              className="w-[250px] max-w-[250px]"
+              options={Object.values(EmailNotifierSecurity).map((security) => ({
+                value: security,
+                label: t(EMAIL_NOTIFIER_SECURITY_LABEL_KEYS[security]),
+              }))}
+            />
+          </AdvancedFieldRowComponent>
+
+          <AdvancedFieldRowComponent
+            label={t('notifiers.email.heloName')}
+            tooltip={t('notifiers.email.heloNameTooltip')}
+          >
+            <Input
+              value={notifier?.emailNotifier?.heloName || ''}
+              onChange={(e) => {
+                if (!notifier?.emailNotifier) return;
+
+                setNotifier({
+                  ...notifier,
+                  emailNotifier: { ...notifier.emailNotifier, heloName: e.target.value.trim() },
+                });
+                setUnsaved();
+              }}
+              size="small"
+              className="w-full max-w-[250px]"
+              placeholder={t('notifiers.email.heloNamePlaceholder')}
+            />
+          </AdvancedFieldRowComponent>
+
+          <AdvancedFieldRowComponent
+            label={t('notifiers.fields.skipTlsVerify')}
+            tooltip={t('notifiers.email.skipTlsTooltip')}
+          >
             <Checkbox
               checked={notifier?.emailNotifier?.isInsecureSkipVerify || false}
               onChange={(e) => {
@@ -205,13 +268,30 @@ export function EditEmailNotifierComponent({ notifier, setNotifier, setUnsaved }
             >
               {t('notifiers.fields.skipTls')}
             </Checkbox>
-
-            <Tooltip className="cursor-pointer" title={t('notifiers.email.skipTlsTooltip')}>
-              <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
-            </Tooltip>
-          </div>
-        </div>
+          </AdvancedFieldRowComponent>
+        </>
       )}
     </>
+  );
+}
+
+interface AdvancedFieldRowProps {
+  label: string;
+  tooltip: string;
+  children: ReactNode;
+}
+
+function AdvancedFieldRowComponent({ label, tooltip, children }: AdvancedFieldRowProps) {
+  return (
+    <div className="mb-1 flex w-full flex-col items-start sm:flex-row sm:items-center">
+      <div className="mb-1 min-w-[150px] sm:mb-0 sm:pr-2">{label}</div>
+      <div className="flex items-center">
+        {children}
+
+        <Tooltip className="cursor-pointer" title={tooltip}>
+          <InfoCircleOutlined className="ml-2" style={{ color: 'gray' }} />
+        </Tooltip>
+      </div>
+    </div>
   );
 }

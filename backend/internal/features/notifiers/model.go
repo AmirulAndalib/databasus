@@ -38,6 +38,12 @@ func (n *Notifier) TableName() string {
 	return "notifiers"
 }
 
+func (n *Notifier) FillDefaults() {
+	if n.NotifierType == NotifierTypeEmail && n.EmailNotifier != nil {
+		n.EmailNotifier.FillDefaults()
+	}
+}
+
 func (n *Notifier) Validate(encryptor encryption.FieldEncryptor) error {
 	if n.Name == "" {
 		return errors.New("name is required")

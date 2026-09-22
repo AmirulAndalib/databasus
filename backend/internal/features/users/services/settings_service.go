@@ -8,9 +8,16 @@ import (
 
 	audit_logs_models "databasus-backend/internal/features/audit_logs/models"
 	users_dto "databasus-backend/internal/features/users/dto"
+	users_errors "databasus-backend/internal/features/users/errors"
 	users_interfaces "databasus-backend/internal/features/users/interfaces"
 	users_models "databasus-backend/internal/features/users/models"
 	users_repositories "databasus-backend/internal/features/users/repositories"
+	"databasus-backend/internal/util/smtp_transport"
+)
+
+const (
+	testEmailSubject = "Databasus test email"
+	testEmailBody    = `<p>This message confirms that Databasus can deliver email through its mail server.</p>`
 )
 
 // The gate and the profile form must not disagree about what counts as an
@@ -51,6 +58,31 @@ func (s *SettingsService) GetSettingsResponse(
 
 func (s *SettingsService) IsEmailConfigured() bool {
 	return s.emailSender != nil && s.emailSender.IsConfigured()
+}
+
+func (s *SettingsService) SendTestEmail(ctx context.Context, admin *users_models.User) (string, error) {
+	if !s.IsEmailConfigured() {
+		return "", users_errors.ErrEmailNotConfigured
+	}
+
+	if !isDeliverableAddress(admin.Email) {
+		return "", users_errors.ErrAdminEmailMissing
+	}
+
+	sendError := s.emailSender.SendEmail(ctx, admin.Email, testEmailSubject, testEmailBody)
+
+	auditMessage := fmt.Sprintf("Test email sent to %s", admin.Email)
+	if sendError != nil {
+		auditMessage = fmt.Sprintf("Test email to %s failed", admin.Email)
+	}
+
+	s.writeAuditLog(ctx, audit_logs_models.AuditEntry{Message: auditMessage, UserID: &admin.ID})
+
+	if sendError != nil {
+		return "", sendError
+	}
+
+	return admin.Email, nil
 }
 
 func (s *SettingsService) UpdateSettings(
@@ -193,6 +225,18 @@ func (s *SettingsService) checkCodesCanReachEveryAdmin(ctx context.Context) erro
 	}
 
 	return nil
+}
+
+// The validator keeps agreement with the profile form, and the transport's parser
+// keeps an address it would refuse from surfacing as a delivery failure.
+func isDeliverableAddress(address string) bool {
+	if addressValidator.Var(address, "required,email") != nil {
+		return false
+	}
+
+	_, err := smtp_transport.ParseRecipient(address)
+
+	return err == nil
 }
 
 func (s *SettingsService) buildSettingsResponse(

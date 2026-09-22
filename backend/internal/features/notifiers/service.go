@@ -92,6 +92,7 @@ func (s *NotifierService) SaveNotifier(
 		}
 	} else {
 		notifier.WorkspaceID = workspaceID
+		notifier.FillDefaults()
 
 		if err := notifier.EncryptSensitiveData(s.fieldEncryptor); err != nil {
 			return err
@@ -272,6 +273,8 @@ func (s *NotifierService) SendTestNotificationToNotifier(
 
 		usingNotifier = existingNotifier
 	} else {
+		notifier.FillDefaults()
+
 		if err := notifier.EncryptSensitiveData(s.fieldEncryptor); err != nil {
 			return err
 		}

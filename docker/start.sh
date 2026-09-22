@@ -144,7 +144,7 @@ configure_runtime_identity() {
 generate_frontend_runtime_configuration() {
     local is_email_configured=false
 
-    if [ -n "${SMTP_HOST:-}" ] && [ -n "${DATABASUS_URL:-}" ]; then
+    if [ -n "${SMTP_HOST:-}" ]; then
         is_email_configured=true
     fi
 

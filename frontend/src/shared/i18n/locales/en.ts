@@ -139,6 +139,8 @@ export const en = {
     signInCodeResentTooSoon:
       'A code was sent less than a minute ago. Wait a minute before requesting another.',
     rateLimitExceeded: 'Too many attempts. Wait a little and try again.',
+    emailNotConfigured: 'The instance has no mail server configured.',
+    adminEmailMissing: 'Your account has no valid email address to send a test email to.',
   },
   status: {
     logicalBackup: {
@@ -256,6 +258,16 @@ export const en = {
     reset: 'Reset',
     updated: 'Settings updated successfully',
     readMore: 'Read more about settings you can <docsLink>here</docsLink>',
+    mailServer: {
+      title: 'Mail server',
+      configured: 'The mail server is <status>configured</status>.',
+      notConfigured: 'The mail server is <status>not configured</status>.',
+      description:
+        'It sends invitations, password reset codes and sign-in codes. Email notifiers have SMTP settings of their own.',
+      docs: 'See <docsLink>the SMTP documentation</docsLink> for how to connect a mail server.',
+      sendTestEmail: 'Send test email',
+      testEmailSent: 'Test email sent to {{email}}',
+    },
     healthcheck: {
       title: 'Health-check',
       openInNewTab: 'Click to open in new tab',
@@ -1197,11 +1209,23 @@ export const en = {
       smtpPasswordPlaceholder: 'password',
       from: 'From',
       fromTooltip:
-        'Optional. Email address to use as sender. If empty, will use SMTP user or auto-generate from host',
+        'Optional. Sender address, with or without a name: Acme Backups <noreply@example.com>. If empty, the SMTP user is used when it is an email address, otherwise noreply@ and the SMTP host',
       fromAuto: '(auto)',
       advancedSettings: 'Advanced settings',
       skipTlsTooltip:
         'Skip TLS certificate verification. Enable this if your SMTP server uses a self-signed certificate. Warning: this reduces security.',
+      security: 'Connection security',
+      securityTooltip:
+        'TLS encrypts the connection from the start and is usual on port 465. STARTTLS upgrades the connection and fails if the server does not offer it. None sends the password and messages unencrypted - use it only for a trusted relay without STARTTLS.',
+      securityModes: {
+        tls: 'TLS',
+        starttls: 'STARTTLS',
+        none: 'None (unencrypted)',
+      },
+      heloName: 'Greeting name',
+      heloNamePlaceholder: 'Automatic',
+      heloNameTooltip:
+        'The name Databasus introduces itself with to the mail server (EHLO). If empty, the host from DATABASUS_URL is used, or the machine host name.',
     },
     telegram: {
       botTokenHelpLink: 'How to get Telegram bot API token?',

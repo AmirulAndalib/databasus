@@ -142,6 +142,9 @@ export const fr: typeof en = {
     signInCodeResentTooSoon:
       "Un code a été envoyé il y a moins d'une minute. Attendez une minute avant d'en demander un autre.",
     rateLimitExceeded: 'Trop de tentatives. Patientez un peu et réessayez.',
+    emailNotConfigured: "L'instance n'a pas de serveur de messagerie configuré.",
+    adminEmailMissing:
+      "Votre compte n'a pas d'adresse e-mail valide à laquelle envoyer un e-mail de test.",
   },
   status: {
     logicalBackup: {
@@ -261,6 +264,16 @@ export const fr: typeof en = {
     updated: 'Paramètres enregistrés',
     readMore:
       'Pour en savoir plus sur ces paramètres, <docsLink>consultez la documentation</docsLink>',
+    mailServer: {
+      title: 'Serveur de messagerie',
+      configured: 'Le serveur de messagerie <status>est configuré</status>.',
+      notConfigured: "Le serveur de messagerie <status>n'est pas configuré</status>.",
+      description:
+        'Il envoie les invitations, les codes de réinitialisation du mot de passe et les codes de connexion. Les canaux de notification par e-mail ont leurs propres paramètres SMTP.',
+      docs: 'La <docsLink>documentation SMTP</docsLink> explique comment connecter un serveur de messagerie.',
+      sendTestEmail: 'Envoyer un e-mail de test',
+      testEmailSent: 'E-mail de test envoyé à {{email}}',
+    },
     healthcheck: {
       title: 'Vérification de disponibilité',
       openInNewTab: 'Cliquez pour ouvrir dans un nouvel onglet',
@@ -1231,11 +1244,23 @@ export const fr: typeof en = {
       smtpPasswordPlaceholder: 'mot de passe',
       from: 'Expéditeur',
       fromTooltip:
-        "Facultatif. Adresse e-mail de l'expéditeur. Si le champ est vide, l'utilisateur SMTP est utilisé, ou une adresse est générée à partir de l'hôte",
+        "Facultatif. Adresse de l'expéditeur, avec ou sans nom : Acme Backups <noreply@example.com>. Si le champ est vide, l'utilisateur SMTP est utilisé s'il s'agit d'une adresse e-mail, sinon noreply@ suivi de l'hôte SMTP",
       fromAuto: '(automatique)',
       advancedSettings: 'Paramètres avancés',
       skipTlsTooltip:
         'Ne pas vérifier le certificat TLS. Activez cette option si votre serveur SMTP utilise un certificat auto-signé. Attention : cela réduit la sécurité.',
+      security: 'Sécurité de la connexion',
+      securityTooltip:
+        "TLS chiffre la connexion dès le départ, généralement sur le port 465. STARTTLS chiffre la connexion après son ouverture et échoue si le serveur ne le propose pas. « Sans chiffrement » envoie le mot de passe et les messages en clair : ne l'utilisez qu'avec un relais de confiance sans STARTTLS.",
+      securityModes: {
+        tls: 'TLS',
+        starttls: 'STARTTLS',
+        none: 'Sans chiffrement',
+      },
+      heloName: 'Nom annoncé',
+      heloNamePlaceholder: 'Automatique',
+      heloNameTooltip:
+        "Le nom sous lequel Databasus se présente au serveur de messagerie (EHLO). S'il est vide, l'hôte de DATABASUS_URL est utilisé, ou à défaut le nom de la machine.",
     },
     telegram: {
       botTokenHelpLink: "Comment obtenir le jeton d'API d'un bot Telegram ?",

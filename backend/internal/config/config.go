@@ -17,6 +17,7 @@ import (
 
 	env_utils "databasus-backend/internal/util/env"
 	"databasus-backend/internal/util/logger"
+	"databasus-backend/internal/util/smtp_transport"
 	"databasus-backend/internal/util/tools"
 )
 
@@ -93,12 +94,14 @@ type EnvVariables struct {
 	CloudflareTurnstileSiteKey   string `env:"CLOUDFLARE_TURNSTILE_SITE_KEY"`
 
 	// SMTP configuration (optional)
-	SMTPHost               string `env:"SMTP_HOST"`
-	SMTPPort               int    `env:"SMTP_PORT"`
-	SMTPUser               string `env:"SMTP_USER"`
-	SMTPPassword           string `env:"SMTP_PASSWORD"`
-	SMTPFrom               string `env:"SMTP_FROM"`
-	SMTPInsecureSkipVerify bool   `env:"SMTP_INSECURE_SKIP_VERIFY"`
+	SMTPHost               string                  `env:"SMTP_HOST"`
+	SMTPPort               int                     `env:"SMTP_PORT"`
+	SMTPUser               string                  `env:"SMTP_USER"`
+	SMTPPassword           string                  `env:"SMTP_PASSWORD"`
+	SMTPFrom               string                  `env:"SMTP_FROM"`
+	SMTPSecurity           smtp_transport.Security `env:"SMTP_SECURITY"`
+	SMTPHeloName           string                  `env:"SMTP_HELO_NAME"`
+	SMTPInsecureSkipVerify bool                    `env:"SMTP_INSECURE_SKIP_VERIFY"`
 
 	// Application URL (optional) - used for email links
 	DatabasusURL string `env:"DATABASUS_URL"`
@@ -155,8 +158,8 @@ func loadEnvVariables() {
 		logger.ExitAfterFlush(1)
 	}
 
-	if env.SMTPHost != "" && env.SMTPPort <= 0 {
-		log.Error("SMTP_PORT must be a positive integer when SMTP_HOST is set", "value", env.SMTPPort)
+	if err := validateSMTPSettings(&env); err != nil {
+		log.Error("invalid SMTP configuration", "error", err)
 		logger.ExitAfterFlush(1)
 	}
 
@@ -233,6 +236,30 @@ func loadEnvVariables() {
 	}
 
 	log.Info("environment variables loaded successfully")
+}
+
+func validateSMTPSettings(env *EnvVariables) error {
+	if env.SMTPHost != "" && env.SMTPPort <= 0 {
+		return fmt.Errorf("SMTP_PORT must be a positive integer when SMTP_HOST is set, got %d", env.SMTPPort)
+	}
+
+	if env.SMTPSecurity != "" && !env.SMTPSecurity.IsValid() {
+		return fmt.Errorf("SMTP_SECURITY %q: %w", env.SMTPSecurity, smtp_transport.ErrUnknownSecurity)
+	}
+
+	if env.SMTPHeloName != "" {
+		if err := smtp_transport.ValidateHeloName(env.SMTPHeloName); err != nil {
+			return fmt.Errorf("SMTP_HELO_NAME %q: %w", env.SMTPHeloName, err)
+		}
+	}
+
+	if env.SMTPFrom != "" {
+		if _, err := smtp_transport.ParseSender(env.SMTPFrom); err != nil {
+			return fmt.Errorf("SMTP_FROM %q: %w", env.SMTPFrom, err)
+		}
+	}
+
+	return nil
 }
 
 // An operator-supplied connection string wins, then the one startup published, then

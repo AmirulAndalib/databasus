@@ -15,6 +15,8 @@ const API_ERROR_CODE_KEYS: Record<string, TranslationKey> = {
   sign_in_code_not_sent: 'errors.signInCodeNotSent',
   too_many_sign_in_codes: 'errors.tooManySignInCodes',
   sign_in_code_resent_too_soon: 'errors.signInCodeResentTooSoon',
+  email_not_configured: 'errors.emailNotConfigured',
+  admin_email_missing: 'errors.adminEmailMissing',
 };
 
 // The one way an error reaches the screen. The message of anything that is not an ApiError comes

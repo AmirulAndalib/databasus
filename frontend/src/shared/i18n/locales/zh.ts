@@ -134,6 +134,8 @@ export const zh: typeof en = {
     tooManySignInCodes: '该账户在过去一小时内请求的登录验证码过多，请稍后重试。',
     signInCodeResentTooSoon: '验证码发送不到一分钟，请稍等一分钟后再请求新的验证码。',
     rateLimitExceeded: '尝试次数过多，请稍后重试。',
+    emailNotConfigured: '实例没有配置邮件服务器。',
+    adminEmailMissing: '你的账号没有可以接收测试邮件的有效邮箱地址。',
   },
   status: {
     logicalBackup: {
@@ -249,6 +251,15 @@ export const zh: typeof en = {
     reset: '重置',
     updated: '设置已更新',
     readMore: '关于这些设置的详细说明，请<docsLink>查看文档</docsLink>',
+    mailServer: {
+      title: '邮件服务器',
+      configured: '邮件服务器<status>已配置</status>。',
+      notConfigured: '邮件服务器<status>未配置</status>。',
+      description: '它负责发送邀请、密码重置码和登录验证码。邮件通知渠道有自己的 SMTP 设置。',
+      docs: '连接邮件服务器的方法见 <docsLink>SMTP 文档</docsLink>。',
+      sendTestEmail: '发送测试邮件',
+      testEmailSent: '测试邮件已发送至 {{email}}',
+    },
     healthcheck: {
       title: '可用性检查',
       openInNewTab: '点击在新标签页中打开',
@@ -1153,11 +1164,24 @@ export const zh: typeof en = {
       smtpPassword: 'SMTP 密码',
       smtpPasswordPlaceholder: '密码',
       from: '发件人',
-      fromTooltip: '可选。用作发件人的邮箱地址。留空时使用 SMTP 用户，或根据主机自动生成',
+      fromTooltip:
+        '可选。发件人地址，可以带名称：Acme Backups <noreply@example.com>。留空时，如果 SMTP 用户是邮箱地址就使用它，否则使用 noreply@ 加 SMTP 主机',
       fromAuto: '（自动）',
       advancedSettings: '高级设置',
       skipTlsTooltip:
         '跳过 TLS 证书验证。如果 SMTP 服务器使用自签名证书，请开启此项。警告：这会降低安全性。',
+      security: '连接安全',
+      securityTooltip:
+        'TLS 从一开始就加密连接，通常用于 465 端口。STARTTLS 在连接建立后升级为加密连接，服务器不支持时发送失败。“不加密”会以明文发送密码和邮件，只应在不支持 STARTTLS 的可信中继上使用。',
+      securityModes: {
+        tls: 'TLS',
+        starttls: 'STARTTLS',
+        none: '不加密',
+      },
+      heloName: '问候名称',
+      heloNamePlaceholder: '自动',
+      heloNameTooltip:
+        'Databasus 向邮件服务器介绍自己时使用的名称（EHLO）。留空时使用 DATABASUS_URL 中的主机，或本机的主机名。',
     },
     telegram: {
       botTokenHelpLink: '如何获取 Telegram 机器人 API 令牌？',

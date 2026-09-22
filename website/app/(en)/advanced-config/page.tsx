@@ -237,15 +237,34 @@ export default function AdvancedConfigPage() {
               <h2 id="email-smtp">Email (SMTP)</h2>
 
               <p>
-                Connect an SMTP server so Databasus can send transactional email
-                such as password-reset links and workspace invitations. Email is
-                treated as configured{" "}
-                <strong>
-                  only when both <code>SMTP_HOST</code> and{" "}
-                  <code>DATABASUS_URL</code> are set
-                </strong>{" "}
-                — until then, email features stay hidden in the UI.
+                Connect a mail server so Databasus can send workspace invitations, password reset codes and sign-in codes. The mail server counts as configured <strong>as soon as <code>SMTP_HOST</code> is set</strong>. Without it, the settings screen reports the mail server as not configured, and the sign-in screen hides the password reset link.
               </p>
+
+              <p>
+                This is the instance mail server. Email notifiers, which report backup events, have SMTP settings of their own in each notifier&apos;s form, so a notifier that delivers mail tells you nothing about this server. To check the instance mail server, open <strong>Databasus settings → Mail server</strong> and press <strong>Send test email</strong>. The message goes to your own address, and a failed delivery shows the mail server&apos;s response.
+              </p>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    <strong>If your relay does not offer STARTTLS, set <code>SMTP_SECURITY=none</code> before upgrading.</strong> On any port other than 465 the default mode is <code>starttls</code>, which refuses to continue without encryption, so such a relay receives nothing until the variable is set. If the instance requires the emailed sign-in code, nobody gets in with a password while mail cannot be delivered. To get back in, switch the second factor off with <code>docker exec -it databasus ./main --disable-2fa</code> (see <a href="/password/#disable-two-factor" className="text-blue-400 hover:text-blue-300">Stop requiring a sign-in code</a>).
+                  </p>
+                </div>
+              </div>
 
               <table>
                 <thead>
@@ -260,8 +279,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_HOST</code>
                     </td>
                     <td data-label="Description">
-                      SMTP server hostname (e.g. <code>smtp.gmail.com</code>).
-                      Enables email together with <code>DATABASUS_URL</code>.
+                      Mail server host name (e.g. <code>smtp.gmail.com</code>). Setting it turns instance mail on.
                     </td>
                   </tr>
                   <tr>
@@ -269,8 +287,15 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_PORT</code>
                     </td>
                     <td data-label="Description">
-                      SMTP server port (e.g. <code>587</code>). Must be a
-                      positive integer when <code>SMTP_HOST</code> is set.
+                      Mail server port (e.g. <code>587</code>). Must be a positive integer when <code>SMTP_HOST</code> is set.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_SECURITY</code>
+                    </td>
+                    <td data-label="Description">
+                      Connection security: <code>tls</code>, <code>starttls</code> or <code>none</code>, described below. Defaults to <code>tls</code> on port 465 and to <code>starttls</code> on every other port. The instance refuses to start with any other value.
                     </td>
                   </tr>
                   <tr>
@@ -286,8 +311,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_PASSWORD</code>
                     </td>
                     <td data-label="Description">
-                      Password for SMTP authentication. For Gmail, use an App
-                      Password — not your account password.
+                      Password for SMTP authentication. For Gmail, use an App Password, not your account password.
                     </td>
                   </tr>
                   <tr>
@@ -295,7 +319,15 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_FROM</code>
                     </td>
                     <td data-label="Description">
-                      The &quot;From&quot; address on outgoing email.
+                      Sender address, either bare (<code>noreply@example.com</code>) or with a name (<code>Acme Backups &lt;noreply@example.com&gt;</code>). Without a name, recipients see <code>Databasus</code>. When it is not set, <code>SMTP_USER</code> is used if it is an email address, and otherwise <code>noreply@</code> followed by <code>SMTP_HOST</code>, so a username such as <code>apikey</code> never becomes the sender. The instance refuses to start when the value cannot be read as an address.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>SMTP_HELO_NAME</code>
+                    </td>
+                    <td data-label="Description">
+                      The name the instance greets the mail server with. Defaults to the host of <code>DATABASUS_URL</code>, then to the machine&apos;s host name. Must be a host name or an address literal such as <code>[192.0.2.1]</code> or <code>[IPv6:2001:db8::1]</code>, or the instance refuses to start.
                     </td>
                   </tr>
                   <tr>
@@ -303,11 +335,7 @@ export default function AdvancedConfigPage() {
                       <code>SMTP_INSECURE_SKIP_VERIFY</code>
                     </td>
                     <td data-label="Description">
-                      Set to <code>true</code> to skip TLS certificate
-                      verification when connecting to the SMTP server. Defaults
-                      to <code>false</code>. Use it only for servers with a
-                      self-signed certificate on a trusted network — it disables
-                      protection against man-in-the-middle attacks.
+                      Set to <code>true</code> to skip TLS certificate verification in the <code>tls</code> and <code>starttls</code> modes. Defaults to <code>false</code>. Use it only for servers with a self-signed certificate on a trusted network, because it disables protection against man-in-the-middle attacks.
                     </td>
                   </tr>
                   <tr>
@@ -315,14 +343,72 @@ export default function AdvancedConfigPage() {
                       <code>DATABASUS_URL</code>
                     </td>
                     <td data-label="Description">
-                      Public base URL of your instance (e.g.{" "}
-                      <code>https://backup.example.com</code>). Used to build
-                      links inside emails. Required together with{" "}
-                      <code>SMTP_HOST</code>.
+                      Public base URL of your instance (e.g. <code>https://backup.example.com</code>). Optional: it adds a link to invitation emails and supplies the default greeting name. Mail works without it.
                     </td>
                   </tr>
                 </tbody>
               </table>
+
+              <p>
+                <code>SMTP_SECURITY</code> selects one of three modes. Email notifiers offer the same choice under <strong>Advanced settings</strong>.
+              </p>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mode</th>
+                    <th>Behavior</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <code>tls</code>
+                    </td>
+                    <td data-label="Behavior">
+                      The connection is encrypted from the first byte. Usual on port 465.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>starttls</code>
+                    </td>
+                    <td data-label="Behavior">
+                      The connection starts unencrypted and is upgraded before the password or any message is sent. If the server does not offer the upgrade, the delivery fails instead of continuing unencrypted. Usual on port 587.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>none</code>
+                    </td>
+                    <td data-label="Behavior">
+                      The connection is never encrypted. Use it for a relay that does not offer STARTTLS, such as a local Postfix on port 25.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="bg-[#1f2937]/50 border border-[#ffffff20] border-l-[3px] my-4 border-l-red-500 rounded-lg px-4 py-4 flex items-start gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-red-500 mt-0.5 shrink-0"
+                >
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+                <div>
+                  <p className="text-gray-300 my-0!">
+                    <code>none</code> sends the SMTP password and every message unencrypted, and anyone between Databasus and the relay can read them. Use it only for a relay on the same host or on a trusted private network.
+                  </p>
+                </div>
+              </div>
 
               <h2 id="signup-captcha">
                 Sign up captcha (Cloudflare Turnstile)

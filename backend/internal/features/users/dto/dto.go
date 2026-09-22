@@ -151,6 +151,10 @@ type SettingsResponseDTO struct {
 	IsEmailConfigured                 bool `json:"isEmailConfigured"`
 }
 
+type SendTestEmailResponseDTO struct {
+	RecipientEmail string `json:"recipientEmail"`
+}
+
 type UpdateSettingsRequestDTO struct {
 	IsAllowExternalRegistrations      bool `json:"isAllowExternalRegistrations"`
 	IsAllowMemberInvitations          bool `json:"isAllowMemberInvitations"`

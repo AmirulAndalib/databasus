@@ -313,6 +313,10 @@ func (s *UserService) ChangeUserPasswordByEmail(ctx context.Context, email, newP
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
+	if user == nil {
+		return errors.New("user with this email does not exist")
+	}
+
 	return s.ChangeUserPassword(ctx, user.ID, newPassword)
 }
 
@@ -587,7 +591,7 @@ func (s *UserService) SendResetPasswordCode(ctx context.Context, email string) e
 </html>
 `, code)
 
-		if err := s.emailSender.SendEmail(user.Email, subject, body); err != nil {
+		if err := s.emailSender.SendEmail(ctx, user.Email, subject, body); err != nil {
 			return fmt.Errorf("failed to send email: %w", err)
 		}
 	}

@@ -39,7 +39,7 @@ func (c *UserController) VerifySignInCode(ctx *gin.Context) {
 		return
 	}
 
-	if !c.checkRateLimitOrRespond(ctx, ratelimiter.Attempt{
+	if !checkRateLimitOrRespond(ctx, c.rateLimiter, c.logger, ratelimiter.Attempt{
 		Scope:      signInCodeVerificationScope,
 		Identifier: request.PendingSignInID.String(),
 		Limit:      signInCodeVerificationLimit,
